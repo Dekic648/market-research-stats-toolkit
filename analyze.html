@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analyze — Market Research Statistics Toolkit</title>
+  <style>
+    /* ========================================
+       CSS Variables — Light / Dark
+       ======================================== */
+    :root {
+      --bg-0: #ffffff;
+      --bg-1: #f5f2f0;
+      --bg-2: #eeebe9;
+      --bg-card: rgba(255, 255, 255, 0.65);
+      --text-0: #1a1a18;
+      --text-1: #5f5a58;
+      --text-2: #887f7d;
+      --rose: #D4587A;
+      --rose-glow: rgba(212, 88, 122, 0.25);
+      --rose-soft: rgba(212, 88, 122, 0.08);
+      --coral: #E08860;
+      --coral-soft: rgba(224, 136, 96, 0.10);
+      --border: rgba(0, 0, 0, 0.06);
+      --border-hover: rgba(212, 88, 122, 0.35);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+      --card-shadow-hover: 0 8px 30px rgba(212, 88, 122, 0.18), 0 2px 8px rgba(0,0,0,0.06);
+      --dot-color: rgba(0, 0, 0, 0.04);
+      --green: #3a9a5c;
+      --green-soft: rgba(58, 154, 92, 0.10);
+      --amber: #c08a30;
+      --amber-soft: rgba(192, 138, 48, 0.10);
+      --red: #c0392b;
+      --red-soft: rgba(192, 57, 43, 0.10);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-0: #1c1c1a;
+        --bg-1: #252523;
+        --bg-2: #2e2e2b;
+        --bg-card: rgba(37, 37, 35, 0.6);
+        --text-0: #f0ede8;
+        --text-1: #b4aba8;
+        --text-2: #887f7d;
+        --rose: #E8829E;
+        --rose-glow: rgba(232, 130, 158, 0.22);
+        --rose-soft: rgba(232, 130, 158, 0.10);
+        --coral: #F0A882;
+        --coral-soft: rgba(240, 168, 130, 0.10);
+        --border: rgba(255, 255, 255, 0.06);
+        --border-hover: rgba(232, 130, 158, 0.35);
+        --card-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
+        --card-shadow-hover: 0 8px 30px rgba(232, 130, 158, 0.15), 0 2px 8px rgba(0,0,0,0.3);
+        --dot-color: rgba(255, 255, 255, 0.03);
+        --green: #5cb87a;
+        --green-soft: rgba(92, 184, 122, 0.12);
+        --amber: #e0a840;
+        --amber-soft: rgba(224, 168, 64, 0.12);
+        --red: #e05a4a;
+        --red-soft: rgba(224, 90, 74, 0.12);
+      }
+    }
+
+    :root.light {
+      --bg-0: #ffffff;
+      --bg-1: #f5f2f0;
+      --bg-2: #eeebe9;
+      --bg-card: rgba(255, 255, 255, 0.65);
+      --text-0: #1a1a18;
+      --text-1: #5f5a58;
+      --text-2: #887f7d;
+      --rose: #D4587A;
+      --rose-glow: rgba(212, 88, 122, 0.25);
+      --rose-soft: rgba(212, 88, 122, 0.08);
+      --coral: #E08860;
+      --coral-soft: rgba(224, 136, 96, 0.10);
+      --border: rgba(0, 0, 0, 0.06);
+      --border-hover: rgba(212, 88, 122, 0.35);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+      --card-shadow-hover: 0 8px 30px rgba(212, 88, 122, 0.18), 0 2px 8px rgba(0,0,0,0.06);
+      --dot-color: rgba(0, 0, 0, 0.04);
+      --green: #3a9a5c;
+      --green-soft: rgba(58, 154, 92, 0.10);
+      --amber: #c08a30;
+      --amber-soft: rgba(192, 138, 48, 0.10);
+      --red: #c0392b;
+      --red-soft: rgba(192, 57, 43, 0.10);
+    }
+
+    :root.dark {
+      --bg-0: #1c1c1a;
+      --bg-1: #252523;
+      --bg-2: #2e2e2b;
+      --bg-card: rgba(37, 37, 35, 0.6);
+      --text-0: #f0ede8;
+      --text-1: #b4aba8;
+      --text-2: #887f7d;
+      --rose: #E8829E;
+      --rose-glow: rgba(232, 130, 158, 0.22);
+      --rose-soft: rgba(232, 130, 158, 0.10);
+      --coral: #F0A882;
+      --coral-soft: rgba(240, 168, 130, 0.10);
+      --border: rgba(255, 255, 255, 0.06);
+      --border-hover: rgba(232, 130, 158, 0.35);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
+      --card-shadow-hover: 0 8px 30px rgba(232, 130, 158, 0.15), 0 2px 8px rgba(0,0,0,0.3);
+      --dot-color: rgba(255, 255, 255, 0.03);
+      --green: #5cb87a;
+      --green-soft: rgba(92, 184, 122, 0.12);
+      --amber: #e0a840;
+      --amber-soft: rgba(224, 168, 64, 0.12);
+      --red: #e05a4a;
+      --red-soft: rgba(224, 90, 74, 0.12);
+    }
+
+    /* ========================================
+       Reset & Base
+       ======================================== */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-0);
+      color: var(--text-0);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(var(--dot-color) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    ::selection {
+      background: var(--rose-glow);
+      color: var(--text-0);
+    }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ========================================
+       Sticky Header
+       ======================================== */
+    .sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--bg-0);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 0.85rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-2);
+      transition: color 0.2s;
+    }
+
+    .back-link:hover { color: var(--rose); }
+
+    .header-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--rose), var(--coral));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .start-over-link {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-2);
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-family: inherit;
+      transition: color 0.2s;
+    }
+
+    .start-over-link:hover { color: var(--rose); }
+
+    .theme-toggle {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      color: var(--text-1);
+      transition: border-color 0.3s, background 0.3s, transform 0.2s;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--border-hover);
+      background: var(--rose-soft);
+      transform: scale(1.08);
+    }
+
+    /* ========================================
+       Chat Container
+       ======================================== */
+    .chat-container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 6rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ========================================
+       Chat Bubbles
+       ======================================== */
+    .chat-message {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1.25rem;
+      opacity: 0;
+      transform: translateY(12px);
+      animation: chatIn 0.4s ease forwards;
+    }
+
+    @keyframes chatIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chat-dot {
+      width: 8px;
+      height: 8px;
+      min-width: 8px;
+      border-radius: 50%;
+      background: var(--rose);
+      margin-top: 10px;
+      opacity: 0.7;
+    }
+
+    .chat-bubble {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      border-top-left-radius: 4px;
+      padding: 0.9rem 1.15rem;
+      font-size: 0.92rem;
+      color: var(--text-0);
+      line-height: 1.6;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--card-shadow);
+      max-width: 85%;
+    }
+
+    /* Options row */
+    .chat-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 0.75rem;
+      margin-bottom: 0.5rem;
+      margin-left: 18px;
+    }
+
+    .chat-option-btn {
+      padding: 0.5rem 1rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-0);
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.25s, background 0.25s, transform 0.15s, box-shadow 0.25s;
+    }
+
+    .chat-option-btn:hover {
+      border-color: var(--border-hover);
+      background: var(--rose-soft);
+      transform: translateY(-1px);
+      box-shadow: var(--card-shadow-hover);
+    }
+
+    .chat-option-btn.selected {
+      background: var(--rose);
+      color: #fff;
+      border-color: var(--rose);
+    }
+
+    .chat-option-btn.dimmed {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .chat-option-btn.selected.dimmed {
+      opacity: 0.85;
+      pointer-events: none;
+    }
+
+    .chat-options.answered .chat-option-btn:not(.selected) {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .chat-options.answered .chat-option-btn.selected {
+      opacity: 0.85;
+      pointer-events: none;
+    }
+
+    /* ========================================
+       Data Input Section
+       ======================================== */
+    .data-input-section {
+      margin-top: 1.5rem;
+      opacity: 0;
+      transform: translateY(12px);
+      animation: chatIn 0.5s ease 0.2s forwards;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 600px) {
+      .input-grid { grid-template-columns: 1fr; }
+    }
+
+    .group-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--card-shadow);
+    }
+
+    .group-card-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin-bottom: 0.6rem;
+    }
+
+    .group-card textarea {
+      width: 100%;
+      min-height: 140px;
+      padding: 0.7rem 0.85rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-1);
+      color: var(--text-0);
+      font-size: 0.85rem;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      line-height: 1.5;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .group-card textarea::placeholder {
+      color: var(--text-2);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 0.82rem;
+    }
+
+    .group-card textarea:focus {
+      border-color: var(--border-hover);
+      box-shadow: 0 0 0 3px var(--rose-soft);
+    }
+
+    .desc-label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-1);
+      margin-top: 0.7rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .group-card input[type="text"] {
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-1);
+      color: var(--text-0);
+      font-size: 0.85rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .group-card input[type="text"]::placeholder {
+      color: var(--text-2);
+      font-size: 0.82rem;
+    }
+
+    .group-card input[type="text"]:focus {
+      border-color: var(--border-hover);
+      box-shadow: 0 0 0 3px var(--rose-soft);
+    }
+
+    .value-count {
+      font-size: 0.75rem;
+      color: var(--text-2);
+      margin-top: 0.4rem;
+    }
+
+    .value-count.valid { color: var(--green); }
+    .value-count.warning { color: var(--amber); }
+    .value-count.error { color: var(--red); }
+
+    /* Run button */
+    .run-btn {
+      display: block;
+      margin: 1.5rem auto 0;
+      padding: 0.75rem 2.5rem;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, var(--rose), var(--coral));
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.3s, transform 0.2s, box-shadow 0.3s;
+      box-shadow: 0 4px 16px var(--rose-glow);
+    }
+
+    .run-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px var(--rose-glow);
+    }
+
+    .run-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* ========================================
+       Loading State
+       ======================================== */
+    .loading-section {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      opacity: 0;
+      animation: chatIn 0.4s ease forwards;
+    }
+
+    .loading-spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--rose);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 0.88rem;
+      color: var(--text-2);
+    }
+
+    /* ========================================
+       Results
+       ======================================== */
+    .results-section {
+      margin-top: 2rem;
+      opacity: 0;
+      transform: translateY(16px);
+      animation: chatIn 0.5s ease forwards;
+    }
+
+    .result-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--card-shadow);
+      margin-bottom: 1rem;
+    }
+
+    .result-card-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin-bottom: 1rem;
+    }
+
+    /* Summary grid */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 500px) {
+      .summary-grid { grid-template-columns: 1fr; }
+    }
+
+    .summary-col h4 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-0);
+      margin-bottom: 0.5rem;
+    }
+
+    .summary-col .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.25rem 0;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stat-row .stat-label { color: var(--text-2); }
+    .stat-row .stat-value { font-weight: 600; color: var(--text-0); font-variant-numeric: tabular-nums; }
+
+    /* Test results */
+    .test-results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .test-stat {
+      text-align: center;
+      padding: 0.75rem;
+      border-radius: 10px;
+      background: var(--bg-1);
+    }
+
+    .test-stat .label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      margin-bottom: 0.25rem;
+    }
+
+    .test-stat .value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-0);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .test-stat.p-sig .value { color: var(--green); }
+    .test-stat.p-marginal .value { color: var(--amber); }
+    .test-stat.p-nonsig .value { color: var(--red); }
+
+    .effect-interpretation {
+      margin-top: 0.75rem;
+      padding: 0.6rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      color: var(--text-1);
+      background: var(--bg-1);
+      line-height: 1.55;
+    }
+
+    /* Plain English card */
+    .plain-english {
+      position: relative;
+    }
+
+    .plain-english-text {
+      font-size: 0.95rem;
+      line-height: 1.7;
+      color: var(--text-0);
+    }
+
+    .copy-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 1rem;
+      padding: 0.45rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-1);
+      color: var(--text-1);
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.25s, color 0.25s, background 0.25s;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--border-hover);
+      color: var(--rose);
+      background: var(--rose-soft);
+    }
+
+    /* Restart button */
+    .restart-btn {
+      display: block;
+      margin: 2rem auto 0;
+      padding: 0.65rem 2rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-1);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.25s, color 0.25s, background 0.25s;
+    }
+
+    .restart-btn:hover {
+      border-color: var(--border-hover);
+      color: var(--rose);
+      background: var(--rose-soft);
+    }
+
+    /* Coming soon message */
+    .coming-soon-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 2rem 1.5rem;
+      text-align: center;
+      backdrop-filter: blur(12px);
+      box-shadow: var(--card-shadow);
+      margin-top: 1rem;
+      opacity: 0;
+      animation: chatIn 0.4s ease 0.15s forwards;
+    }
+
+    .coming-soon-card p {
+      font-size: 0.92rem;
+      color: var(--text-1);
+      line-height: 1.65;
+      margin-bottom: 1.25rem;
+    }
+
+    .coming-soon-card .try-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0.55rem 1.2rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-1);
+      cursor: pointer;
+      font-family: inherit;
+      margin-right: 0.5rem;
+      transition: border-color 0.25s, color 0.25s, background 0.25s;
+    }
+
+    .coming-soon-card .try-btn:hover {
+      border-color: var(--border-hover);
+      color: var(--rose);
+      background: var(--rose-soft);
+    }
+
+    /* ========================================
+       Responsive
+       ======================================== */
+    @media (max-width: 680px) {
+      .sticky-header { padding: 0.7rem 1rem; }
+      .header-title { font-size: 0.85rem; }
+      .chat-container { padding: 1.5rem 1rem 5rem; }
+      .chat-bubble { max-width: 92%; font-size: 0.88rem; }
+      .chat-option-btn { font-size: 0.82rem; padding: 0.45rem 0.85rem; }
+    }
+
+    @media (max-width: 400px) {
+      .sticky-header { padding: 0.6rem 0.75rem; }
+      .back-link span { display: none; }
+    }
+
+    /* ========================================
+       Animations
+       ======================================== */
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ====== Sticky Header ====== -->
+  <header class="sticky-header">
+    <div class="header-left">
+      <a href="index.html" class="back-link">&#8592; <span>Toolkit</span></a>
+      <div class="header-title">Analysis Assistant</div>
+    </div>
+    <div class="header-right">
+      <button class="start-over-link" id="startOverLink">Start over</button>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">&#9790;</button>
+    </div>
+  </header>
+
+  <!-- ====== Chat ====== -->
+  <div class="chat-container" id="chatContainer">
+    <!-- Messages are injected here -->
+  </div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ==================================================================
+     Theme Toggle
+     ================================================================== */
+  const toggle = document.getElementById('themeToggle');
+  const root = document.documentElement;
+
+  function applyTheme(theme) {
+    root.classList.remove('light', 'dark');
+    if (theme !== 'auto') root.classList.add(theme);
+    toggle.textContent = theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches) ? '\u2600' : '\u263E';
+    localStorage.setItem('mr-toolkit-theme', theme);
+  }
+
+  var saved = localStorage.getItem('mr-toolkit-theme') || 'auto';
+  if (saved !== 'auto') applyTheme(saved);
+  else toggle.textContent = window.matchMedia('(prefers-color-scheme: dark)').matches ? '\u2600' : '\u263E';
+
+  toggle.addEventListener('click', function() {
+    var isDark = root.classList.contains('dark') ||
+      (!root.classList.contains('light') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    applyTheme(isDark ? 'light' : 'dark');
+  });
+
+  /* ==================================================================
+     Decision Tree Definition
+     ================================================================== */
+  const TREE = {
+    id: 'start',
+    question: "What would you like to find out from your survey data?",
+    options: [
+      {
+        text: "Are groups different from each other?",
+        next: {
+          id: 'groups_diff',
+          question: "How many groups are you comparing?",
+          options: [
+            {
+              text: "Two groups",
+              next: {
+                id: 'two_groups_type',
+                question: "What kind of measurement are you comparing?",
+                options: [
+                  {
+                    text: "Numbers (revenue, scores, time)",
+                    next: {
+                      id: 'two_num_paired',
+                      question: "Are these the same people measured twice, or two separate groups of people?",
+                      options: [
+                        { text: "Two separate groups", next: { id: 'ttest', method: 'ttest' } },
+                        { text: "Same people, measured twice", next: { id: 'paired_ttest', method: 'coming_soon', name: 'Paired Samples t-test' } }
+                      ]
+                    }
+                  },
+                  { text: "Categories (yes/no, bought/didn't)", next: { id: 'chi_2', method: 'coming_soon', name: 'Chi-Square Test' } }
+                ]
+              }
+            },
+            {
+              text: "Three or more groups",
+              next: {
+                id: 'three_groups_type',
+                question: "What kind of measurement are you comparing?",
+                options: [
+                  { text: "Numbers (revenue, scores, time)", next: { id: 'anova', method: 'coming_soon', name: 'One-way ANOVA' } },
+                  { text: "Categories (yes/no, bought/didn't)", next: { id: 'chi_3', method: 'coming_soon', name: 'Chi-Square Test' } }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        text: "What factors drive an outcome?",
+        next: {
+          id: 'drivers',
+          question: "What type of outcome are you trying to predict?",
+          options: [
+            { text: "A number (revenue, score)", next: { id: 'regression', method: 'coming_soon', name: 'Multiple Regression' } },
+            { text: "Yes or No", next: { id: 'logistic', method: 'coming_soon', name: 'Logistic Regression' } },
+            { text: "A rating scale (1-5, 1-7)", next: { id: 'ordinal', method: 'coming_soon', name: 'Ordinal Regression' } }
+          ]
+        }
+      },
+      {
+        text: "Are two variables related?",
+        next: {
+          id: 'related',
+          question: "What types of variables are you looking at?",
+          options: [
+            { text: "Both are numbers", next: { id: 'corr', method: 'coming_soon', name: 'Correlation Analysis' } },
+            { text: "Both are categories", next: { id: 'cramers', method: 'coming_soon', name: "Cram\u00e9r's V" } },
+            { text: "One number, one category", next: { id: 'pointbiserial', method: 'coming_soon', name: 'Point-Biserial Correlation' } }
+          ]
+        }
+      },
+      {
+        text: "Are there natural segments in my data?",
+        next: {
+          id: 'segments',
+          question: "What kind of data do you mostly have?",
+          options: [
+            { text: "Numbers (scores, amounts)", next: { id: 'kmeans', method: 'coming_soon', name: 'K-Means Clustering' } },
+            { text: "Categories (yes/no, choices)", next: { id: 'lca', method: 'coming_soon', name: 'Latent Class Analysis' } }
+          ]
+        }
+      },
+      { text: "Is my measurement scale reliable?", next: { id: 'reliability', method: 'coming_soon', name: 'Reliability Analysis' } },
+      { text: "I just need to summarize my data", next: { id: 'summary', method: 'coming_soon', name: 'Summary Statistics' } }
+    ]
+  };
+
+  /* ==================================================================
+     Chat Engine
+     ================================================================== */
+  const container = document.getElementById('chatContainer');
+  let pyodideInstance = null;
+  let pyodideLoading = false;
+
+  function scrollToBottom() {
+    setTimeout(function() {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }, 100);
+  }
+
+  function addAssistantMessage(text, delay) {
+    return new Promise(function(resolve) {
+      setTimeout(function() {
+        const msg = document.createElement('div');
+        msg.className = 'chat-message';
+        msg.innerHTML = '<div class="chat-dot"></div><div class="chat-bubble">' + text + '</div>';
+        container.appendChild(msg);
+        scrollToBottom();
+        resolve();
+      }, delay || 300);
+    });
+  }
+
+  function addOptions(options, callback) {
+    return new Promise(function(resolve) {
+      setTimeout(function() {
+        const wrap = document.createElement('div');
+        wrap.className = 'chat-options';
+        wrap.style.opacity = '0';
+        wrap.style.transform = 'translateY(8px)';
+        wrap.style.animation = 'chatIn 0.35s ease 0.1s forwards';
+
+        options.forEach(function(opt, i) {
+          const btn = document.createElement('button');
+          btn.className = 'chat-option-btn';
+          btn.textContent = opt.text;
+          btn.addEventListener('click', function() {
+            // Mark as answered
+            wrap.classList.add('answered');
+            btn.classList.add('selected');
+            callback(opt, i);
+          });
+          wrap.appendChild(btn);
+        });
+
+        container.appendChild(wrap);
+        scrollToBottom();
+        resolve();
+      }, 150);
+    });
+  }
+
+  async function runNode(node) {
+    // If this node has a method endpoint
+    if (node.method) {
+      if (node.method === 'ttest') {
+        await addAssistantMessage("Great! An <strong>Independent Samples t-test</strong> will tell you whether two groups are significantly different on a numeric measure. You'll need to paste two columns of numbers &mdash; one for each group.");
+        showDataInput();
+      } else if (node.method === 'coming_soon') {
+        await addAssistantMessage("You've selected: <strong>" + node.name + "</strong>");
+        showComingSoon(node.name);
+      }
+      return;
+    }
+
+    // Otherwise ask the question
+    await addAssistantMessage(node.question);
+    await addOptions(node.options, async function(opt) {
+      await runNode(opt.next);
+    });
+  }
+
+  /* ==================================================================
+     Coming Soon
+     ================================================================== */
+  function showComingSoon(name) {
+    const card = document.createElement('div');
+    card.className = 'coming-soon-card';
+    card.innerHTML = '<p><strong>' + name + '</strong> is coming soon! For now, try the Independent Samples t-test to see how the tool works.</p>' +
+      '<button class="try-btn" id="tryTtest">Try the t-test</button>' +
+      '<button class="try-btn" id="restartFromCS">Start over</button>';
+    container.appendChild(card);
+    scrollToBottom();
+
+    card.querySelector('#tryTtest').addEventListener('click', function() {
+      resetChat();
+      addAssistantMessage("Great! An <strong>Independent Samples t-test</strong> will tell you whether two groups are significantly different on a numeric measure. You'll need to paste two columns of numbers &mdash; one for each group.").then(function() {
+        showDataInput();
+      });
+    });
+    card.querySelector('#restartFromCS').addEventListener('click', resetChat);
+  }
+
+  /* ==================================================================
+     Data Input UI
+     ================================================================== */
+  function showDataInput() {
+    const section = document.createElement('div');
+    section.className = 'data-input-section';
+    section.innerHTML =
+      '<div class="input-grid">' +
+        '<div class="group-card">' +
+          '<div class="group-card-label">Group A</div>' +
+          '<textarea id="dataA" placeholder="Paste your values here, one per line (e.g., revenue per customer, satisfaction scores...)"></textarea>' +
+          '<div class="desc-label">Tell us about this column</div>' +
+          '<input type="text" id="descA" placeholder="e.g., Monthly revenue for existing customers">' +
+          '<div class="value-count" id="countA">No values detected</div>' +
+        '</div>' +
+        '<div class="group-card">' +
+          '<div class="group-card-label">Group B</div>' +
+          '<textarea id="dataB" placeholder="Paste your values here, one per line (e.g., revenue per customer, satisfaction scores...)"></textarea>' +
+          '<div class="desc-label">Tell us about this column</div>' +
+          '<input type="text" id="descB" placeholder="e.g., Monthly revenue for new customers">' +
+          '<div class="value-count" id="countB">No values detected</div>' +
+        '</div>' +
+      '</div>' +
+      '<button class="run-btn" id="runBtn" disabled>Run Analysis</button>';
+
+    container.appendChild(section);
+    scrollToBottom();
+
+    const dataA = section.querySelector('#dataA');
+    const dataB = section.querySelector('#dataB');
+    const countA = section.querySelector('#countA');
+    const countB = section.querySelector('#countB');
+    const runBtn = section.querySelector('#runBtn');
+
+    function parseValues(text) {
+      var lines = text.split(/[\n,\t]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
+      var nums = [];
+      var bad = 0;
+      lines.forEach(function(l) {
+        var n = parseFloat(l);
+        if (!isNaN(n) && isFinite(n)) nums.push(n);
+        else bad++;
+      });
+      return { nums: nums, bad: bad, total: lines.length };
+    }
+
+    function updateCount(textarea, countEl) {
+      var parsed = parseValues(textarea.value);
+      if (parsed.total === 0) {
+        countEl.textContent = 'No values detected';
+        countEl.className = 'value-count';
+      } else if (parsed.bad > 0) {
+        countEl.textContent = parsed.nums.length + ' valid number' + (parsed.nums.length !== 1 ? 's' : '') + ' detected, ' + parsed.bad + ' non-numeric value' + (parsed.bad !== 1 ? 's' : '') + ' skipped';
+        countEl.className = 'value-count warning';
+      } else {
+        countEl.textContent = parsed.nums.length + ' value' + (parsed.nums.length !== 1 ? 's' : '') + ' detected';
+        countEl.className = 'value-count valid';
+      }
+      return parsed;
+    }
+
+    function checkReady() {
+      var a = parseValues(dataA.value);
+      var b = parseValues(dataB.value);
+      runBtn.disabled = !(a.nums.length >= 3 && b.nums.length >= 3);
+    }
+
+    dataA.addEventListener('input', function() { updateCount(dataA, countA); checkReady(); });
+    dataB.addEventListener('input', function() { updateCount(dataB, countB); checkReady(); });
+
+    runBtn.addEventListener('click', function() {
+      var a = parseValues(dataA.value).nums;
+      var b = parseValues(dataB.value).nums;
+      var descAText = section.querySelector('#descA').value || 'Group A';
+      var descBText = section.querySelector('#descB').value || 'Group B';
+      runBtn.disabled = true;
+      runBtn.textContent = 'Running...';
+      runTTest(a, b, descAText, descBText);
+    });
+  }
+
+  /* ==================================================================
+     Pyodide & t-test
+     ================================================================== */
+  async function loadPyodide() {
+    if (pyodideInstance) return pyodideInstance;
+    if (pyodideLoading) {
+      // Wait for existing load
+      while (!pyodideInstance) await new Promise(function(r) { setTimeout(r, 200); });
+      return pyodideInstance;
+    }
+    pyodideLoading = true;
+
+    // Show loading
+    var loadDiv = document.createElement('div');
+    loadDiv.className = 'loading-section';
+    loadDiv.id = 'pyodideLoading';
+    loadDiv.innerHTML = '<div class="loading-spinner"></div><div class="loading-text">Loading statistical engine...</div>';
+    container.appendChild(loadDiv);
+    scrollToBottom();
+
+    // Load script
+    await new Promise(function(resolve, reject) {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js';
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+
+    pyodideInstance = await window.loadPyodide();
+    await pyodideInstance.loadPackage('scipy');
+
+    // Remove loading
+    var el = document.getElementById('pyodideLoading');
+    if (el) el.remove();
+
+    return pyodideInstance;
+  }
+
+  async function runTTest(a, b, descA, descB) {
+    var py;
+    try {
+      py = await loadPyodide();
+    } catch (e) {
+      showError('Failed to load the statistical engine. Please check your internet connection and try again.');
+      return;
+    }
+
+    var code = `
+import json, math
+from scipy import stats
+import numpy as np
+
+a = np.array(${JSON.stringify(a)})
+b = np.array(${JSON.stringify(b)})
+
+na, nb = len(a), len(b)
+ma, mb = float(np.mean(a)), float(np.mean(b))
+sa, sb = float(np.std(a, ddof=1)), float(np.std(b, ddof=1))
+meda, medb = float(np.median(a)), float(np.median(b))
+
+t_stat, p_val = stats.ttest_ind(a, b, equal_var=False)
+
+# Degrees of freedom (Welch's)
+df = ((sa**2/na + sb**2/nb)**2) / ((sa**2/na)**2/(na-1) + (sb**2/nb)**2/(nb-1))
+
+# Cohen's d
+pooled_std = math.sqrt(((na-1)*sa**2 + (nb-1)*sb**2) / (na+nb-2))
+cohens_d = (ma - mb) / pooled_std if pooled_std > 0 else 0
+
+# 95% CI of the difference
+se_diff = math.sqrt(sa**2/na + sb**2/nb)
+t_crit = float(stats.t.ppf(0.975, df))
+ci_low = (ma - mb) - t_crit * se_diff
+ci_high = (ma - mb) + t_crit * se_diff
+
+json.dumps({
+    "na": na, "nb": nb,
+    "ma": round(ma, 4), "mb": round(mb, 4),
+    "sa": round(sa, 4), "sb": round(sb, 4),
+    "meda": round(meda, 4), "medb": round(medb, 4),
+    "t": round(float(t_stat), 4),
+    "p": round(float(p_val), 6),
+    "df": round(float(df), 2),
+    "d": round(float(cohens_d), 4),
+    "ci_low": round(float(ci_low), 4),
+    "ci_high": round(float(ci_high), 4)
+})
+`;
+
+    try {
+      var resultStr = py.runPython(code);
+      var r = JSON.parse(resultStr);
+      showResults(r, descA, descB);
+    } catch (e) {
+      showError('Something went wrong running the analysis: ' + e.message);
+    }
+  }
+
+  function showError(msg) {
+    addAssistantMessage('<span style="color:var(--red)">' + msg + '</span>');
+  }
+
+  /* ==================================================================
+     Results Display
+     ================================================================== */
+  function showResults(r, descA, descB) {
+    var absD = Math.abs(r.d);
+    var effectLabel = absD < 0.2 ? 'negligible' : absD < 0.5 ? 'small' : absD < 0.8 ? 'medium' : 'large';
+    var practicalLabel = absD < 0.2 ? 'negligible' : absD < 0.5 ? 'modest' : 'practically meaningful';
+
+    var pClass = r.p < 0.05 ? 'p-sig' : r.p < 0.10 ? 'p-marginal' : 'p-nonsig';
+
+    // Build plain English
+    var plainText;
+    if (r.p < 0.05) {
+      plainText = 'There is a statistically significant difference between ' + descA + ' (M = ' + r.ma + ', SD = ' + r.sa + ') and ' + descB + ' (M = ' + r.mb + ', SD = ' + r.sb + '), t(' + r.df + ') = ' + r.t + ', p = ' + r.p + '. The effect size is ' + effectLabel + ' (Cohen\u2019s d = ' + r.d + '), meaning the difference is ' + practicalLabel + '.';
+    } else {
+      plainText = 'There is no statistically significant difference between ' + descA + ' (M = ' + r.ma + ', SD = ' + r.sa + ') and ' + descB + ' (M = ' + r.mb + ', SD = ' + r.sb + '), t(' + r.df + ') = ' + r.t + ', p = ' + r.p + '. Based on this data, we cannot conclude that the groups differ.';
+    }
+
+    var html =
+      '<div class="results-section">' +
+
+      // Plain English FIRST
+      '<div class="result-card plain-english">' +
+        '<div class="result-card-title">Plain English Interpretation</div>' +
+        '<div class="plain-english-text" id="plainText">' + plainText + '</div>' +
+        '<button class="copy-btn" id="copyBtn">&#128203; Copy to clipboard</button>' +
+      '</div>' +
+
+      // Summary
+      '<div class="result-card">' +
+        '<div class="result-card-title">Descriptive Summary</div>' +
+        '<div class="summary-grid">' +
+          '<div class="summary-col">' +
+            '<h4>' + escHtml(descA) + '</h4>' +
+            '<div class="stat-row"><span class="stat-label">n</span><span class="stat-value">' + r.na + '</span></div>' +
+            '<div class="stat-row"><span class="stat-label">Mean</span><span class="stat-value">' + r.ma + '</span></div>' +
+            '<div class="stat-row"><span class="stat-label">Std Dev</span><span class="stat-value">' + r.sa + '</span></div>' +
+            '<div class="stat-row"><span class="stat-label">Median</span><span class="stat-value">' + r.meda + '</span></div>' +
+          '</div>' +
+          '<div class="summary-col">' +
+            '<h4>' + escHtml(descB) + '</h4>' +
+            '<div class="stat-row"><span class="stat-label">n</span><span class="stat-value">' + r.nb + '</span></div>' +
+            '<div class="stat-row"><span class="stat-label">Mean</span><span class="stat-value">' + r.mb + '</span></div>' +
+            '<div class="stat-row"><span class="stat-label">Std Dev</span><span class="stat-value">' + r.sb + '</span></div>' +
+            '<div class="stat-row"><span class="stat-label">Median</span><span class="stat-value">' + r.medb + '</span></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // Test Results
+      '<div class="result-card">' +
+        '<div class="result-card-title">Test Results</div>' +
+        '<div class="test-results-grid">' +
+          '<div class="test-stat"><div class="label">t-statistic</div><div class="value">' + r.t + '</div></div>' +
+          '<div class="test-stat ' + pClass + '"><div class="label">p-value</div><div class="value">' + r.p + '</div></div>' +
+          '<div class="test-stat"><div class="label">Degrees of freedom</div><div class="value">' + r.df + '</div></div>' +
+          '<div class="test-stat"><div class="label">Cohen\'s d</div><div class="value">' + r.d + '</div></div>' +
+          '<div class="test-stat"><div class="label">95% CI of difference</div><div class="value">[' + r.ci_low + ', ' + r.ci_high + ']</div></div>' +
+        '</div>' +
+        '<div class="effect-interpretation">Effect size interpretation: <strong>' + effectLabel + '</strong> ' +
+          '(|d| < 0.2 = negligible, 0.2\u20130.5 = small, 0.5\u20130.8 = medium, > 0.8 = large)</div>' +
+      '</div>' +
+
+      '<button class="restart-btn" id="restartBtn">Start Over</button>' +
+      '</div>';
+
+    container.insertAdjacentHTML('beforeend', html);
+    scrollToBottom();
+
+    // Copy handler
+    document.getElementById('copyBtn').addEventListener('click', function() {
+      navigator.clipboard.writeText(plainText).then(function() {
+        var btn = document.getElementById('copyBtn');
+        btn.textContent = 'Copied!';
+        setTimeout(function() { btn.innerHTML = '&#128203; Copy to clipboard'; }, 2000);
+      });
+    });
+
+    // Restart
+    document.getElementById('restartBtn').addEventListener('click', resetChat);
+  }
+
+  function escHtml(s) {
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  /* ==================================================================
+     Reset
+     ================================================================== */
+  function resetChat() {
+    container.innerHTML = '';
+    startConversation();
+  }
+
+  document.getElementById('startOverLink').addEventListener('click', resetChat);
+
+  /* ==================================================================
+     Start
+     ================================================================== */
+  function startConversation() {
+    runNode(TREE);
+  }
+
+  startConversation();
+
+})();
+</script>
+</body>
+</html>
