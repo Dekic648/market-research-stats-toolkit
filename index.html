@@ -21,6 +21,8 @@
       --rose-soft: rgba(212, 88, 122, 0.08);
       --coral: #E08860;
       --coral-soft: rgba(224, 136, 96, 0.10);
+      --green: #3a9a5c;
+      --green-soft: rgba(58, 154, 92, 0.10);
       --border: rgba(0, 0, 0, 0.06);
       --border-hover: rgba(212, 88, 122, 0.35);
       --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
@@ -45,6 +47,8 @@
         --rose-soft: rgba(232, 130, 158, 0.10);
         --coral: #F0A882;
         --coral-soft: rgba(240, 168, 130, 0.10);
+        --green: #4aad6a;
+        --green-soft: rgba(74, 173, 106, 0.12);
         --border: rgba(255, 255, 255, 0.06);
         --border-hover: rgba(232, 130, 158, 0.35);
         --card-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
@@ -70,6 +74,8 @@
       --rose-soft: rgba(212, 88, 122, 0.08);
       --coral: #E08860;
       --coral-soft: rgba(224, 136, 96, 0.10);
+      --green: #3a9a5c;
+      --green-soft: rgba(58, 154, 92, 0.10);
       --border: rgba(0, 0, 0, 0.06);
       --border-hover: rgba(212, 88, 122, 0.35);
       --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
@@ -93,6 +99,8 @@
       --rose-soft: rgba(232, 130, 158, 0.10);
       --coral: #F0A882;
       --coral-soft: rgba(240, 168, 130, 0.10);
+      --green: #4aad6a;
+      --green-soft: rgba(74, 173, 106, 0.12);
       --border: rgba(255, 255, 255, 0.06);
       --border-hover: rgba(232, 130, 158, 0.35);
       --card-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
@@ -811,12 +819,123 @@
       margin-top: 0.25rem;
       width: fit-content;
     }
+
+    .tool-badge.live {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    /* Live card links */
+    a.tool-card {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    /* ========================================
+       Method Directory
+       ======================================== */
+    .method-directory { margin-top: 1rem; }
+
+    .method-dir-search-wrap { margin-bottom: 1.5rem; }
+    .method-dir-search {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-0);
+      font-size: 0.88rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .method-dir-search:focus {
+      border-color: var(--border-hover);
+      box-shadow: 0 0 0 3px var(--rose-soft);
+    }
+    .method-dir-search::placeholder { color: var(--text-2); }
+
+    .method-dir-category { margin-bottom: 1rem; }
+    .method-dir-cat-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0.6rem 0;
+      cursor: pointer;
+      user-select: none;
+    }
+    .method-dir-cat-num {
+      width: 24px; height: 24px;
+      border-radius: 6px;
+      background: var(--rose-soft);
+      color: var(--rose);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700; flex-shrink: 0;
+    }
+    .method-dir-cat-title {
+      font-size: 0.82rem; font-weight: 600;
+      letter-spacing: 0.03em; text-transform: uppercase;
+      color: var(--text-1); flex: 1;
+    }
+    .method-dir-cat-count {
+      font-size: 0.72rem; color: var(--text-2);
+    }
+    .method-dir-cat-toggle {
+      font-size: 0.8rem; color: var(--text-2);
+      transition: transform 0.2s;
+    }
+    .method-dir-cat-header[data-expanded="false"] .method-dir-cat-toggle {
+      transform: rotate(-90deg);
+    }
+    .method-dir-cat-body {
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .method-dir-cat-header[data-expanded="false"] + .method-dir-cat-body {
+      max-height: 0 !important;
+    }
+
+    .method-dir-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+      padding: 0.5rem 0.75rem;
+      margin-left: 34px;
+      border-radius: 8px;
+      text-decoration: none;
+      color: inherit;
+      transition: background 0.2s;
+    }
+    .method-dir-row:hover {
+      background: var(--rose-soft);
+    }
+    .method-dir-name {
+      font-size: 0.85rem; font-weight: 600; color: var(--text-0);
+    }
+    .method-dir-desc {
+      font-size: 0.8rem; color: var(--text-2);
+    }
+    .method-dir-hint {
+      width: 100%;
+      font-size: 0.75rem; color: var(--text-2); font-style: italic;
+    }
+
+    .method-dir-no-results {
+      text-align: center; padding: 2rem; color: var(--text-2);
+      font-size: 0.88rem; display: none;
+    }
+
+    .method-dir-row.hidden { display: none; }
+    .method-dir-category.hidden { display: none; }
   </style>
 </head>
 <body>
 
   <!-- ====== Top Bar ====== -->
   <div class="top-bar">
+    <a href="https://dekic648.github.io/ux-stats-toolkit/" class="github-cta" target="_blank" rel="noopener">
+      &#128300; UX Toolkit
+    </a>
     <a href="https://github.com/Dekic648/market-research-stats-toolkit" target="_blank" rel="noopener" class="github-cta">
       <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
       Star · Contribute
@@ -843,148 +962,161 @@
 
   <!-- ====== Tools ====== -->
   <section class="section">
-    <div class="section-label">100+ methods · 6 categories · Guided by conversation</div>
+    <div class="section-label">59 methods · 6 categories · Guided by conversation</div>
 
-    <!-- Chapter 1: Group Comparisons -->
+    <!-- Chapter 1: Descriptives & Distributions -->
     <div class="chapter">
       <div class="chapter-header" style="animation-delay:0.3s">
         <div class="chapter-number">1</div>
+        <div class="chapter-title">Descriptives &amp; Distributions</div>
+      </div>
+      <div class="tools-grid">
+        <a href="analyze.html" class="tool-card">
+          <div class="tool-name">Summary Statistics</div>
+          <div class="tool-desc">Means, medians, standard deviations, confidence intervals — the basics, done right. Paste a column, get a full statistical profile with interpretation.</div>
+          <div class="tool-badge live">Live</div>
+        </a>
+        <a href="analyze.html" class="tool-card">
+          <div class="tool-name">Distribution Checker</div>
+          <div class="tool-desc">Is your data normal? Skewed? Has outliers? Paste a column and get normality tests, skewness/kurtosis, and advice on which methods will work.</div>
+          <div class="tool-badge live">Live</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Chapter 2: Group Comparisons -->
+    <div class="chapter">
+      <div class="chapter-header" style="animation-delay:0.4s">
+        <div class="chapter-number">2</div>
         <div class="chapter-title">Group Comparisons</div>
       </div>
       <div class="tools-grid">
-        <div class="tool-card">
+        <a href="analyze.html" class="tool-card">
           <div class="tool-name">Independent Samples t-test</div>
           <div class="tool-desc">Compare means between two groups — e.g., did customers in Region A spend more than Region B? Paste two columns, get the answer with effect size and a plain-English verdict.</div>
-          <div class="tool-badge">Coming soon</div>
-        </div>
-        <div class="tool-card">
+          <div class="tool-badge live">Live</div>
+        </a>
+        <a href="analyze.html" class="tool-card">
           <div class="tool-name">One-way ANOVA</div>
           <div class="tool-desc">Compare means across 3+ groups at once. Which customer segment rates satisfaction highest? Includes post-hoc tests to pinpoint where differences lie.</div>
-          <div class="tool-badge">Coming soon</div>
-        </div>
-        <div class="tool-card">
+          <div class="tool-badge live">Live</div>
+        </a>
+        <a href="analyze.html" class="tool-card">
           <div class="tool-name">Chi-Square Test</div>
           <div class="tool-desc">Test whether two categorical variables are related — e.g., does purchase intent differ by age group? Works with crosstabs you already have.</div>
-          <div class="tool-badge">Coming soon</div>
-        </div>
-        <div class="tool-card">
+          <div class="tool-badge live">Live</div>
+        </a>
+        <a href="analyze.html" class="tool-card">
           <div class="tool-name">Mann-Whitney U</div>
           <div class="tool-desc">The non-parametric alternative when your data isn't normally distributed. Compare two groups on ordinal or skewed data — like Likert ratings or income brackets.</div>
-          <div class="tool-badge">Coming soon</div>
-        </div>
+          <div class="tool-badge live">Live</div>
+        </a>
       </div>
     </div>
 
-    <!-- Chapter 2: Crosstabs & Association -->
+    <!-- Chapter 3: Correlation & Association -->
     <div class="chapter">
-      <div class="chapter-header" style="animation-delay:0.45s">
-        <div class="chapter-number">2</div>
-        <div class="chapter-title">Crosstabs &amp; Association</div>
+      <div class="chapter-header" style="animation-delay:0.5s">
+        <div class="chapter-number">3</div>
+        <div class="chapter-title">Correlation &amp; Association</div>
       </div>
       <div class="tools-grid">
-        <div class="tool-card">
-          <div class="tool-name">Cross-tabulation Builder</div>
-          <div class="tool-desc">Build crosstabs from raw data — see frequencies, percentages, and expected counts. The foundation of most survey analysis.</div>
-          <div class="tool-badge">Coming soon</div>
-        </div>
-        <div class="tool-card">
+        <a href="analyze.html" class="tool-card">
           <div class="tool-name">Correlation Matrix</div>
           <div class="tool-desc">Explore relationships between multiple variables at once. Pearson, Spearman, or Kendall — the tool picks the right one based on your data types.</div>
-          <div class="tool-badge">Coming soon</div>
-        </div>
-        <div class="tool-card">
+          <div class="tool-badge live">Live</div>
+        </a>
+        <a href="analyze.html" class="tool-card">
           <div class="tool-name">Cram&eacute;r's V &amp; Phi</div>
           <div class="tool-desc">Measure the strength of association between categorical variables — goes beyond "significant or not" to tell you how strong the relationship actually is.</div>
-          <div class="tool-badge">Coming soon</div>
-        </div>
+          <div class="tool-badge live">Live</div>
+        </a>
       </div>
     </div>
 
-    <!-- Chapter 3: Regression & Prediction -->
+    <!-- Chapter 4: Regression & Prediction -->
     <div class="chapter">
       <div class="chapter-header" style="animation-delay:0.6s">
-        <div class="chapter-number">3</div>
+        <div class="chapter-number">4</div>
         <div class="chapter-title">Regression &amp; Prediction</div>
       </div>
       <div class="tools-grid">
-        <div class="tool-card">
+        <a href="analyze.html" class="tool-card">
           <div class="tool-name">Multiple Linear Regression</div>
           <div class="tool-desc">Which factors drive your outcome? Paste your columns, describe them, and get coefficients, R-squared, and what each predictor actually means — in plain English.</div>
-          <div class="tool-badge">Coming soon</div>
-        </div>
-        <div class="tool-card">
+          <div class="tool-badge live">Live</div>
+        </a>
+        <a href="analyze.html" class="tool-card">
           <div class="tool-name">Logistic Regression</div>
           <div class="tool-desc">Predict a yes/no outcome — will this customer churn? Does awareness drive purchase? Get odds ratios explained in stakeholder language.</div>
-          <div class="tool-badge">Coming soon</div>
-        </div>
-        <div class="tool-card">
+          <div class="tool-badge live">Live</div>
+        </a>
+        <a href="analyze.html" class="tool-card">
           <div class="tool-name">Ordinal Regression</div>
           <div class="tool-desc">When your outcome is a Likert scale (1-5 satisfaction, likelihood to recommend). The right model for the data most surveys actually produce.</div>
-          <div class="tool-badge">Coming soon</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Chapter 4: Segmentation & Clustering -->
-    <div class="chapter">
-      <div class="chapter-header" style="animation-delay:0.75s">
-        <div class="chapter-number">4</div>
-        <div class="chapter-title">Segmentation &amp; Clustering</div>
-      </div>
-      <div class="tools-grid">
-        <div class="tool-card">
-          <div class="tool-name">K-Means Clustering</div>
-          <div class="tool-desc">Find natural groupings in your respondents. Paste behavioral or attitudinal data — get segments with profiles you can name and act on.</div>
-          <div class="tool-badge">Coming soon</div>
-        </div>
-        <div class="tool-card">
-          <div class="tool-name">Latent Class Analysis</div>
-          <div class="tool-desc">Probabilistic segmentation from categorical survey items. Better than K-means when your data is mostly yes/no or multiple choice.</div>
-          <div class="tool-badge">Coming soon</div>
-        </div>
+          <div class="tool-badge live">Live</div>
+        </a>
       </div>
     </div>
 
     <!-- Chapter 5: Scale & Construct Analysis -->
     <div class="chapter">
-      <div class="chapter-header" style="animation-delay:0.85s">
+      <div class="chapter-header" style="animation-delay:0.7s">
         <div class="chapter-number">5</div>
         <div class="chapter-title">Scale &amp; Construct Analysis</div>
       </div>
       <div class="tools-grid">
-        <div class="tool-card">
+        <a href="analyze.html" class="tool-card">
           <div class="tool-name">Reliability Analysis</div>
           <div class="tool-desc">Is your scale measuring one thing consistently? Get Cronbach's alpha, item-total correlations, and advice on which items to drop.</div>
-          <div class="tool-badge">Coming soon</div>
-        </div>
-        <div class="tool-card">
+          <div class="tool-badge live">Live</div>
+        </a>
+        <a href="analyze.html" class="tool-card">
           <div class="tool-name">Factor Analysis (EFA)</div>
           <div class="tool-desc">Discover the hidden constructs behind your survey items. How many factors are there, and which questions load onto which? Explained without jargon.</div>
-          <div class="tool-badge">Coming soon</div>
-        </div>
+          <div class="tool-badge live">Live</div>
+        </a>
       </div>
     </div>
 
-    <!-- Chapter 6: Descriptives & Distributions -->
+    <!-- Chapter 6: Segmentation & Clustering -->
     <div class="chapter">
-      <div class="chapter-header" style="animation-delay:0.95s">
+      <div class="chapter-header" style="animation-delay:0.8s">
         <div class="chapter-number">6</div>
-        <div class="chapter-title">Descriptives &amp; Distributions</div>
+        <div class="chapter-title">Segmentation &amp; Clustering</div>
       </div>
       <div class="tools-grid">
-        <div class="tool-card">
-          <div class="tool-name">Summary Statistics</div>
-          <div class="tool-desc">Means, medians, standard deviations, confidence intervals — the basics, done right. Paste a column, get a full statistical profile with interpretation.</div>
-          <div class="tool-badge">Coming soon</div>
-        </div>
-        <div class="tool-card">
-          <div class="tool-name">Distribution Checker</div>
-          <div class="tool-desc">Is your data normal? Skewed? Has outliers? Paste a column and get normality tests, skewness/kurtosis, and advice on which methods will work.</div>
-          <div class="tool-badge">Coming soon</div>
-        </div>
+        <a href="analyze.html" class="tool-card">
+          <div class="tool-name">K-Means Clustering</div>
+          <div class="tool-desc">Find natural groupings in your respondents. Paste behavioral or attitudinal data — get segments with profiles you can name and act on.</div>
+          <div class="tool-badge live">Live</div>
+        </a>
+        <a href="analyze.html" class="tool-card">
+          <div class="tool-name">Latent Class Analysis</div>
+          <div class="tool-desc">Probabilistic segmentation from categorical survey items. Better than K-means when your data is mostly yes/no or multiple choice.</div>
+          <div class="tool-badge live">Live</div>
+        </a>
+        <a href="analyze.html" class="tool-card">
+          <div class="tool-name">Cross-tabulation Builder</div>
+          <div class="tool-desc">Build crosstabs from raw data — see frequencies, percentages, and expected counts. The foundation of most survey analysis.</div>
+          <div class="tool-badge live">Live</div>
+        </a>
       </div>
     </div>
 
+  </section>
+
+  <!-- ====== Browse All Methods Directory ====== -->
+  <section class="section">
+    <div class="section-label">Browse all 59 methods</div>
+
+    <div class="method-dir-search-wrap">
+      <input type="text" class="method-dir-search" id="methodDirSearch" placeholder="Search by name, keyword, or example...">
+    </div>
+
+    <div class="method-directory" id="methodDirectory"></div>
+
+    <div class="method-dir-no-results" id="dirNoResults">No methods match your search.</div>
   </section>
 
   <!-- ====== Methodology ====== -->
@@ -996,7 +1128,7 @@
 
   <!-- ====== Footer ====== -->
   <footer>
-    <p>Built by <span>Milo Vandekic</span> · Grounded in <a href="https://groundedly.vercel.app" target="_blank" rel="noopener" style="color:var(--rose);text-decoration:none;font-weight:500">Groundedly</a></p>
+    <p>Built by <span>Milo Vandekic</span> · Grounded in <a href="https://groundedly.vercel.app" target="_blank" rel="noopener" style="color:var(--rose);text-decoration:none;font-weight:500">Groundedly</a> · <a href="tests.html" style="color:var(--text-2);text-decoration:none;font-size:0.75rem;opacity:0.5">Tests</a></p>
   </footer>
 
 <script>
@@ -1064,6 +1196,153 @@
     });
 
     noResults.style.display = (q && !anyVisible) ? 'block' : 'none';
+  });
+  /* ---- Method Directory ---- */
+  var METHOD_REGISTRY = [
+    { category: 'Descriptive & Distributional', methods: [
+      { name: 'Summary Statistics', desc: 'means, medians, SD, confidence intervals', hint: 'e.g., What\'s the average customer satisfaction score?' },
+      { name: 'Distribution Checker', desc: 'normality tests, skewness, kurtosis', hint: 'e.g., Is my revenue data normally distributed?' },
+      { name: 'Frequencies & Crosstabs', desc: 'frequency tables, percentages', hint: 'e.g., How many respondents chose each brand?' },
+      { name: 'Multi-Response Analysis', desc: 'checkbox / select-all questions', hint: 'e.g., Which features did customers select?' }
+    ]},
+    { category: 'Group Comparison', methods: [
+      { name: 'Independent Samples t-test', desc: 'compare means between two groups', hint: 'e.g., Do male and female customers spend differently?' },
+      { name: 'Paired Samples t-test', desc: 'compare before/after measurements', hint: 'e.g., Did scores improve after training?' },
+      { name: 'One-way ANOVA', desc: 'compare means across 3+ groups', hint: 'e.g., Does satisfaction differ across 4 regions?' },
+      { name: 'Two-way ANOVA', desc: 'compare with two grouping variables', hint: 'e.g., Does satisfaction differ by region AND product?' },
+      { name: 'ANCOVA', desc: 'compare groups controlling for a covariate', hint: 'e.g., Compare regions while controlling for income' },
+      { name: 'Mann-Whitney U', desc: 'non-parametric two-group comparison', hint: 'e.g., Compare ratings when data isn\'t normal' },
+      { name: 'Kruskal-Wallis', desc: 'non-parametric 3+ group comparison', hint: 'e.g., Compare ordinal ratings across groups' },
+      { name: 'Wilcoxon Signed-Rank', desc: 'non-parametric paired comparison', hint: 'e.g., Before/after on non-normal data' },
+      { name: 'Friedman Test', desc: 'non-parametric repeated measures', hint: 'e.g., Rate 3 products, same people' },
+      { name: 'Chi-Square Test', desc: 'categorical independence test', hint: 'e.g., Is purchase intent related to age group?' },
+      { name: 'Fisher\'s Exact Test', desc: 'small sample categorical test', hint: 'e.g., Small sample 2\u00d72 comparison' },
+      { name: 'McNemar\'s Test', desc: 'paired categorical change', hint: 'e.g., Did brand preference change after the campaign?' },
+      { name: 'Welch\'s ANOVA', desc: 'unequal variance group comparison', hint: 'e.g., Compare groups with very different variances' },
+      { name: 'Two-Proportion Z-Test', desc: 'compare two proportions', hint: 'e.g., Did conversion rate differ between campaigns?' },
+      { name: 'A/B Test Analysis', desc: 'experiment analysis with power', hint: 'e.g., Did the new landing page increase signups?' },
+      { name: 'Bayesian Hypothesis Testing', desc: 'evidence-based inference', hint: 'e.g., How strong is the evidence for a difference?' }
+    ]},
+    { category: 'Correlation & Association', methods: [
+      { name: 'Pearson Correlation', desc: 'linear relationship', hint: 'e.g., Does spending increase with income?' },
+      { name: 'Spearman Correlation', desc: 'monotonic relationship', hint: 'e.g., Do satisfaction rankings match loyalty?' },
+      { name: 'Kendall\'s Tau', desc: 'ordinal correlation, small samples', hint: 'e.g., Agreement between two ordinal rankings' },
+      { name: 'Point-Biserial Correlation', desc: 'binary vs continuous', hint: 'e.g., Does gender predict test scores?' },
+      { name: 'Phi Coefficient', desc: 'binary \u00d7 binary', hint: 'e.g., Are two yes/no questions related?' },
+      { name: 'Cram\u00e9r\'s V', desc: 'categorical association strength', hint: 'e.g., How strongly are brand and region linked?' },
+      { name: 'Partial Correlation', desc: 'controlling for variables', hint: 'e.g., Price \u2192 satisfaction, controlling for quality' },
+      { name: 'Correlation Matrix', desc: 'explore multiple relationships', hint: 'e.g., Relationships among 10 survey items at once' }
+    ]},
+    { category: 'Regression & Prediction', methods: [
+      { name: 'Simple Linear Regression', desc: 'one predictor', hint: 'e.g., Does ad spend predict revenue?' },
+      { name: 'Multiple Linear Regression', desc: 'multiple predictors', hint: 'e.g., What drives satisfaction \u2014 price, quality, or service?' },
+      { name: 'Logistic Regression', desc: 'binary outcome', hint: 'e.g., What predicts customer churn?' },
+      { name: 'Multinomial Logistic', desc: '3+ category outcome', hint: 'e.g., What predicts brand choice?' },
+      { name: 'Ordinal Regression', desc: 'Likert scale outcome', hint: 'e.g., What predicts satisfaction on a 1-5 scale?' },
+      { name: 'Poisson Regression', desc: 'count outcomes', hint: 'e.g., What predicts number of complaints?' },
+      { name: 'Moderation Analysis', desc: 'interaction effects', hint: 'e.g., Does price effect depend on brand?' },
+      { name: 'Mediation Analysis', desc: 'indirect effects', hint: 'e.g., Does training \u2192 confidence \u2192 performance?' },
+      { name: 'Difference-in-Differences', desc: 'causal effect estimation', hint: 'e.g., Did the policy change cause the improvement?' }
+    ]},
+    { category: 'Scale & Construct Analysis', methods: [
+      { name: 'Cronbach\'s Alpha', desc: 'scale reliability', hint: 'e.g., Do these 5 items reliably measure satisfaction?' },
+      { name: 'Factor Analysis (EFA)', desc: 'discover constructs', hint: 'e.g., What themes underlie 20 survey questions?' },
+      { name: 'Confirmatory Factor Analysis', desc: 'test structure', hint: 'e.g., Do items 1-5 really measure \'trust\'?' },
+      { name: 'Principal Component Analysis', desc: 'data reduction', hint: 'e.g., Reduce 15 variables to 3 dimensions' },
+      { name: 'Item Response Theory (Rasch)', desc: 'item calibration', hint: 'e.g., Which test items are too easy or hard?' }
+    ]},
+    { category: 'Segmentation & Classification', methods: [
+      { name: 'K-Means Clustering', desc: 'find natural groupings', hint: 'e.g., Are there 3-4 distinct customer types?' },
+      { name: 'Hierarchical Clustering', desc: 'tree-based segmentation', hint: 'e.g., Build nested customer segments' },
+      { name: 'Latent Class Analysis', desc: 'probabilistic clustering', hint: 'e.g., Find groups from yes/no survey patterns' },
+      { name: 'Decision Trees', desc: 'interpretable classification', hint: 'e.g., What rules predict who will buy?' },
+      { name: 'Discriminant Analysis', desc: 'predict group membership', hint: 'e.g., Which variables separate loyal vs churned?' }
+    ]},
+    { category: 'Preference & Choice', methods: [
+      { name: 'Conjoint Analysis', desc: 'trade-off preferences', hint: 'e.g., Which product features matter most?' },
+      { name: 'MaxDiff Scaling', desc: 'relative importance', hint: 'e.g., Rank 8 brand attributes by importance' },
+      { name: 'Discrete Choice Modeling', desc: 'predict choices', hint: 'e.g., Which package will customers pick?' }
+    ]},
+    { category: 'Longitudinal & Repeated Measures', methods: [
+      { name: 'Repeated Measures ANOVA', desc: 'compare across time', hint: 'e.g., Did scores change across 4 quarters?' },
+      { name: 'Mixed-Effects Models', desc: 'nested data', hint: 'e.g., Students within classrooms' },
+      { name: 'Survival Analysis', desc: 'time-to-event', hint: 'e.g., How long until customers churn?' }
+    ]},
+    { category: 'Text & Open-Ended', methods: [
+      { name: 'Sentiment Analysis', desc: 'positive/negative scoring', hint: 'e.g., Are comments mostly positive or negative?' },
+      { name: 'Word Frequency Analysis', desc: 'top words', hint: 'e.g., What words appear most in feedback?' },
+      { name: 'Inter-Rater Reliability', desc: 'agreement measures', hint: 'e.g., Do two coders agree on categorizations?' }
+    ]},
+    { category: 'Survey Design & Weighting', methods: [
+      { name: 'Shapiro-Wilk Test', desc: 'normality check', hint: 'e.g., Should I use parametric or non-parametric?' },
+      { name: 'Levene\'s Test', desc: 'equal variance check', hint: 'e.g., Do groups have similar variability?' },
+      { name: 'Post-Stratification Weighting', desc: 'demographic adjustment', hint: 'e.g., Sample is 70% female, population is 50%' },
+      { name: 'Multiple Imputation', desc: 'handle missing data', hint: 'e.g., 15% of responses are missing' },
+      { name: 'Propensity Score Matching', desc: 'fair group comparison', hint: 'e.g., Compare groups despite selection bias' }
+    ]}
+  ];
+
+  // Render method directory
+  var dirContainer = document.getElementById('methodDirectory');
+  METHOD_REGISTRY.forEach(function(cat, i) {
+    var catDiv = document.createElement('div');
+    catDiv.className = 'method-dir-category';
+
+    var header = document.createElement('div');
+    header.className = 'method-dir-cat-header';
+    header.setAttribute('data-expanded', 'true');
+    header.innerHTML = '<span class="method-dir-cat-num">' + (i + 1) + '</span>' +
+      '<span class="method-dir-cat-title">' + cat.category + '</span>' +
+      '<span class="method-dir-cat-count">' + cat.methods.length + ' method' + (cat.methods.length !== 1 ? 's' : '') + '</span>' +
+      '<span class="method-dir-cat-toggle">\u25BE</span>';
+
+    var body = document.createElement('div');
+    body.className = 'method-dir-cat-body';
+
+    cat.methods.forEach(function(m) {
+      var row = document.createElement('a');
+      row.href = 'analyze.html';
+      row.className = 'method-dir-row';
+      row.innerHTML = '<span class="method-dir-name">' + m.name + '</span>' +
+        '<span class="method-dir-desc">' + m.desc + '</span>' +
+        '<span class="method-dir-hint">' + m.hint + '</span>';
+      body.appendChild(row);
+    });
+
+    catDiv.appendChild(header);
+    catDiv.appendChild(body);
+    dirContainer.appendChild(catDiv);
+  });
+
+  // Toggle category collapse
+  document.querySelectorAll('.method-dir-cat-header').forEach(function(header) {
+    header.addEventListener('click', function() {
+      var expanded = this.getAttribute('data-expanded') === 'true';
+      this.setAttribute('data-expanded', expanded ? 'false' : 'true');
+    });
+  });
+
+  // Directory search filter
+  document.getElementById('methodDirSearch').addEventListener('input', function() {
+    var q = this.value.toLowerCase().trim();
+    var cats = document.querySelectorAll('.method-dir-category');
+    var anyVisible = false;
+    cats.forEach(function(cat) {
+      var rows = cat.querySelectorAll('.method-dir-row');
+      var catVisible = false;
+      rows.forEach(function(row) {
+        var text = row.textContent.toLowerCase();
+        var match = !q || text.indexOf(q) !== -1;
+        row.classList.toggle('hidden', !match);
+        if (match) catVisible = true;
+      });
+      cat.classList.toggle('hidden', !catVisible);
+      if (catVisible) {
+        anyVisible = true;
+        cat.querySelector('.method-dir-cat-header').setAttribute('data-expanded', 'true');
+      }
+    });
+    document.getElementById('dirNoResults').style.display = (q && !anyVisible) ? 'block' : 'none';
   });
 })();
 </script>

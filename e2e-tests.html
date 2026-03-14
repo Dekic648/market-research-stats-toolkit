@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E2E Smoke Tests — Market Research Statistics Toolkit</title>
+  <style>
+    /* ========================================
+       CSS Variables — Light / Dark
+       ======================================== */
+    :root {
+      --bg-0: #ffffff;
+      --bg-1: #f5f2f0;
+      --bg-2: #eeebe9;
+      --bg-card: rgba(255, 255, 255, 0.65);
+      --text-0: #1a1a18;
+      --text-1: #5f5a58;
+      --text-2: #887f7d;
+      --rose: #D4587A;
+      --rose-glow: rgba(212, 88, 122, 0.25);
+      --rose-soft: rgba(212, 88, 122, 0.08);
+      --coral: #E08860;
+      --coral-soft: rgba(224, 136, 96, 0.10);
+      --border: rgba(0, 0, 0, 0.06);
+      --border-hover: rgba(212, 88, 122, 0.35);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+      --green: #3a9a5c;
+      --green-soft: rgba(58, 154, 92, 0.10);
+      --amber: #c08a30;
+      --amber-soft: rgba(192, 138, 48, 0.10);
+      --red: #c0392b;
+      --red-soft: rgba(192, 57, 43, 0.10);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-0: #1c1c1a;
+        --bg-1: #252523;
+        --bg-2: #2e2e2b;
+        --bg-card: rgba(37, 37, 35, 0.6);
+        --text-0: #f0ede8;
+        --text-1: #b4aba8;
+        --text-2: #887f7d;
+        --rose: #E8829E;
+        --rose-glow: rgba(232, 130, 158, 0.22);
+        --rose-soft: rgba(232, 130, 158, 0.10);
+        --coral: #F0A882;
+        --coral-soft: rgba(240, 168, 130, 0.10);
+        --border: rgba(255, 255, 255, 0.06);
+        --border-hover: rgba(232, 130, 158, 0.35);
+        --card-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
+        --green: #5cb87a;
+        --green-soft: rgba(92, 184, 122, 0.12);
+        --amber: #e0a840;
+        --amber-soft: rgba(224, 168, 64, 0.12);
+        --red: #e05a4a;
+        --red-soft: rgba(224, 90, 74, 0.12);
+      }
+    }
+
+    :root.light {
+      --bg-0: #ffffff; --bg-1: #f5f2f0; --bg-2: #eeebe9;
+      --bg-card: rgba(255,255,255,0.65); --text-0: #1a1a18; --text-1: #5f5a58; --text-2: #887f7d;
+      --rose: #D4587A; --rose-glow: rgba(212,88,122,0.25); --rose-soft: rgba(212,88,122,0.08);
+      --coral: #E08860; --coral-soft: rgba(224,136,96,0.10);
+      --border: rgba(0,0,0,0.06); --border-hover: rgba(212,88,122,0.35);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+      --green: #3a9a5c; --green-soft: rgba(58,154,92,0.10);
+      --amber: #c08a30; --amber-soft: rgba(192,138,48,0.10);
+      --red: #c0392b; --red-soft: rgba(192,57,43,0.10);
+    }
+
+    :root.dark {
+      --bg-0: #1c1c1a; --bg-1: #252523; --bg-2: #2e2e2b;
+      --bg-card: rgba(37,37,35,0.6); --text-0: #f0ede8; --text-1: #b4aba8; --text-2: #887f7d;
+      --rose: #E8829E; --rose-glow: rgba(232,130,158,0.22); --rose-soft: rgba(232,130,158,0.10);
+      --coral: #F0A882; --coral-soft: rgba(240,168,130,0.10);
+      --border: rgba(255,255,255,0.06); --border-hover: rgba(232,130,158,0.35);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
+      --green: #5cb87a; --green-soft: rgba(92,184,122,0.12);
+      --amber: #e0a840; --amber-soft: rgba(224,168,64,0.12);
+      --red: #e05a4a; --red-soft: rgba(224,90,74,0.12);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg-0);
+      color: var(--text-0);
+      line-height: 1.55;
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 2.5rem 2rem 1.5rem;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-0);
+    }
+
+    header h1 span { color: var(--rose); }
+
+    header p {
+      margin-top: 0.4rem;
+      font-size: 0.85rem;
+      color: var(--text-2);
+    }
+
+    .summary-bar {
+      margin: 0 auto 2rem;
+      max-width: 800px;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: center;
+      letter-spacing: -0.01em;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .summary-bar.all-pass {
+      background: var(--green-soft);
+      color: var(--green);
+      border: 1px solid var(--green);
+    }
+
+    .summary-bar.has-fail {
+      background: var(--red-soft);
+      color: var(--red);
+      border: 1px solid var(--red);
+    }
+
+    .summary-bar.pending {
+      background: var(--bg-2);
+      color: var(--text-2);
+      border: 1px solid var(--border);
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 1.5rem 3rem;
+    }
+
+    .category {
+      margin-bottom: 2rem;
+    }
+
+    .category h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--rose);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .test-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      margin-bottom: 0.25rem;
+      font-size: 0.85rem;
+      transition: background 0.15s;
+    }
+
+    .test-row:hover { background: var(--bg-1); }
+
+    .test-status {
+      flex-shrink: 0;
+      width: 52px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      padding-top: 1px;
+    }
+
+    .test-status.pass { color: var(--green); }
+    .test-status.fail { color: var(--red); }
+
+    .test-name {
+      font-weight: 600;
+      color: var(--text-0);
+      min-width: 220px;
+      flex-shrink: 0;
+    }
+
+    .test-detail {
+      color: var(--text-2);
+      font-size: 0.8rem;
+      word-break: break-word;
+    }
+
+    .test-detail.fail-detail { color: var(--red); }
+
+    .fix-plan {
+      margin-top: 2rem;
+      padding: 1.25rem 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .fix-plan h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--coral);
+      margin-bottom: 1rem;
+    }
+
+    .fix-plan h3 {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--red);
+      margin-top: 1rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .fix-plan ul {
+      margin-left: 1.2rem;
+      font-size: 0.82rem;
+      color: var(--text-1);
+      line-height: 1.7;
+    }
+
+    .fix-plan .all-good {
+      color: var(--green);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .stack-trace {
+      margin-top: 0.3rem;
+      padding: 0.4rem 0.6rem;
+      background: var(--bg-2);
+      border-radius: 6px;
+      font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
+      font-size: 0.7rem;
+      color: var(--text-2);
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--rose);
+      text-decoration: none;
+    }
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>E2E Smoke Tests — <span>Market Research Statistics Toolkit</span></h1>
+  <p>End-to-end validation: wiring consistency, method coverage, error handling, and interpret coverage</p>
+  <a class="back-link" href="index.html">&larr; Back to toolkit</a>
+</header>
+
+<div id="summaryBar" class="summary-bar pending">Running tests...</div>
+
+<div class="container">
+  <div id="results"></div>
+  <div id="fixPlan"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+<script src="stats-engine.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ========================================================
+   *  Test harness
+   * ======================================================== */
+
+  var passed = 0;
+  var failed = 0;
+  var results = []; // { category, name, status, detail, stack }
+
+  function test(category, name, fn) {
+    var detail = "";
+    var stack = "";
+    var status = "pass";
+    try {
+      fn();
+    } catch (e) {
+      status = "fail";
+      detail = e.message || String(e);
+      stack = e.stack || "";
+    }
+    if (status === "pass") passed++;
+    else failed++;
+    results.push({ category: category, name: name, status: status, detail: detail, stack: stack });
+  }
+
+  function assert(condition, msg) {
+    if (!condition) throw new Error(msg || "Assertion failed");
+  }
+
+  /* ========================================================
+   *  METHOD_REGISTRY — mirrored from analyze.html
+   * ======================================================== */
+
+  var METHOD_REGISTRY = [
+    { category: "Descriptive & Distributional", methods: [
+      { id: "summary", name: "Summary Statistics", implemented: true },
+      { id: "distribution", name: "Distribution Checker", implemented: true },
+      { id: "shapiro_wilk", name: "Shapiro-Wilk Test", implemented: true },
+      { id: "frequencies", name: "Frequencies & Crosstabs", implemented: true },
+      { id: "multi_response", name: "Multi-Response / Checkbox Analysis", implemented: true }
+    ]},
+    { category: "Group Comparison", methods: [
+      { id: "ttest", name: "Independent Samples t-test", implemented: true },
+      { id: "paired_ttest", name: "Paired Samples t-test", implemented: true },
+      { id: "anova", name: "One-way ANOVA", implemented: true },
+      { id: "two_way_anova", name: "Two-way ANOVA", implemented: true },
+      { id: "ancova", name: "ANCOVA", implemented: true },
+      { id: "mann_whitney", name: "Mann-Whitney U", implemented: true },
+      { id: "kruskal_wallis", name: "Kruskal-Wallis", implemented: true },
+      { id: "wilcoxon", name: "Wilcoxon Signed-Rank", implemented: true },
+      { id: "friedman", name: "Friedman Test", implemented: true },
+      { id: "chi_square", name: "Chi-Square Test", implemented: true },
+      { id: "fisher_exact", name: "Fisher's Exact Test", implemented: true },
+      { id: "mcnemar", name: "McNemar's Test", implemented: true },
+      { id: "two_proportion_z", name: "Two-Proportion Z-Test", implemented: true },
+      { id: "levene", name: "Levene's Test", implemented: true },
+      { id: "welch_anova", name: "Welch's ANOVA", implemented: true }
+    ]},
+    { category: "Correlation & Association", methods: [
+      { id: "pearson", name: "Pearson Correlation", implemented: true },
+      { id: "spearman", name: "Spearman Correlation", implemented: true },
+      { id: "kendall", name: "Kendall's Tau", implemented: true },
+      { id: "point_biserial", name: "Point-Biserial Correlation", implemented: true },
+      { id: "cramers_v", name: "Cramer's V", implemented: true },
+      { id: "phi", name: "Phi Coefficient", implemented: true },
+      { id: "partial_corr", name: "Partial Correlation", implemented: true },
+      { id: "corr_matrix", name: "Correlation Matrix", implemented: true }
+    ]},
+    { category: "Regression & Prediction", methods: [
+      { id: "simple_regression", name: "Simple Linear Regression", implemented: true },
+      { id: "multiple_regression", name: "Multiple Linear Regression", implemented: true },
+      { id: "logistic_regression", name: "Logistic Regression", implemented: true },
+      { id: "multinomial_logistic", name: "Multinomial Logistic", implemented: true },
+      { id: "ordinal_regression", name: "Ordinal Regression", implemented: true },
+      { id: "poisson_regression", name: "Poisson Regression", implemented: true },
+      { id: "mediation", name: "Mediation Analysis", implemented: true },
+      { id: "moderation", name: "Moderation Analysis", implemented: true }
+    ]},
+    { category: "Scale & Construct Analysis", methods: [
+      { id: "reliability", name: "Reliability Analysis (Cronbach's alpha)", implemented: true },
+      { id: "efa", name: "Factor Analysis (EFA)", implemented: true },
+      { id: "cfa", name: "Confirmatory Factor Analysis", implemented: true },
+      { id: "pca", name: "Principal Component Analysis", implemented: true },
+      { id: "irt", name: "Item Response Theory", implemented: true }
+    ]},
+    { category: "Segmentation & Classification", methods: [
+      { id: "kmeans", name: "K-Means Clustering", implemented: true },
+      { id: "hierarchical_clustering", name: "Hierarchical Clustering", implemented: true },
+      { id: "lca", name: "Latent Class Analysis", implemented: true },
+      { id: "decision_trees", name: "Decision Trees", implemented: true },
+      { id: "discriminant", name: "Discriminant Analysis", implemented: true }
+    ]},
+    { category: "Preference & Choice", methods: [
+      { id: "conjoint", name: "Conjoint Analysis", implemented: true },
+      { id: "maxdiff", name: "MaxDiff Scaling", implemented: true },
+      { id: "discrete_choice", name: "Discrete Choice Modeling", implemented: true }
+    ]},
+    { category: "Longitudinal & Repeated Measures", methods: [
+      { id: "repeated_anova", name: "Repeated Measures ANOVA", implemented: true },
+      { id: "mixed_effects", name: "Mixed-Effects Models", implemented: true },
+      { id: "survival", name: "Survival Analysis", implemented: true }
+    ]},
+    { category: "Text & Open-Ended", methods: [
+      { id: "sentiment", name: "Sentiment Analysis", implemented: true },
+      { id: "word_freq", name: "Word Frequency Analysis", implemented: true },
+      { id: "irr", name: "Inter-Rater Reliability", implemented: true }
+    ]},
+    { category: "Survey Design & Weighting", methods: [
+      { id: "post_strat", name: "Post-Stratification Weighting", implemented: true },
+      { id: "multiple_imputation", name: "Multiple Imputation", implemented: true },
+      { id: "propensity", name: "Propensity Score Matching", implemented: true }
+    ]},
+    { category: "Advanced & Causal", methods: [
+      { id: "diff_in_diff", name: "Difference-in-Differences", implemented: true },
+      { id: "ab_test", name: "A/B Test Analysis", implemented: true },
+      { id: "bayesian", name: "Bayesian Hypothesis Testing", implemented: true }
+    ]}
+  ];
+
+  /* selectMethod methodMap from analyze.html */
+  var METHOD_MAP = {
+    'ttest': 'ttest',
+    'paired_ttest': 'paired_ttest',
+    'anova': 'anova',
+    'mann_whitney': 'mann_whitney',
+    'kruskal_wallis': 'kruskal_wallis',
+    'wilcoxon': 'wilcoxon',
+    'chi_square': 'chi_square',
+    'fisher_exact': 'fisher_exact',
+    'mcnemar': 'mcnemar',
+    'two_proportion_z': 'two_proportion_z',
+    'pearson': 'pearson',
+    'spearman': 'spearman',
+    'point_biserial': 'point_biserial',
+    'corr_matrix': 'corr_matrix',
+    'multiple_regression': 'linear_regression',
+    'logistic_regression': 'logistic_regression',
+    'kmeans': 'kmeans',
+    'cramers_v': 'chi_square',
+    'reliability': 'cronbach',
+    'efa': 'factor_analysis',
+    'pca': 'pca',
+    'shapiro_wilk': 'shapiro_wilk',
+    'levene': 'levene',
+    'distribution': 'distribution',
+    'summary': 'summary',
+    'frequencies': 'frequencies',
+    'phi': 'phi',
+    'kendall': 'kendall',
+    'simple_regression': 'simple_regression',
+    'irr': 'irr',
+    'ab_test': 'ab_test',
+    'word_freq': 'word_freq',
+    'welch_anova': 'welch_anova',
+    'friedman': 'friedman',
+    'repeated_anova': 'repeated_anova',
+    'two_way_anova': 'two_way_anova',
+    'ancova': 'ancova',
+    'partial_corr': 'partial_corr',
+    'moderation': 'moderation',
+    'diff_in_diff': 'diff_in_diff',
+    'poisson_regression': 'poisson_regression',
+    'mediation': 'mediation',
+    'hierarchical_clustering': 'hierarchical_clustering',
+    'sentiment': 'sentiment',
+    'post_strat': 'post_strat',
+    'propensity': 'propensity',
+    'multinomial_logistic': 'multinomial_logistic',
+    'ordinal_regression': 'ordinal_regression',
+    'decision_trees': 'decision_trees',
+    'discriminant': 'discriminant',
+    'survival': 'survival',
+    'multiple_imputation': 'multiple_imputation',
+    'bayesian': 'bayesian',
+    'conjoint': 'conjoint',
+    'maxdiff': 'maxdiff',
+    'discrete_choice': 'discrete_choice',
+    'lca': 'lca',
+    'cfa': 'cfa',
+    'irt': 'irt',
+    'mixed_effects': 'mixed_effects',
+    'multi_response': 'multi_response'
+  };
+
+  /* launchMethod intros keys (resolved method IDs) */
+  var LAUNCH_INTROS = [
+    'ttest', 'paired_ttest', 'anova', 'mann_whitney', 'kruskal_wallis', 'wilcoxon',
+    'chi_square', 'fisher_exact', 'mcnemar', 'two_proportion_z',
+    'pearson', 'spearman', 'point_biserial', 'corr_matrix',
+    'linear_regression', 'logistic_regression', 'kmeans', 'cronbach',
+    'shapiro_wilk', 'levene', 'pca', 'factor_analysis',
+    'distribution', 'summary', 'frequencies', 'phi', 'kendall',
+    'simple_regression', 'irr', 'ab_test', 'word_freq',
+    'welch_anova', 'friedman', 'repeated_anova', 'two_way_anova',
+    'ancova', 'partial_corr', 'moderation', 'diff_in_diff',
+    'poisson_regression', 'mediation', 'hierarchical_clustering',
+    'sentiment', 'post_strat', 'propensity',
+    'multinomial_logistic', 'ordinal_regression', 'decision_trees',
+    'discriminant', 'survival', 'multiple_imputation', 'bayesian',
+    'conjoint', 'maxdiff', 'discrete_choice', 'lca',
+    'cfa', 'irt', 'mixed_effects', 'multi_response'
+  ];
+
+  /* launchMethod inputFns keys (same set) */
+  var LAUNCH_INPUT_FNS = LAUNCH_INTROS.slice();
+
+  /* ========================================================
+   *  Registry ID -> StatsEngine method name mapping
+   * ======================================================== */
+
+  var ENGINE_METHOD_MAP = {
+    ttest: 'ttest',
+    paired_ttest: 'pairedTTest',
+    anova: 'anova',
+    mann_whitney: 'mannWhitney',
+    kruskal_wallis: 'kruskalWallis',
+    wilcoxon: 'wilcoxon',
+    chi_square: 'chiSquare',
+    fisher_exact: 'fisherExact',
+    mcnemar: 'mcnemar',
+    two_proportion_z: 'twoProportionZ',
+    shapiro_wilk: 'shapiroWilk',
+    levene: 'levene',
+    pearson: 'pearson',
+    spearman: 'spearman',
+    kendall: 'kendallTau',
+    point_biserial: 'pointBiserial',
+    cramers_v: null, /* tested via chiSquare */
+    phi: 'phi',
+    partial_corr: 'partialCorrelation',
+    corr_matrix: 'correlationMatrix',
+    simple_regression: 'simpleRegression',
+    multiple_regression: 'linearRegression',
+    logistic_regression: 'logisticRegression',
+    multinomial_logistic: 'multinomialLogistic',
+    ordinal_regression: 'ordinalRegression',
+    poisson_regression: 'poissonRegression',
+    mediation: 'mediation',
+    moderation: 'moderation',
+    reliability: 'cronbachAlpha',
+    efa: 'factorAnalysis',
+    cfa: 'cfa',
+    pca: 'pca',
+    irt: 'irt',
+    kmeans: 'kMeans',
+    hierarchical_clustering: 'hierarchicalClustering',
+    lca: 'latentClassAnalysis',
+    decision_trees: 'decisionTree',
+    discriminant: 'discriminantAnalysis',
+    conjoint: 'conjointAnalysis',
+    maxdiff: 'maxDiff',
+    discrete_choice: 'discreteChoice',
+    repeated_anova: 'repeatedMeasuresAnova',
+    mixed_effects: 'mixedEffects',
+    survival: 'survivalAnalysis',
+    sentiment: 'sentiment',
+    word_freq: 'wordFrequency',
+    irr: 'cohensKappa',
+    post_strat: 'postStratWeighting',
+    multiple_imputation: 'multipleImputation',
+    propensity: 'propensityScoreMatching',
+    diff_in_diff: 'diffInDiff',
+    ab_test: 'abTest',
+    bayesian: 'bayesianTest',
+    welch_anova: 'welchAnova',
+    friedman: 'friedman',
+    two_way_anova: 'twoWayAnova',
+    ancova: 'ancova',
+    summary: 'describe',
+    distribution: 'shapiroWilk', /* distribution checker uses shapiroWilk + describe */
+    frequencies: 'frequencies',
+    multi_response: null /* multi_response is a UI-only flow, no single engine method */
+  };
+
+  /* ========================================================
+   *  Sample data for each StatsEngine method
+   * ======================================================== */
+
+  var SAMPLE_DATA = {
+    ttest: function() { return StatsEngine.ttest([1,2,3,4,5], [6,7,8,9,10]); },
+    pairedTTest: function() { return StatsEngine.pairedTTest([1,2,3,4,5], [2,4,6,8,10]); },
+    anova: function() { return StatsEngine.anova([[1,2,3],[4,5,6],[7,8,9]]); },
+    mannWhitney: function() { return StatsEngine.mannWhitney([1,2,3,4,5], [6,7,8,9,10]); },
+    wilcoxon: function() { return StatsEngine.wilcoxon([1,2,3,4,5], [2,4,6,8,10]); },
+    kruskalWallis: function() { return StatsEngine.kruskalWallis([[1,2,3],[4,5,6],[7,8,9]]); },
+    chiSquare: function() { return StatsEngine.chiSquare([[10,20],[30,40]]); },
+    fisherExact: function() { return StatsEngine.fisherExact(10, 5, 3, 12); },
+    mcnemar: function() { return StatsEngine.mcnemar(10, 5, 3, 12); },
+    twoProportionZ: function() { return StatsEngine.twoProportionZ(30, 100, 40, 100); },
+    shapiroWilk: function() { return StatsEngine.shapiroWilk([1,2,3,4,5,6,7,8,9,10]); },
+    levene: function() { return StatsEngine.levene([[1,2,3,4,5],[6,7,8,9,10]]); },
+    pearson: function() { return StatsEngine.pearson([1,2,3,4,5], [2,4,6,8,10]); },
+    spearman: function() { return StatsEngine.spearman([1,2,3,4,5], [2,4,6,8,10]); },
+    pointBiserial: function() { return StatsEngine.pointBiserial([0,0,0,1,1,1], [1,2,3,4,5,6]); },
+    correlationMatrix: function() { return StatsEngine.correlationMatrix([[1,2,3,4,5],[5,4,3,2,1]]); },
+    linearRegression: function() { return StatsEngine.linearRegression([1,2,3,4,5], [[1,2,3,4,5]]); },
+    simpleRegression: function() { return StatsEngine.simpleRegression([1,2,3,4,5], [1,2,3,4,5]); },
+    logisticRegression: function() { return StatsEngine.logisticRegression([0,0,0,1,1,1,1,1], [[1,2,3,4,5,6,7,8]]); },
+    cronbachAlpha: function() { return StatsEngine.cronbachAlpha([[1,2,3,4,5],[2,3,4,5,6],[1,3,5,4,6]]); },
+    pca: function() { return StatsEngine.pca([[1,2,3,4,5],[5,4,3,2,1],[1,3,5,2,4]]); },
+    factorAnalysis: function() { return StatsEngine.factorAnalysis([[1,2,3,4,5],[5,4,3,2,1],[1,3,5,2,4]]); },
+    kMeans: function() { return StatsEngine.kMeans([[1,2,3,10,11,12],[1,2,3,10,11,12]], 2); },
+    describe: function() { return StatsEngine.describe([1,2,3,4,5,6,7,8,9,10]); },
+    frequencies: function() { return StatsEngine.frequencies(["A","B","A","C","A","B"]); },
+    crossTab: function() { return StatsEngine.crossTab(["A","A","B","B"], ["X","Y","X","Y"]); },
+    phi: function() { return StatsEngine.phi([[10,5],[3,12]]); },
+    kendallTau: function() { return StatsEngine.kendallTau([1,2,3,4,5], [2,4,6,8,10]); },
+    cohensKappa: function() { return StatsEngine.cohensKappa(["A","A","A","B","B"], ["A","A","B","B","B"]); },
+    abTest: function() { return StatsEngine.abTest([1,2,3,4,5], [6,7,8,9,10], "continuous"); },
+    wordFrequency: function() { return StatsEngine.wordFrequency(["hello world", "hello there"]); },
+    welchAnova: function() { return StatsEngine.welchAnova([[1,2,3],[10,20,30],[100,200,300]]); },
+    friedman: function() { return StatsEngine.friedman([[1,2,3,4,5],[2,3,4,5,6],[3,4,5,6,7]]); },
+    repeatedMeasuresAnova: function() { return StatsEngine.repeatedMeasuresAnova([[1,2,3,4,5],[3,4,5,6,7],[5,6,7,8,9]]); },
+    twoWayAnova: function() { return StatsEngine.twoWayAnova([1,2,3,4,5,6,7,8,9,10,11,12], ["A","A","A","A","B","B","B","B","C","C","C","C"], ["X","X","Y","Y","X","X","Y","Y","X","X","Y","Y"]); },
+    ancova: function() { return StatsEngine.ancova([1,2,3,4,5,6,7,8,9,10], ["A","A","A","A","A","B","B","B","B","B"], [1,2,3,4,5,1,2,3,4,5]); },
+    partialCorrelation: function() { return StatsEngine.partialCorrelation([1,2,3,4,5,6,7,8,9,10], [2,4,6,8,10,12,14,16,18,20], [[1,1,2,2,3,3,4,4,5,5]]); },
+    moderation: function() { return StatsEngine.moderation([1,2,3,4,5,6,7,8,9,10], [1,1,1,1,1,2,2,2,2,2], [1,2,3,4,5,10,14,18,22,26]); },
+    diffInDiff: function() { return StatsEngine.diffInDiff([1,2,3,4,2,3,4,5,1,2,3,4,5,6,7,8], [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1], [0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1]); },
+    poissonRegression: function() { return StatsEngine.poissonRegression([0,1,2,3,4,5,3,2,1,0], [[1,2,3,4,5,6,7,8,9,10]]); },
+    mediation: function() { return StatsEngine.mediation([1,2,3,4,5,6,7,8,9,10], [2,3,5,6,8,9,11,12,14,15], [3,5,8,10,13,15,18,20,23,25]); },
+    hierarchicalClustering: function() { return StatsEngine.hierarchicalClustering([[1,2,3,10,11,12],[1,2,3,10,11,12]]); },
+    sentiment: function() { return StatsEngine.sentiment(["great product", "terrible service", "okay experience"]); },
+    postStratWeighting: function() { return StatsEngine.postStratWeighting(["A","A","A","A","B","B","B","B","B","B"], {"A":0.5,"B":0.5}); },
+    propensityScoreMatching: function() { return StatsEngine.propensityScoreMatching([1,1,1,1,1,0,0,0,0,0], [[1,2,3,4,5,2,3,4,5,6]]); },
+    multinomialLogistic: function() { return StatsEngine.multinomialLogistic(["A","A","A","B","B","B","C","C","C"], [[1,2,3,4,5,6,7,8,9]]); },
+    ordinalRegression: function() { return StatsEngine.ordinalRegression([1,1,2,2,3,3,4,4,5,5], [[1,2,3,4,5,6,7,8,9,10]]); },
+    decisionTree: function() { return StatsEngine.decisionTree(["A","A","A","A","B","B","B","B"], [[1,2,3,4,5,6,7,8]]); },
+    discriminantAnalysis: function() { return StatsEngine.discriminantAnalysis(["A","A","A","A","B","B","B","B"], [[1,2,3,4,8,9,10,11]]); },
+    survivalAnalysis: function() { return StatsEngine.survivalAnalysis([1,2,3,4,5,6,7,8,9,10], [1,0,1,1,0,1,0,1,0,1]); },
+    multipleImputation: function() { return StatsEngine.multipleImputation([[1,2,NaN,4,5],[5,NaN,3,2,1]], 3); },
+    bayesianTest: function() { return StatsEngine.bayesianTest([1,2,3,4,5], [6,7,8,9,10]); },
+    conjointAnalysis: function() { return StatsEngine.conjointAnalysis([7,5,8,3,6,4,9,2], [["A","A","B","B","A","A","B","B"],["X","Y","X","Y","X","Y","X","Y"]]); },
+    maxDiff: function() { return StatsEngine.maxDiff(["Price","Quality","Brand","Speed"], [10,25,5,20], [20,5,25,10], [30,30,30,30]); },
+    discreteChoice: function() { return StatsEngine.discreteChoice(2, [0,1,0,1,0,1,0,1,0,1], [[1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1]]); },
+    latentClassAnalysis: function() { return StatsEngine.latentClassAnalysis([[1,1,1,1,1,0,0,0,0,0],[1,1,1,0,1,0,0,1,0,0],[1,1,0,1,1,0,0,0,0,1]], 2); },
+    cfa: function() { return StatsEngine.cfa([[1,2,3,4,5,6,7,8],[2,3,4,5,6,7,8,9],[1,3,5,4,6,5,7,8],[5,4,3,2,1,2,3,4],[6,5,4,3,2,3,4,5],[4,3,2,1,2,3,4,5]], [{factor:"F1",items:[0,1,2]},{factor:"F2",items:[3,4,5]}]); },
+    irt: function() { return StatsEngine.irt([[1,1,1,1,1,1,1,1,0,0],[1,1,1,1,1,0,0,0,0,0],[1,1,1,0,0,0,0,0,0,0],[1,1,0,0,0,0,0,0,0,0]]); },
+    mixedEffects: function() { return StatsEngine.mixedEffects([1,2,3,5,6,7,10,11,12], [[1,2,3,1,2,3,1,2,3]], ["A","A","A","B","B","B","C","C","C"]); }
+  };
+
+  /* ========================================================
+   *  Edge-case data generators for error handling tests
+   * ======================================================== */
+
+  var EDGE_CASES = {
+    ttest: [
+      { label: "empty arrays", fn: function() { StatsEngine.ttest([], []); } },
+      { label: "mismatched lengths", fn: function() { StatsEngine.ttest([1,2], [1,2,3,4,5]); } },
+      { label: "all-same values", fn: function() { StatsEngine.ttest([5,5,5,5], [5,5,5,5]); } }
+    ],
+    pairedTTest: [
+      { label: "empty arrays", fn: function() { StatsEngine.pairedTTest([], []); } },
+      { label: "mismatched lengths", fn: function() { StatsEngine.pairedTTest([1,2], [1,2,3]); } },
+      { label: "all-same values", fn: function() { StatsEngine.pairedTTest([3,3,3], [3,3,3]); } }
+    ],
+    anova: [
+      { label: "empty arrays", fn: function() { StatsEngine.anova([[],[],[]]); } },
+      { label: "single-element groups", fn: function() { StatsEngine.anova([[1],[2],[3]]); } },
+      { label: "all-same values", fn: function() { StatsEngine.anova([[5,5,5],[5,5,5],[5,5,5]]); } }
+    ],
+    mannWhitney: [
+      { label: "empty arrays", fn: function() { StatsEngine.mannWhitney([], []); } },
+      { label: "all-same values", fn: function() { StatsEngine.mannWhitney([1,1,1], [1,1,1]); } }
+    ],
+    wilcoxon: [
+      { label: "empty arrays", fn: function() { StatsEngine.wilcoxon([], []); } },
+      { label: "all-same values", fn: function() { StatsEngine.wilcoxon([5,5,5], [5,5,5]); } }
+    ],
+    kruskalWallis: [
+      { label: "empty arrays", fn: function() { StatsEngine.kruskalWallis([[],[],[]]); } },
+      { label: "all-same values", fn: function() { StatsEngine.kruskalWallis([[3,3],[3,3],[3,3]]); } }
+    ],
+    chiSquare: [
+      { label: "empty table", fn: function() { StatsEngine.chiSquare([[]]); } },
+      { label: "all zeros", fn: function() { StatsEngine.chiSquare([[0,0],[0,0]]); } }
+    ],
+    fisherExact: [
+      { label: "all zeros", fn: function() { StatsEngine.fisherExact(0, 0, 0, 0); } }
+    ],
+    mcnemar: [
+      { label: "all zeros", fn: function() { StatsEngine.mcnemar(0, 0, 0, 0); } }
+    ],
+    twoProportionZ: [
+      { label: "zero denominators", fn: function() { StatsEngine.twoProportionZ(0, 0, 0, 0); } },
+      { label: "same proportions", fn: function() { StatsEngine.twoProportionZ(50, 100, 50, 100); } }
+    ],
+    shapiroWilk: [
+      { label: "empty array", fn: function() { StatsEngine.shapiroWilk([]); } },
+      { label: "single value", fn: function() { StatsEngine.shapiroWilk([5]); } },
+      { label: "all-same values", fn: function() { StatsEngine.shapiroWilk([3,3,3,3,3]); } }
+    ],
+    levene: [
+      { label: "empty arrays", fn: function() { StatsEngine.levene([[],[]]); } },
+      { label: "all-same values", fn: function() { StatsEngine.levene([[5,5,5],[5,5,5]]); } }
+    ],
+    pearson: [
+      { label: "empty arrays", fn: function() { StatsEngine.pearson([], []); } },
+      { label: "mismatched lengths", fn: function() { StatsEngine.pearson([1,2], [1,2,3]); } },
+      { label: "all-same values", fn: function() { StatsEngine.pearson([5,5,5], [5,5,5]); } }
+    ],
+    spearman: [
+      { label: "empty arrays", fn: function() { StatsEngine.spearman([], []); } },
+      { label: "all-same values", fn: function() { StatsEngine.spearman([5,5,5], [5,5,5]); } }
+    ],
+    pointBiserial: [
+      { label: "empty arrays", fn: function() { StatsEngine.pointBiserial([], []); } },
+      { label: "all-same binary", fn: function() { StatsEngine.pointBiserial([0,0,0], [1,2,3]); } }
+    ],
+    correlationMatrix: [
+      { label: "empty arrays", fn: function() { StatsEngine.correlationMatrix([[],[]]); } },
+      { label: "all-same values", fn: function() { StatsEngine.correlationMatrix([[5,5,5],[5,5,5]]); } }
+    ],
+    linearRegression: [
+      { label: "empty arrays", fn: function() { StatsEngine.linearRegression([], [[]]); } },
+      { label: "single observation", fn: function() { StatsEngine.linearRegression([1], [[1]]); } }
+    ],
+    simpleRegression: [
+      { label: "empty arrays", fn: function() { StatsEngine.simpleRegression([], []); } },
+      { label: "all-same X values", fn: function() { StatsEngine.simpleRegression([5,5,5], [1,2,3]); } }
+    ],
+    logisticRegression: [
+      { label: "empty arrays", fn: function() { StatsEngine.logisticRegression([], [[]]); } },
+      { label: "all-same outcome", fn: function() { StatsEngine.logisticRegression([1,1,1,1], [[1,2,3,4]]); } }
+    ],
+    cronbachAlpha: [
+      { label: "empty arrays", fn: function() { StatsEngine.cronbachAlpha([[],[],[]]); } },
+      { label: "all-same values", fn: function() { StatsEngine.cronbachAlpha([[5,5,5],[5,5,5],[5,5,5]]); } }
+    ],
+    pca: [
+      { label: "empty arrays", fn: function() { StatsEngine.pca([[],[],[]]); } }
+    ],
+    factorAnalysis: [
+      { label: "empty arrays", fn: function() { StatsEngine.factorAnalysis([[],[],[]]); } }
+    ],
+    kMeans: [
+      { label: "empty arrays", fn: function() { StatsEngine.kMeans([[],[]], 2); } },
+      { label: "k larger than points", fn: function() { StatsEngine.kMeans([[1,2],[3,4]], 5); } }
+    ],
+    describe: [
+      { label: "empty array", fn: function() { StatsEngine.describe([]); } },
+      { label: "single value", fn: function() { StatsEngine.describe([5]); } }
+    ],
+    frequencies: [
+      { label: "empty array", fn: function() { StatsEngine.frequencies([]); } }
+    ],
+    phi: [
+      { label: "all zeros", fn: function() { StatsEngine.phi([[0,0],[0,0]]); } }
+    ],
+    kendallTau: [
+      { label: "empty arrays", fn: function() { StatsEngine.kendallTau([], []); } },
+      { label: "all-same values", fn: function() { StatsEngine.kendallTau([5,5,5], [5,5,5]); } }
+    ],
+    cohensKappa: [
+      { label: "empty arrays", fn: function() { StatsEngine.cohensKappa([], []); } },
+      { label: "mismatched lengths", fn: function() { StatsEngine.cohensKappa(["A"], ["A","B"]); } }
+    ],
+    abTest: [
+      { label: "empty arrays", fn: function() { StatsEngine.abTest([], [], "continuous"); } }
+    ],
+    wordFrequency: [
+      { label: "empty array", fn: function() { StatsEngine.wordFrequency([]); } },
+      { label: "empty strings", fn: function() { StatsEngine.wordFrequency(["","",""]); } }
+    ],
+    welchAnova: [
+      { label: "empty arrays", fn: function() { StatsEngine.welchAnova([[],[],[]]); } },
+      { label: "all-same values", fn: function() { StatsEngine.welchAnova([[5,5],[5,5],[5,5]]); } }
+    ],
+    friedman: [
+      { label: "empty arrays", fn: function() { StatsEngine.friedman([[],[],[]]); } }
+    ],
+    repeatedMeasuresAnova: [
+      { label: "empty arrays", fn: function() { StatsEngine.repeatedMeasuresAnova([[],[],[]]); } }
+    ],
+    twoWayAnova: [
+      { label: "empty arrays", fn: function() { StatsEngine.twoWayAnova([], [], []); } }
+    ],
+    ancova: [
+      { label: "empty arrays", fn: function() { StatsEngine.ancova([], [], []); } }
+    ],
+    partialCorrelation: [
+      { label: "empty arrays", fn: function() { StatsEngine.partialCorrelation([], [], [[]]); } }
+    ],
+    moderation: [
+      { label: "empty arrays", fn: function() { StatsEngine.moderation([], [], []); } }
+    ],
+    diffInDiff: [
+      { label: "empty arrays", fn: function() { StatsEngine.diffInDiff([], [], []); } }
+    ],
+    poissonRegression: [
+      { label: "empty arrays", fn: function() { StatsEngine.poissonRegression([], [[]]); } }
+    ],
+    mediation: [
+      { label: "empty arrays", fn: function() { StatsEngine.mediation([], [], []); } }
+    ],
+    hierarchicalClustering: [
+      { label: "empty arrays", fn: function() { StatsEngine.hierarchicalClustering([[],[]]); } }
+    ],
+    sentiment: [
+      { label: "empty array", fn: function() { StatsEngine.sentiment([]); } },
+      { label: "empty strings", fn: function() { StatsEngine.sentiment(["","",""]); } }
+    ],
+    postStratWeighting: [
+      { label: "empty array", fn: function() { StatsEngine.postStratWeighting([], {}); } }
+    ],
+    propensityScoreMatching: [
+      { label: "empty arrays", fn: function() { StatsEngine.propensityScoreMatching([], [[]]); } }
+    ],
+    multinomialLogistic: [
+      { label: "empty arrays", fn: function() { StatsEngine.multinomialLogistic([], [[]]); } }
+    ],
+    ordinalRegression: [
+      { label: "empty arrays", fn: function() { StatsEngine.ordinalRegression([], [[]]); } }
+    ],
+    decisionTree: [
+      { label: "empty arrays", fn: function() { StatsEngine.decisionTree([], [[]]); } }
+    ],
+    discriminantAnalysis: [
+      { label: "empty arrays", fn: function() { StatsEngine.discriminantAnalysis([], [[]]); } }
+    ],
+    survivalAnalysis: [
+      { label: "empty arrays", fn: function() { StatsEngine.survivalAnalysis([], []); } }
+    ],
+    multipleImputation: [
+      { label: "empty arrays", fn: function() { StatsEngine.multipleImputation([[],[]], 3); } }
+    ],
+    bayesianTest: [
+      { label: "empty arrays", fn: function() { StatsEngine.bayesianTest([], []); } },
+      { label: "all-same values", fn: function() { StatsEngine.bayesianTest([5,5,5], [5,5,5]); } }
+    ],
+    conjointAnalysis: [
+      { label: "empty arrays", fn: function() { StatsEngine.conjointAnalysis([], [[]]); } }
+    ],
+    maxDiff: [
+      { label: "empty arrays", fn: function() { StatsEngine.maxDiff([], [], [], []); } }
+    ],
+    discreteChoice: [
+      { label: "empty arrays", fn: function() { StatsEngine.discreteChoice(2, [], [[]]); } }
+    ],
+    latentClassAnalysis: [
+      { label: "empty arrays", fn: function() { StatsEngine.latentClassAnalysis([[],[],[]], 2); } }
+    ],
+    cfa: [
+      { label: "empty arrays", fn: function() { StatsEngine.cfa([[],[],[],[],[],[]], [{factor:"F1",items:[0,1,2]},{factor:"F2",items:[3,4,5]}]); } }
+    ],
+    irt: [
+      { label: "empty arrays", fn: function() { StatsEngine.irt([[],[],[],[]]); } }
+    ],
+    mixedEffects: [
+      { label: "empty arrays", fn: function() { StatsEngine.mixedEffects([], [[]], []); } }
+    ]
+  };
+
+  /* ========================================================
+   *  Failure tracking for Fix Plan
+   * ======================================================== */
+
+  var fixPlanData = {
+    missingSelectMethod: [],
+    missingLaunchIntro: [],
+    missingLaunchInputFn: [],
+    missingEngineMethod: [],
+    crashOnValidData: [],
+    nullResult: [],
+    missingInterpret: [],
+    crashOnInterpret: [],
+    crashOnEdgeCase: []
+  };
+
+  /* ========================================================
+   *  CATEGORY 1: Wiring Consistency Tests
+   * ======================================================== */
+
+  var CAT1 = "1. Wiring Consistency";
+
+  METHOD_REGISTRY.forEach(function(cat) {
+    cat.methods.forEach(function(method) {
+      if (!method.implemented) return;
+
+      // Check selectMethod methodMap has entry
+      test(CAT1, method.id + " in selectMethod map", function() {
+        var has = METHOD_MAP.hasOwnProperty(method.id);
+        if (!has) fixPlanData.missingSelectMethod.push(method.id);
+        assert(has, "Missing from selectMethod methodMap");
+      });
+
+      // Check launchMethod intros has entry for the resolved ID
+      test(CAT1, method.id + " has launchMethod intro", function() {
+        var resolvedId = METHOD_MAP[method.id] || method.id;
+        var has = LAUNCH_INTROS.indexOf(resolvedId) !== -1;
+        if (!has) fixPlanData.missingLaunchIntro.push(method.id + " (resolved: " + resolvedId + ")");
+        assert(has, "No intro for resolved ID '" + resolvedId + "'");
+      });
+
+      // Check launchMethod inputFns has entry for the resolved ID
+      test(CAT1, method.id + " has launchMethod inputFn", function() {
+        var resolvedId = METHOD_MAP[method.id] || method.id;
+        var has = LAUNCH_INPUT_FNS.indexOf(resolvedId) !== -1;
+        if (!has) fixPlanData.missingLaunchInputFn.push(method.id + " (resolved: " + resolvedId + ")");
+        assert(has, "No inputFn for resolved ID '" + resolvedId + "'");
+      });
+    });
+  });
+
+  /* ========================================================
+   *  CATEGORY 2: StatsEngine Method Coverage
+   * ======================================================== */
+
+  var CAT2 = "2. StatsEngine Method Coverage";
+  var sampleResults = {}; // store for interpret tests
+
+  METHOD_REGISTRY.forEach(function(cat) {
+    cat.methods.forEach(function(method) {
+      if (!method.implemented) return;
+
+      var engineMethodName = ENGINE_METHOD_MAP[method.id];
+
+      // Skip methods with no direct engine mapping
+      if (engineMethodName === null || engineMethodName === undefined) return;
+
+      // Check function exists
+      test(CAT2, engineMethodName + " exists on StatsEngine", function() {
+        var exists = typeof StatsEngine[engineMethodName] === "function";
+        if (!exists) fixPlanData.missingEngineMethod.push(engineMethodName);
+        assert(exists, "StatsEngine." + engineMethodName + " is not a function");
+      });
+
+      // Check calling with valid data doesn't throw and returns non-null
+      if (SAMPLE_DATA[engineMethodName]) {
+        test(CAT2, engineMethodName + " runs with valid data", function() {
+          var result;
+          try {
+            result = SAMPLE_DATA[engineMethodName]();
+          } catch (e) {
+            fixPlanData.crashOnValidData.push(engineMethodName);
+            throw e;
+          }
+          if (result === null || result === undefined) {
+            fixPlanData.nullResult.push(engineMethodName);
+          }
+          assert(result !== null && result !== undefined, "Result is null/undefined");
+          assert(typeof result === "object", "Result is not an object, got " + typeof result);
+          sampleResults[engineMethodName] = result;
+        });
+      }
+    });
+  });
+
+  /* ========================================================
+   *  CATEGORY 3: Error Handling Tests
+   * ======================================================== */
+
+  var CAT3 = "3. Error Handling (Edge Cases)";
+
+  Object.keys(EDGE_CASES).forEach(function(methodName) {
+    var cases = EDGE_CASES[methodName];
+    cases.forEach(function(ec) {
+      test(CAT3, methodName + " / " + ec.label, function() {
+        try {
+          ec.fn();
+        } catch (e) {
+          fixPlanData.crashOnEdgeCase.push(methodName + " (" + ec.label + "): " + e.message);
+          throw e;
+        }
+        // If it returns without crashing, that's a pass (may return error object, that's fine)
+      });
+    });
+  });
+
+  /* ========================================================
+   *  CATEGORY 4: Interpret Coverage
+   * ======================================================== */
+
+  var CAT4 = "4. Interpret Coverage";
+
+  // Build list of interpret method names from SAMPLE_DATA keys that produced results
+  Object.keys(SAMPLE_DATA).forEach(function(engineMethodName) {
+    // Check interpret function exists
+    test(CAT4, engineMethodName + " interpret exists", function() {
+      var fn = StatsEngine.interpret[engineMethodName];
+      if (typeof fn !== "function") {
+        fixPlanData.missingInterpret.push(engineMethodName);
+      }
+      assert(typeof fn === "function", "StatsEngine.interpret." + engineMethodName + " is not a function");
+    });
+
+    // If we have a sample result, verify interpret output shape
+    if (sampleResults[engineMethodName]) {
+      test(CAT4, engineMethodName + " interpret returns valid output", function() {
+        var fn = StatsEngine.interpret[engineMethodName];
+        if (typeof fn !== "function") {
+          assert(false, "interpret function missing (skipped)");
+          return;
+        }
+        var out;
+        try {
+          out = fn(sampleResults[engineMethodName]);
+        } catch (e) {
+          fixPlanData.crashOnInterpret.push(engineMethodName + ": " + e.message);
+          throw e;
+        }
+        assert(out && typeof out === "object", "interpret result is not an object");
+        assert(typeof out.significant === "boolean", "significant is not boolean, got: " + typeof out.significant);
+        assert(typeof out.summary === "string" && out.summary.length > 0, "summary is empty or not a string");
+        assert(typeof out.details === "string", "details is not a string, got: " + typeof out.details);
+      });
+    }
+  });
+
+  /* ========================================================
+   *  Render results
+   * ======================================================== */
+
+  function render() {
+    var bar = document.getElementById("summaryBar");
+    var total = passed + failed;
+    bar.textContent = passed + " of " + total + " tests passed" + (failed > 0 ? " (" + failed + " failed)" : "");
+    bar.className = "summary-bar " + (failed === 0 ? "all-pass" : "has-fail");
+
+    // Group by category
+    var cats = [];
+    var catMap = {};
+    for (var i = 0; i < results.length; i++) {
+      var r = results[i];
+      if (!catMap[r.category]) {
+        catMap[r.category] = [];
+        cats.push(r.category);
+      }
+      catMap[r.category].push(r);
+    }
+
+    var html = "";
+    for (var c = 0; c < cats.length; c++) {
+      var catName = cats[c];
+      var items = catMap[catName];
+      var catFails = items.filter(function(x) { return x.status === "fail"; }).length;
+      var catLabel = catName + " (" + (items.length - catFails) + "/" + items.length + " passed)";
+
+      html += '<div class="category">';
+      html += '<h2>' + catLabel + '</h2>';
+
+      for (var j = 0; j < items.length; j++) {
+        var t = items[j];
+        html += '<div class="test-row">';
+        html += '<div class="test-status ' + t.status + '">' + t.status + '</div>';
+        html += '<div class="test-name">' + escHtml(t.name) + '</div>';
+
+        if (t.status === "fail") {
+          html += '<div class="test-detail fail-detail">' + escHtml(t.detail);
+          if (t.stack) {
+            html += '<div class="stack-trace">' + escHtml(t.stack) + '</div>';
+          }
+          html += '</div>';
+        } else {
+          html += '<div class="test-detail">OK</div>';
+        }
+
+        html += '</div>';
+      }
+
+      html += '</div>';
+    }
+
+    document.getElementById("results").innerHTML = html;
+
+    // Build Fix Plan
+    renderFixPlan();
+  }
+
+  function renderFixPlan() {
+    var plan = document.getElementById("fixPlan");
+    var hasIssues = false;
+    var html = '<div class="fix-plan"><h2>Fix Plan</h2>';
+
+    var sections = [
+      { key: "missingSelectMethod", title: "Methods missing from selectMethod map" },
+      { key: "missingLaunchIntro", title: "Methods missing launchMethod intro" },
+      { key: "missingLaunchInputFn", title: "Methods missing launchMethod inputFn" },
+      { key: "missingEngineMethod", title: "Methods missing from StatsEngine" },
+      { key: "crashOnValidData", title: "Methods that crash on valid data" },
+      { key: "nullResult", title: "Methods returning null/undefined on valid data" },
+      { key: "missingInterpret", title: "Methods missing interpret functions" },
+      { key: "crashOnInterpret", title: "Methods whose interpret crashes" },
+      { key: "crashOnEdgeCase", title: "Methods that crash on edge-case input" }
+    ];
+
+    for (var i = 0; i < sections.length; i++) {
+      var s = sections[i];
+      var items = fixPlanData[s.key];
+      if (items.length > 0) {
+        hasIssues = true;
+        html += '<h3>' + s.title + ' (' + items.length + ')</h3><ul>';
+        for (var j = 0; j < items.length; j++) {
+          html += '<li>' + escHtml(items[j]) + '</li>';
+        }
+        html += '</ul>';
+      }
+    }
+
+    if (!hasIssues) {
+      html += '<p class="all-good">All checks passed. No fixes needed.</p>';
+    }
+
+    html += '</div>';
+    plan.innerHTML = html;
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  /* ========================================================
+   *  Auto-run on load
+   * ======================================================== */
+
+  render();
+
+})();
+</script>
+
+</body>
+</html>

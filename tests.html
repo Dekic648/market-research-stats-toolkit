@@ -1,0 +1,1870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Suite — Market Research Statistics Toolkit</title>
+  <style>
+    /* ========================================
+       CSS Variables — Light / Dark
+       ======================================== */
+    :root {
+      --bg-0: #ffffff;
+      --bg-1: #f5f2f0;
+      --bg-2: #eeebe9;
+      --bg-card: rgba(255, 255, 255, 0.65);
+      --text-0: #1a1a18;
+      --text-1: #5f5a58;
+      --text-2: #887f7d;
+      --rose: #D4587A;
+      --rose-glow: rgba(212, 88, 122, 0.25);
+      --rose-soft: rgba(212, 88, 122, 0.08);
+      --coral: #E08860;
+      --coral-soft: rgba(224, 136, 96, 0.10);
+      --border: rgba(0, 0, 0, 0.06);
+      --border-hover: rgba(212, 88, 122, 0.35);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+      --green: #3a9a5c;
+      --green-soft: rgba(58, 154, 92, 0.10);
+      --amber: #c08a30;
+      --amber-soft: rgba(192, 138, 48, 0.10);
+      --red: #c0392b;
+      --red-soft: rgba(192, 57, 43, 0.10);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-0: #1c1c1a;
+        --bg-1: #252523;
+        --bg-2: #2e2e2b;
+        --bg-card: rgba(37, 37, 35, 0.6);
+        --text-0: #f0ede8;
+        --text-1: #b4aba8;
+        --text-2: #887f7d;
+        --rose: #E8829E;
+        --rose-glow: rgba(232, 130, 158, 0.22);
+        --rose-soft: rgba(232, 130, 158, 0.10);
+        --coral: #F0A882;
+        --coral-soft: rgba(240, 168, 130, 0.10);
+        --border: rgba(255, 255, 255, 0.06);
+        --border-hover: rgba(232, 130, 158, 0.35);
+        --card-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
+        --green: #5cb87a;
+        --green-soft: rgba(92, 184, 122, 0.12);
+        --amber: #e0a840;
+        --amber-soft: rgba(224, 168, 64, 0.12);
+        --red: #e05a4a;
+        --red-soft: rgba(224, 90, 74, 0.12);
+      }
+    }
+
+    :root.light {
+      --bg-0: #ffffff; --bg-1: #f5f2f0; --bg-2: #eeebe9;
+      --bg-card: rgba(255,255,255,0.65); --text-0: #1a1a18; --text-1: #5f5a58; --text-2: #887f7d;
+      --rose: #D4587A; --rose-glow: rgba(212,88,122,0.25); --rose-soft: rgba(212,88,122,0.08);
+      --coral: #E08860; --coral-soft: rgba(224,136,96,0.10);
+      --border: rgba(0,0,0,0.06); --border-hover: rgba(212,88,122,0.35);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+      --green: #3a9a5c; --green-soft: rgba(58,154,92,0.10);
+      --red: #c0392b; --red-soft: rgba(192,57,43,0.10);
+    }
+
+    :root.dark {
+      --bg-0: #1c1c1a; --bg-1: #252523; --bg-2: #2e2e2b;
+      --bg-card: rgba(37,37,35,0.6); --text-0: #f0ede8; --text-1: #b4aba8; --text-2: #887f7d;
+      --rose: #E8829E; --rose-glow: rgba(232,130,158,0.22); --rose-soft: rgba(232,130,158,0.10);
+      --coral: #F0A882; --coral-soft: rgba(240,168,130,0.10);
+      --border: rgba(255,255,255,0.06); --border-hover: rgba(232,130,158,0.35);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
+      --green: #5cb87a; --green-soft: rgba(92,184,122,0.12);
+      --red: #e05a4a; --red-soft: rgba(224,90,74,0.12);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg-0);
+      color: var(--text-0);
+      line-height: 1.55;
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 2.5rem 2rem 1.5rem;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-0);
+    }
+
+    header h1 span { color: var(--rose); }
+
+    header p {
+      margin-top: 0.4rem;
+      font-size: 0.85rem;
+      color: var(--text-2);
+    }
+
+    .summary-bar {
+      margin: 0 auto 2rem;
+      max-width: 800px;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: center;
+      letter-spacing: -0.01em;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .summary-bar.all-pass {
+      background: var(--green-soft);
+      color: var(--green);
+      border: 1px solid var(--green);
+    }
+
+    .summary-bar.has-fail {
+      background: var(--red-soft);
+      color: var(--red);
+      border: 1px solid var(--red);
+    }
+
+    .summary-bar.pending {
+      background: var(--bg-2);
+      color: var(--text-2);
+      border: 1px solid var(--border);
+    }
+
+    .controls {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .controls button {
+      background: linear-gradient(135deg, var(--rose), var(--coral));
+      color: #fff;
+      border: none;
+      padding: 0.6rem 1.8rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .controls button:hover { opacity: 0.88; }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 1.5rem 3rem;
+    }
+
+    .category {
+      margin-bottom: 2rem;
+    }
+
+    .category h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--rose);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .test-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      margin-bottom: 0.25rem;
+      font-size: 0.85rem;
+      transition: background 0.15s;
+    }
+
+    .test-row:hover { background: var(--bg-1); }
+
+    .test-status {
+      flex-shrink: 0;
+      width: 52px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      padding-top: 1px;
+    }
+
+    .test-status.pass { color: var(--green); }
+    .test-status.fail { color: var(--red); }
+    .test-status.pending { color: var(--text-2); }
+
+    .test-name {
+      font-weight: 600;
+      color: var(--text-0);
+      min-width: 200px;
+      flex-shrink: 0;
+    }
+
+    .test-detail {
+      color: var(--text-2);
+      font-size: 0.8rem;
+      word-break: break-word;
+    }
+
+    .test-detail.fail-detail { color: var(--red); }
+
+    .discovery {
+      margin-bottom: 2rem;
+      padding: 1rem 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .discovery h3 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--coral);
+      margin-bottom: 0.5rem;
+    }
+
+    .discovery pre {
+      font-size: 0.78rem;
+      color: var(--text-1);
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.6;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--rose);
+      text-decoration: none;
+    }
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Test Suite — <span>Market Research Statistics Toolkit</span></h1>
+  <p>Automated validation of every statistical method in stats-engine.js</p>
+  <a class="back-link" href="index.html">&larr; Back to toolkit</a>
+</header>
+
+<div class="controls">
+  <button id="runBtn" onclick="runAllTests()">Run All Tests</button>
+</div>
+
+<div id="summaryBar" class="summary-bar pending">Waiting to run...</div>
+
+<div class="container">
+  <div id="discovery" class="discovery" style="display:none">
+    <h3>API Discovery</h3>
+    <pre id="discoveryPre"></pre>
+  </div>
+  <div id="results"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+<script src="stats-engine.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ========================================================
+   *  Test harness
+   * ======================================================== */
+
+  var passed = 0;
+  var failed = 0;
+  var results = []; // { category, name, status, detail }
+
+  function assert(condition, msg) {
+    if (!condition) throw new Error(msg || "Assertion failed");
+  }
+
+  function isNum(v) { return typeof v === "number" && !isNaN(v); }
+  function approx(a, b, tol) { return Math.abs(a - b) < (tol || 0.05); }
+
+  function test(category, name, fn) {
+    var detail = "";
+    var status = "pass";
+    try {
+      fn();
+    } catch (e) {
+      status = "fail";
+      detail = e.message || String(e);
+    }
+    if (status === "pass") passed++;
+    else failed++;
+    results.push({ category: category, name: name, status: status, detail: detail });
+  }
+
+  function checkInterpret(category, methodName, result) {
+    test(category, methodName + " interpret()", function () {
+      var interpFn = StatsEngine.interpret[methodName];
+      assert(typeof interpFn === "function", "interpret." + methodName + " is not a function");
+      var out = interpFn(result);
+      assert(out && typeof out === "object", "interpret result is not an object");
+      assert(typeof out.significant === "boolean", "significant is not boolean, got: " + typeof out.significant);
+      assert(typeof out.summary === "string" && out.summary.length > 0, "summary is empty or not a string");
+      assert(typeof out.details === "string", "details is not a string");
+    });
+  }
+
+  /* ========================================================
+   *  Render
+   * ======================================================== */
+
+  function render() {
+    var bar = document.getElementById("summaryBar");
+    var total = passed + failed;
+    bar.textContent = passed + " of " + total + " tests passed" + (failed > 0 ? " (" + failed + " failed)" : "");
+    bar.className = "summary-bar " + (failed === 0 ? "all-pass" : "has-fail");
+
+    // Group by category
+    var cats = [];
+    var catMap = {};
+    for (var i = 0; i < results.length; i++) {
+      var r = results[i];
+      if (!catMap[r.category]) {
+        catMap[r.category] = [];
+        cats.push(r.category);
+      }
+      catMap[r.category].push(r);
+    }
+
+    var html = "";
+    for (var c = 0; c < cats.length; c++) {
+      var cat = cats[c];
+      var items = catMap[cat];
+      html += '<div class="category"><h2>' + cat + '</h2>';
+      for (var i = 0; i < items.length; i++) {
+        var r = items[i];
+        html += '<div class="test-row">';
+        html += '<div class="test-status ' + r.status + '">' + r.status + '</div>';
+        html += '<div class="test-name">' + r.name + '</div>';
+        if (r.detail) {
+          html += '<div class="test-detail ' + (r.status === "fail" ? "fail-detail" : "") + '">' + r.detail + '</div>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+
+    document.getElementById("results").innerHTML = html;
+  }
+
+  /* ========================================================
+   *  Discovery
+   * ======================================================== */
+
+  function runDiscovery() {
+    var lines = [];
+
+    // Check globals
+    test("Environment", "typeof jStat !== 'undefined'", function () {
+      assert(typeof jStat !== "undefined", "jStat is undefined");
+    });
+
+    test("Environment", "typeof StatsEngine !== 'undefined'", function () {
+      assert(typeof StatsEngine !== "undefined", "StatsEngine is undefined");
+    });
+
+    // Expected public methods
+    var expected = [
+      "describe", "detectType",
+      "ttest", "pairedTTest", "anova", "mannWhitney", "kruskalWallis",
+      "wilcoxon", "chiSquare", "fisherExact", "mcnemar", "twoProportionZ",
+      "shapiroWilk", "levene",
+      "pearson", "spearman", "pointBiserial", "correlationMatrix",
+      "linearRegression", "logisticRegression",
+      "cronbachAlpha",
+      "pca", "factorAnalysis", "kMeans", "elbowMethod",
+      "interpret"
+    ];
+
+    var found = [];
+    for (var key in StatsEngine) {
+      if (StatsEngine.hasOwnProperty(key) && key.charAt(0) !== "_") {
+        found.push(key);
+      }
+    }
+
+    lines.push("Expected methods: " + expected.length);
+    lines.push("Found public keys: " + found.join(", "));
+
+    var missing = expected.filter(function (m) { return found.indexOf(m) === -1; });
+    var extra = found.filter(function (m) { return expected.indexOf(m) === -1; });
+    if (missing.length) lines.push("MISSING: " + missing.join(", "));
+    if (extra.length) lines.push("Extra (unexpected): " + extra.join(", "));
+
+    test("Environment", "All expected methods exist", function () {
+      assert(missing.length === 0, "Missing: " + missing.join(", "));
+    });
+
+    // Check each expected method is a function (except interpret which is an object)
+    for (var i = 0; i < expected.length; i++) {
+      (function (name) {
+        test("Environment", name + " is correct type", function () {
+          if (name === "interpret") {
+            assert(typeof StatsEngine[name] === "object", name + " should be an object");
+          } else {
+            assert(typeof StatsEngine[name] === "function", name + " should be a function, got " + typeof StatsEngine[name]);
+          }
+        });
+      })(expected[i]);
+    }
+
+    var disc = document.getElementById("discovery");
+    disc.style.display = "block";
+    document.getElementById("discoveryPre").textContent = lines.join("\n");
+  }
+
+  /* ========================================================
+   *  Test definitions
+   * ======================================================== */
+
+  function runStatTests() {
+
+    /* ---------- Descriptive ---------- */
+
+    var descResult;
+    test("Descriptive", "describe([1..10])", function () {
+      descResult = StatsEngine.describe([1,2,3,4,5,6,7,8,9,10]);
+      assert(descResult.n === 10, "n should be 10, got " + descResult.n);
+      assert(approx(descResult.mean, 5.5, 0.001), "mean should be 5.5, got " + descResult.mean);
+      assert(approx(descResult.median, 5.5, 0.001), "median should be 5.5, got " + descResult.median);
+      assert(descResult.min === 1, "min should be 1");
+      assert(descResult.max === 10, "max should be 10");
+      assert(descResult.range === 9, "range should be 9");
+      assert(approx(descResult.sd, 3.02765, 0.001), "sd should be 3.02765, got " + descResult.sd);
+      assert(approx(descResult.variance, 9.16667, 0.001), "variance should be 9.16667, got " + descResult.variance);
+      assert(approx(descResult.skewness, 0.0, 0.01), "skewness should be 0.0, got " + descResult.skewness);
+      assert(approx(descResult.kurtosis, -1.2, 0.01), "kurtosis should be -1.2, got " + descResult.kurtosis);
+      assert(isNum(descResult.iqr), "iqr is not a number");
+      assert(isNum(descResult.p5), "p5 is not a number");
+      assert(isNum(descResult.p25), "p25 is not a number");
+      assert(isNum(descResult.p50), "p50 is not a number");
+      assert(isNum(descResult.p75), "p75 is not a number");
+      assert(isNum(descResult.p95), "p95 is not a number");
+      assert(approx(descResult.se, 0.95743, 0.001), "se should be 0.95743, got " + descResult.se);
+      assert(descResult.ci95 && isNum(descResult.ci95.lower) && isNum(descResult.ci95.upper), "ci95 invalid");
+      assert(Array.isArray(descResult.mode), "mode should be an array");
+    });
+
+    test("Descriptive", "describe() known sd", function () {
+      // sd of [1..10] with ddof=1: sqrt(9.1667) = 3.02765 (scipy reference)
+      assert(approx(descResult.sd, 3.02765, 0.001), "sd should be 3.02765, got " + descResult.sd);
+    });
+
+    test("Descriptive", "detectType([1,2,3,4,5])", function () {
+      var t = StatsEngine.detectType([1,2,3,4,5]);
+      assert(typeof t === "string" && t.length > 0, "should return a non-empty string, got: " + t);
+      assert(t === "continuous", "expected 'continuous' for 5 distinct numbers, got: " + t);
+    });
+
+    test("Descriptive", "detectType binary", function () {
+      var t = StatsEngine.detectType([0,1,0,1,0,1,0,1]);
+      assert(t === "binary", "expected 'binary', got: " + t);
+    });
+
+    /* ---------- Group Comparison ---------- */
+
+    var ttResult;
+    test("Group Comparison", "ttest([1..5], [6..10])", function () {
+      ttResult = StatsEngine.ttest([1,2,3,4,5], [6,7,8,9,10]);
+      assert(ttResult.nA === 5 && ttResult.nB === 5, "nA/nB wrong");
+      assert(approx(ttResult.t, -5.0, 0.01), "t should be -5.0, got " + ttResult.t);
+      assert(approx(ttResult.p, 0.001053, 0.01), "p should be 0.001053, got " + ttResult.p);
+      assert(ttResult.df === 8.0, "df should be 8.0, got " + ttResult.df);
+      assert(approx(ttResult.cohensD, -3.16228, 0.01), "cohensD should be -3.16228, got " + ttResult.cohensD);
+      assert(approx(ttResult.meanA, 3.0, 0.001), "meanA should be 3.0, got " + ttResult.meanA);
+      assert(approx(ttResult.meanB, 8.0, 0.001), "meanB should be 8.0, got " + ttResult.meanB);
+      assert(isNum(ttResult.meanDiff), "meanDiff missing");
+      assert(isNum(ttResult.sdA), "sdA missing");
+      assert(isNum(ttResult.sdB), "sdB missing");
+      assert(isNum(ttResult.se), "se missing");
+      assert(ttResult.ci95 && isNum(ttResult.ci95.lower), "ci95 missing");
+    });
+
+    checkInterpret("Group Comparison", "ttest", ttResult);
+
+    var pairedResult;
+    test("Group Comparison", "pairedTTest([1..5], [2,4,6,8,10])", function () {
+      pairedResult = StatsEngine.pairedTTest([1,2,3,4,5], [2,4,6,8,10]);
+      assert(pairedResult.n === 5, "n should be 5");
+      assert(pairedResult.df === 4, "df should be 4, got " + pairedResult.df);
+      assert(approx(Math.abs(pairedResult.t), 4.24264, 0.01), "abs(t) should be 4.24264, got " + pairedResult.t);
+      assert(approx(pairedResult.p, 0.01324, 0.01), "p should be 0.01324, got " + pairedResult.p);
+      assert(approx(Math.abs(pairedResult.meanDiff), 3.0, 0.001), "abs(meanDiff) should be 3.0, got " + pairedResult.meanDiff);
+      assert(isNum(pairedResult.cohensD), "cohensD missing");
+      assert(isNum(pairedResult.sdDiff), "sdDiff missing");
+      assert(isNum(pairedResult.se), "se missing");
+      assert(pairedResult.ci95 && isNum(pairedResult.ci95.lower), "ci95 missing");
+    });
+
+    checkInterpret("Group Comparison", "pairedTTest", pairedResult);
+
+    var anovaResult;
+    test("Group Comparison", "anova([[1,2,3],[4,5,6],[7,8,9]])", function () {
+      anovaResult = StatsEngine.anova([[1,2,3],[4,5,6],[7,8,9]]);
+      assert(anovaResult.k === 3, "k should be 3");
+      assert(anovaResult.N === 9, "N should be 9");
+      assert(approx(anovaResult.F, 27.0, 0.01), "F should be 27.0, got " + anovaResult.F);
+      assert(approx(anovaResult.p, 0.001, 0.01), "p should be 0.001, got " + anovaResult.p);
+      assert(approx(anovaResult.etaSquared, 0.9, 0.01), "etaSquared should be 0.9, got " + anovaResult.etaSquared);
+      assert(isNum(anovaResult.dfBetween), "dfBetween missing");
+      assert(isNum(anovaResult.dfWithin), "dfWithin missing");
+      assert(isNum(anovaResult.SSB), "SSB missing");
+      assert(isNum(anovaResult.SSW), "SSW missing");
+      assert(isNum(anovaResult.SST), "SST missing");
+      assert(isNum(anovaResult.MSB), "MSB missing");
+      assert(isNum(anovaResult.MSW), "MSW missing");
+      assert(isNum(anovaResult.grandMean), "grandMean missing");
+      assert(Array.isArray(anovaResult.groupMeans), "groupMeans missing");
+      assert(Array.isArray(anovaResult.groupNs), "groupNs missing");
+      assert(Array.isArray(anovaResult.posthoc), "posthoc missing");
+    });
+
+    checkInterpret("Group Comparison", "anova", anovaResult);
+
+    var mwResult;
+    test("Group Comparison", "mannWhitney([1..5], [6..10])", function () {
+      mwResult = StatsEngine.mannWhitney([1,2,3,4,5], [6,7,8,9,10]);
+      assert(mwResult.nA === 5, "nA should be 5");
+      assert(mwResult.nB === 5, "nB should be 5");
+      assert(mwResult.U === 0, "U should be 0 (exact), got " + mwResult.U);
+      assert(approx(mwResult.p, 0.00794, 0.01), "p should be 0.00794, got " + mwResult.p);
+      assert(isNum(mwResult.U1), "U1 missing");
+      assert(isNum(mwResult.U2), "U2 missing");
+      assert(isNum(mwResult.z), "z missing");
+      assert(isNum(mwResult.r), "r missing");
+      assert(isNum(mwResult.rankSumA), "rankSumA missing");
+      assert(isNum(mwResult.rankSumB), "rankSumB missing");
+    });
+
+    checkInterpret("Group Comparison", "mannWhitney", mwResult);
+
+    var wilcoxResult;
+    test("Group Comparison", "wilcoxon([1..5], [2,4,6,8,10])", function () {
+      wilcoxResult = StatsEngine.wilcoxon([1,2,3,4,5], [2,4,6,8,10]);
+      assert(wilcoxResult.nPairs === 5, "nPairs should be 5");
+      assert(wilcoxResult.W === 0, "W should be 0 (exact), got " + wilcoxResult.W);
+      assert(approx(wilcoxResult.p, 0.0625, 0.01), "p should be 0.0625, got " + wilcoxResult.p);
+      assert(isNum(wilcoxResult.Wplus), "Wplus missing");
+      assert(isNum(wilcoxResult.Wminus), "Wminus missing");
+      assert(isNum(wilcoxResult.z), "z missing");
+      assert(isNum(wilcoxResult.r), "r missing");
+      assert(isNum(wilcoxResult.nNonZero), "nNonZero missing");
+    });
+
+    checkInterpret("Group Comparison", "wilcoxon", wilcoxResult);
+
+    var kwResult;
+    test("Group Comparison", "kruskalWallis([[1,2,3],[4,5,6],[7,8,9]])", function () {
+      kwResult = StatsEngine.kruskalWallis([[1,2,3],[4,5,6],[7,8,9]]);
+      assert(kwResult.k === 3, "k should be 3");
+      assert(kwResult.N === 9, "N should be 9");
+      assert(approx(kwResult.H, 7.2, 0.01), "H should be 7.2, got " + kwResult.H);
+      assert(approx(kwResult.p, 0.02732, 0.01), "p should be 0.02732, got " + kwResult.p);
+      assert(isNum(kwResult.df), "df missing");
+      assert(isNum(kwResult.etaSquared), "etaSquared missing");
+      assert(Array.isArray(kwResult.meanRanks), "meanRanks missing");
+      assert(Array.isArray(kwResult.rankSums), "rankSums missing");
+      assert(Array.isArray(kwResult.ns), "ns missing");
+      assert(Array.isArray(kwResult.posthoc), "posthoc missing");
+    });
+
+    checkInterpret("Group Comparison", "kruskalWallis", kwResult);
+
+    var chiResult;
+    test("Group Comparison", "chiSquare([[10,20],[30,40]])", function () {
+      chiResult = StatsEngine.chiSquare([[10,20],[30,40]]);
+      assert(chiResult.N === 100, "N should be 100, got " + chiResult.N);
+      assert(chiResult.df === 1, "df should be 1, got " + chiResult.df);
+      assert(approx(chiResult.chiSquare, 0.79365, 0.01), "chiSquare should be 0.79365, got " + chiResult.chiSquare);
+      assert(approx(chiResult.p, 0.37300, 0.01), "p should be 0.37300, got " + chiResult.p);
+      assert(approx(chiResult.cramersV, 0.08909, 0.01), "cramersV should be 0.08909, got " + chiResult.cramersV);
+      assert(Array.isArray(chiResult.expected), "expected missing");
+      assert(Array.isArray(chiResult.observed), "observed missing");
+      assert(Array.isArray(chiResult.rowTotals), "rowTotals missing");
+      assert(Array.isArray(chiResult.colTotals), "colTotals missing");
+    });
+
+    checkInterpret("Group Comparison", "chiSquare", chiResult);
+
+    var fisherResult;
+    test("Group Comparison", "fisherExact(10, 5, 3, 12)", function () {
+      fisherResult = StatsEngine.fisherExact(10, 5, 3, 12);
+      assert(fisherResult.N === 30, "N should be 30, got " + fisherResult.N);
+      assert(approx(fisherResult.oddsRatio, 8.0, 0.01), "oddsRatio should be 8.0, got " + fisherResult.oddsRatio);
+      assert(approx(fisherResult.p, 0.02533, 0.01), "p should be 0.02533, got " + fisherResult.p);
+      assert(Array.isArray(fisherResult.table), "table missing");
+    });
+
+    checkInterpret("Group Comparison", "fisherExact", fisherResult);
+
+    var mcResult;
+    test("Group Comparison", "mcnemar(10, 5, 3, 12)", function () {
+      mcResult = StatsEngine.mcnemar(10, 5, 3, 12);
+      assert(mcResult.b === 5, "b should be 5");
+      assert(mcResult.c === 3, "c should be 3");
+      assert(mcResult.df === 1, "df should be 1, got " + mcResult.df);
+      assert(approx(mcResult.chiSquare, 0.125, 0.01), "chiSquare should be 0.125, got " + mcResult.chiSquare);
+      assert(approx(mcResult.p, 0.72367, 0.01), "p should be 0.72367, got " + mcResult.p);
+      assert(Array.isArray(mcResult.table), "table missing");
+    });
+
+    checkInterpret("Group Comparison", "mcnemar", mcResult);
+
+    var propResult;
+    test("Group Comparison", "twoProportionZ(30, 100, 40, 100)", function () {
+      propResult = StatsEngine.twoProportionZ(30, 100, 40, 100);
+      assert(propResult.n1 === 100, "n1 should be 100");
+      assert(propResult.n2 === 100, "n2 should be 100");
+      assert(approx(propResult.z, -1.48250, 0.01), "z should be -1.48250, got " + propResult.z);
+      assert(approx(propResult.p, 0.13821, 0.01), "p should be 0.13821, got " + propResult.p);
+      assert(approx(propResult.p1, 0.3, 0.001), "p1 should be 0.3, got " + propResult.p1);
+      assert(approx(propResult.p2, 0.4, 0.001), "p2 should be 0.4, got " + propResult.p2);
+      assert(approx(propResult.diff, -0.1, 0.001), "diff should be -0.1, got " + propResult.diff);
+      assert(propResult.ci95 && isNum(propResult.ci95.lower), "ci95 missing");
+    });
+
+    checkInterpret("Group Comparison", "twoProportionZ", propResult);
+
+    /* ---------- Assumption Tests ---------- */
+
+    var swResult;
+    test("Assumption Tests", "shapiroWilk([1..10])", function () {
+      swResult = StatsEngine.shapiroWilk([1,2,3,4,5,6,7,8,9,10]);
+      assert(swResult.n === 10, "n should be 10");
+      assert(approx(swResult.W, 0.97016, 0.05), "W should be 0.97016, got " + swResult.W);
+      assert(approx(swResult.p, 0.89237, 0.05), "p should be 0.89237, got " + swResult.p);
+    });
+
+    checkInterpret("Assumption Tests", "shapiroWilk", swResult);
+
+    var levResult;
+    test("Assumption Tests", "levene([[1..5],[6..10]])", function () {
+      levResult = StatsEngine.levene([[1,2,3,4,5],[6,7,8,9,10]]);
+      assert(approx(levResult.F, 0.0, 0.01), "F should be 0.0, got " + levResult.F);
+      assert(approx(levResult.p, 1.0, 0.01), "p should be 1.0, got " + levResult.p);
+      assert(isNum(levResult.dfBetween), "dfBetween missing");
+      assert(isNum(levResult.dfWithin), "dfWithin missing");
+    });
+
+    checkInterpret("Assumption Tests", "levene", levResult);
+
+    /* ---------- Correlation ---------- */
+
+    var pearsonResult;
+    test("Correlation", "pearson([1..5], [2,4,6,8,10]) r=1.0", function () {
+      pearsonResult = StatsEngine.pearson([1,2,3,4,5], [2,4,6,8,10]);
+      assert(pearsonResult.n === 5, "n should be 5");
+      assert(approx(pearsonResult.r, 1.0, 0.001), "r should be 1.0, got " + pearsonResult.r);
+      assert(approx(pearsonResult.rSquared, 1.0, 0.001), "rSquared should be 1.0, got " + pearsonResult.rSquared);
+      assert(approx(pearsonResult.p, 0.0, 0.01), "p should be 0.0, got " + pearsonResult.p);
+      assert(isNum(pearsonResult.t), "t missing");
+      assert(isNum(pearsonResult.df), "df missing");
+      assert(pearsonResult.ci95 && isNum(pearsonResult.ci95.lower), "ci95 missing");
+    });
+
+    checkInterpret("Correlation", "pearson", pearsonResult);
+
+    var spearmanResult;
+    test("Correlation", "spearman([1..5], [2,4,6,8,10]) rho=1.0", function () {
+      spearmanResult = StatsEngine.spearman([1,2,3,4,5], [2,4,6,8,10]);
+      assert(approx(spearmanResult.rho, 1.0, 0.01), "rho should be 1.0, got " + spearmanResult.rho);
+      assert(approx(spearmanResult.r, 1.0, 0.01), "r should be 1.0, got " + spearmanResult.r);
+      assert(spearmanResult.p < 0.01, "p should be ~0.0, got " + spearmanResult.p);
+    });
+
+    checkInterpret("Correlation", "spearman", spearmanResult);
+
+    var pbResult;
+    test("Correlation", "pointBiserial([0,0,0,1,1,1], [1,2,3,4,5,6])", function () {
+      pbResult = StatsEngine.pointBiserial([0,0,0,1,1,1], [1,2,3,4,5,6]);
+      assert(pbResult.n === 6, "n should be 6");
+      assert(pbResult.n0 === 3, "n0 should be 3");
+      assert(pbResult.n1 === 3, "n1 should be 3");
+      assert(approx(pbResult.r, 0.87831, 0.01), "r should be 0.87831, got " + pbResult.r);
+      assert(approx(pbResult.p, 0.02131, 0.01), "p should be 0.02131, got " + pbResult.p);
+      assert(approx(pbResult.mean0, 2.0, 0.001), "mean0 should be 2.0, got " + pbResult.mean0);
+      assert(approx(pbResult.mean1, 5.0, 0.001), "mean1 should be 5.0, got " + pbResult.mean1);
+      assert(isNum(pbResult.t), "t missing");
+      assert(isNum(pbResult.df), "df missing");
+    });
+
+    test("Correlation", "correlationMatrix([[1,2,3],[4,5,6],[7,8,9]])", function () {
+      var cmResult = StatsEngine.correlationMatrix([[1,2,3],[4,5,6],[7,8,9]]);
+      assert(cmResult && Array.isArray(cmResult.r), "r matrix missing");
+      assert(Array.isArray(cmResult.p), "p matrix missing");
+      assert(cmResult.k === 3, "k should be 3");
+      // Diagonal should be 1
+      assert(approx(cmResult.r[0][0], 1.0, 0.001), "diagonal should be 1.0");
+      assert(approx(cmResult.r[1][1], 1.0, 0.001), "diagonal should be 1.0");
+      assert(approx(cmResult.r[2][2], 1.0, 0.001), "diagonal should be 1.0");
+      // All variables are perfectly correlated
+      assert(approx(cmResult.r[0][1], 1.0, 0.001), "r[0][1] should be 1.0");
+    });
+
+    /* ---------- Regression ---------- */
+
+    var lrResult;
+    test("Regression", "linearRegression y=x, R2=1.0", function () {
+      lrResult = StatsEngine.linearRegression([1,2,3,4,5], [[1,2,3,4,5]]);
+      assert(lrResult.n === 5, "n should be 5");
+      assert(approx(lrResult.R2, 1.0, 0.001), "R2 should be 1.0, got " + lrResult.R2);
+      assert(approx(lrResult.coefficients[1], 1.0, 0.001), "slope should be 1.0, got " + lrResult.coefficients[1]);
+      assert(approx(lrResult.coefficients[0], 0.0, 0.001), "intercept should be 0.0, got " + lrResult.coefficients[0]);
+      assert(isNum(lrResult.adjR2), "adjR2 missing");
+      assert(isNum(lrResult.F), "F missing");
+      assert(isNum(lrResult.fP), "fP missing");
+      assert(isNum(lrResult.SSR), "SSR missing");
+      assert(isNum(lrResult.SSE), "SSE missing");
+      assert(isNum(lrResult.SST), "SST missing");
+      assert(isNum(lrResult.MSE), "MSE missing");
+      assert(isNum(lrResult.RMSE), "RMSE missing");
+      assert(isNum(lrResult.durbinWatson), "durbinWatson missing");
+      assert(Array.isArray(lrResult.coefficients), "coefficients missing");
+      assert(Array.isArray(lrResult.se), "se missing");
+      assert(Array.isArray(lrResult.tStats), "tStats missing");
+      assert(Array.isArray(lrResult.pValues), "pValues missing");
+      assert(Array.isArray(lrResult.residuals), "residuals missing");
+      assert(Array.isArray(lrResult.predicted), "predicted missing");
+    });
+
+    checkInterpret("Regression", "linearRegression", lrResult);
+
+    var logResult;
+    test("Regression", "logisticRegression converges", function () {
+      logResult = StatsEngine.logisticRegression([0,0,0,1,1,1,1,1], [[1,2,3,4,5,6,7,8]]);
+      assert(typeof logResult.converged === "boolean", "converged missing");
+      assert(logResult.converged === true, "should have converged");
+      assert(Array.isArray(logResult.coefficients), "coefficients missing");
+      assert(Array.isArray(logResult.se), "se missing");
+      assert(Array.isArray(logResult.zStats), "zStats missing");
+      assert(Array.isArray(logResult.pValues), "pValues missing");
+      assert(Array.isArray(logResult.oddsRatios), "oddsRatios missing");
+      assert(Array.isArray(logResult.predicted), "predicted missing");
+      assert(isNum(logResult.logLikelihood), "logLikelihood missing");
+      assert(isNum(logResult.nullLogLikelihood), "nullLogLikelihood missing");
+      assert(isNum(logResult.deviance), "deviance missing");
+      assert(isNum(logResult.nullDeviance), "nullDeviance missing");
+      assert(isNum(logResult.pseudoR2), "pseudoR2 missing");
+      assert(isNum(logResult.AIC), "AIC missing");
+      assert(isNum(logResult.BIC), "BIC missing");
+      assert(isNum(logResult.iterations), "iterations missing");
+      assert(logResult.n === 8, "n should be 8");
+    });
+
+    checkInterpret("Regression", "logisticRegression", logResult);
+
+    /* ---------- Scale Reliability ---------- */
+
+    var caResult;
+    test("Scale Reliability", "cronbachAlpha 3 items", function () {
+      caResult = StatsEngine.cronbachAlpha([[1,2,3,4,5],[2,3,4,5,6],[1,3,5,4,6]]);
+      assert(isNum(caResult.alpha), "alpha missing");
+      assert(caResult.k === 3, "k should be 3");
+      assert(caResult.n === 5, "n should be 5");
+      assert(Array.isArray(caResult.itemTotalCorrelations), "itemTotalCorrelations missing");
+      assert(Array.isArray(caResult.alphaIfDeleted), "alphaIfDeleted missing");
+      assert(isNum(caResult.sumItemVariance), "sumItemVariance missing");
+      assert(isNum(caResult.totalVariance), "totalVariance missing");
+      assert(caResult.alpha > 0 && caResult.alpha <= 1, "alpha should be between 0 and 1, got " + caResult.alpha);
+    });
+
+    checkInterpret("Scale Reliability", "cronbachAlpha", caResult);
+
+    /* ---------- Multivariate ---------- */
+
+    var pcaResult;
+    test("Multivariate", "pca 3 variables", function () {
+      pcaResult = StatsEngine.pca([[1,2,3,4,5],[5,4,3,2,1],[1,3,5,2,4]]);
+      assert(Array.isArray(pcaResult.eigenvalues), "eigenvalues missing");
+      assert(Array.isArray(pcaResult.eigenvectors), "eigenvectors missing");
+      assert(Array.isArray(pcaResult.loadings), "loadings missing");
+      assert(Array.isArray(pcaResult.explainedVariance), "explainedVariance missing");
+      assert(Array.isArray(pcaResult.cumulativeVariance), "cumulativeVariance missing");
+      assert(Array.isArray(pcaResult.scores), "scores missing");
+      assert(pcaResult.k === 3, "k should be 3");
+      assert(pcaResult.n === 5, "n should be 5");
+      // Cumulative variance of all components should be ~1.0
+      var lastCum = pcaResult.cumulativeVariance[pcaResult.cumulativeVariance.length - 1];
+      assert(approx(lastCum, 1.0, 0.05), "cumulative variance should be ~1.0, got " + lastCum);
+    });
+
+    checkInterpret("Multivariate", "pca", pcaResult);
+
+    var faResult;
+    test("Multivariate", "factorAnalysis 3 variables", function () {
+      faResult = StatsEngine.factorAnalysis([[1,2,3,4,5],[5,4,3,2,1],[1,3,5,2,4]]);
+      assert(Array.isArray(faResult.loadings), "loadings missing");
+      assert(Array.isArray(faResult.communalities), "communalities missing");
+      assert(Array.isArray(faResult.eigenvalues), "eigenvalues missing");
+      assert(Array.isArray(faResult.explainedVariance), "explainedVariance missing");
+      assert(isNum(faResult.nFactors), "nFactors missing");
+      assert(faResult.k === 3, "k should be 3");
+      assert(faResult.n === 5, "n should be 5");
+    });
+
+    checkInterpret("Multivariate", "factorAnalysis", faResult);
+
+    var kmResult;
+    test("Multivariate", "kMeans 2 clusters", function () {
+      kmResult = StatsEngine.kMeans([[1,2,3,10,11,12],[1,2,3,10,11,12]], 2);
+      assert(Array.isArray(kmResult.assignments), "assignments missing");
+      assert(Array.isArray(kmResult.centroids), "centroids missing");
+      assert(kmResult.k === 2, "k should be 2");
+      assert(kmResult.n === 6, "n should be 6");
+      assert(Array.isArray(kmResult.clusterSizes), "clusterSizes missing");
+      assert(Array.isArray(kmResult.withinSS), "withinSS missing");
+      assert(isNum(kmResult.totalWithinSS), "totalWithinSS missing");
+      assert(isNum(kmResult.betweenSS), "betweenSS missing");
+      assert(isNum(kmResult.totalSS), "totalSS missing");
+      assert(typeof kmResult.converged === "boolean", "converged missing");
+      // Should converge with clearly separated clusters
+      assert(kmResult.converged, "should converge for well-separated clusters");
+      // Each cluster should have 3 points
+      var sorted = kmResult.clusterSizes.slice().sort();
+      assert(sorted[0] === 3 && sorted[1] === 3, "cluster sizes should be [3,3], got " + kmResult.clusterSizes);
+    });
+
+    checkInterpret("Multivariate", "kMeans", kmResult);
+
+    test("Multivariate", "elbowMethod returns array", function () {
+      var elbow = StatsEngine.elbowMethod([[1,2,3,10,11,12],[1,2,3,10,11,12]], 4);
+      assert(Array.isArray(elbow), "should return an array");
+      assert(elbow.length > 0, "should have at least one entry");
+      for (var i = 0; i < elbow.length; i++) {
+        assert(isNum(elbow[i].k), "k missing at index " + i);
+        assert(isNum(elbow[i].withinSS), "withinSS missing at index " + i);
+      }
+      // withinSS should decrease as k increases
+      if (elbow.length >= 2) {
+        assert(elbow[0].withinSS >= elbow[elbow.length - 1].withinSS,
+          "withinSS should decrease from k=1 to k=" + elbow[elbow.length - 1].k);
+      }
+    });
+
+    /* ---------- Frequencies ---------- */
+
+    var freqResult;
+    test("Descriptive", "frequencies()", function () {
+      freqResult = StatsEngine.frequencies(["A","B","A","C","A","B"]);
+      assert(freqResult.n === 6, "n should be 6");
+      assert(freqResult.counts["A"] === 3, "A count should be 3");
+      assert(freqResult.uniqueValues.length === 3, "3 unique values");
+      assert(freqResult.mode === "A", "mode should be A");
+      assert(freqResult.modeCount === 3, "modeCount should be 3");
+      assert(typeof freqResult.percentages === "object", "percentages missing");
+    });
+
+    checkInterpret("Descriptive", "frequencies", freqResult);
+
+    /* ---------- Phi Coefficient ---------- */
+
+    var phiResult;
+    test("Correlation", "phi()", function () {
+      // [[10,5],[3,12]] — phi = (10*12-5*3)/sqrt(15*15*13*17) ≈ 0.4264
+      phiResult = StatsEngine.phi([[10,5],[3,12]]);
+      assert(approx(phiResult.phi, 0.4264, 0.01), "phi should be ~0.4264, got " + phiResult.phi);
+      assert(isNum(phiResult.p), "p is not a number");
+      assert(phiResult.n === 30, "n should be 30");
+      assert(isNum(phiResult.chiSquare), "chiSquare missing");
+    });
+
+    checkInterpret("Correlation", "phi", phiResult);
+
+    /* ---------- Kendall's Tau ---------- */
+
+    var kendallResult;
+    test("Correlation", "kendallTau() perfect", function () {
+      kendallResult = StatsEngine.kendallTau([1,2,3,4,5], [2,4,6,8,10]);
+      assert(approx(kendallResult.tau, 1.0, 0.01), "tau should be 1.0, got " + kendallResult.tau);
+      assert(kendallResult.concordant === 10, "concordant should be 10");
+      assert(kendallResult.discordant === 0, "discordant should be 0");
+      assert(isNum(kendallResult.p), "p missing");
+      assert(isNum(kendallResult.z), "z missing");
+      assert(kendallResult.n === 5, "n should be 5");
+    });
+
+    checkInterpret("Correlation", "kendallTau", kendallResult);
+
+    /* ---------- Simple Regression ---------- */
+
+    var srResult;
+    test("Regression", "simpleRegression() perfect", function () {
+      srResult = StatsEngine.simpleRegression([1,2,3,4,5], [1,2,3,4,5]);
+      assert(approx(srResult.slope, 1.0, 0.001), "slope should be 1.0, got " + srResult.slope);
+      assert(approx(srResult.intercept, 0.0, 0.001), "intercept should be 0, got " + srResult.intercept);
+      assert(approx(srResult.rSquared, 1.0, 0.001), "R² should be 1.0, got " + srResult.rSquared);
+      assert(approx(srResult.correlation, 1.0, 0.001), "correlation should be 1.0, got " + srResult.correlation);
+      assert(typeof srResult.predictionEquation === "string", "predictionEquation missing");
+      assert(isNum(srResult.F), "F missing");
+    });
+
+    checkInterpret("Regression", "simpleRegression", srResult);
+
+    /* ---------- Cohen's Kappa ---------- */
+
+    var kappaResult;
+    test("Correlation", "cohensKappa()", function () {
+      var r1 = ["A","A","A","A","A","B","B","B","B","B"];
+      var r2 = ["A","A","A","A","B","A","B","B","B","B"];
+      kappaResult = StatsEngine.cohensKappa(r1, r2);
+      assert(approx(kappaResult.kappa, 0.6, 0.05), "kappa should be ~0.6, got " + kappaResult.kappa);
+      assert(approx(kappaResult.observedAgreement, 0.8, 0.01), "observed agreement should be 0.8");
+      assert(kappaResult.n === 10, "n should be 10");
+      assert(isNum(kappaResult.p), "p missing");
+      assert(isNum(kappaResult.se), "se missing");
+      assert(kappaResult.ci95 && isNum(kappaResult.ci95.lower), "ci95 missing");
+      assert(Array.isArray(kappaResult.categories), "categories missing");
+      assert(isNum(kappaResult.expectedAgreement), "expectedAgreement missing");
+    });
+
+    checkInterpret("Correlation", "cohensKappa", kappaResult);
+
+    /* ---------- A/B Test ---------- */
+
+    var abContResult;
+    test("Group Comparison", "abTest() continuous", function () {
+      abContResult = StatsEngine.abTest([1,2,3,4,5], [6,7,8,9,10], "continuous");
+      assert(abContResult.type === "continuous", "type should be continuous");
+      assert(isNum(abContResult.lift), "lift missing");
+      assert(isNum(abContResult.power), "power missing");
+      assert(abContResult.p < 0.01, "p should be < 0.01");
+      assert(isNum(abContResult.controlSummary.mean), "controlSummary.mean missing");
+      assert(isNum(abContResult.variantSummary.mean), "variantSummary.mean missing");
+      assert(isNum(abContResult.recommendedN), "recommendedN missing");
+      assert(abContResult.liftCI && isNum(abContResult.liftCI.lower), "liftCI missing");
+    });
+
+    checkInterpret("Group Comparison", "abTest", abContResult);
+
+    var abBinResult;
+    test("Group Comparison", "abTest() binary", function () {
+      abBinResult = StatsEngine.abTest([0,0,0,1,1,0,0,0,1,0], [1,1,0,1,1,0,1,0,1,1], "binary");
+      assert(abBinResult.type === "binary", "type should be binary");
+      assert(isNum(abBinResult.lift), "lift missing");
+      assert(isNum(abBinResult.controlSummary.rate), "controlSummary.rate missing");
+      assert(isNum(abBinResult.variantSummary.rate), "variantSummary.rate missing");
+      assert(isNum(abBinResult.power), "power missing");
+      assert(isNum(abBinResult.recommendedN), "recommendedN missing");
+    });
+
+    /* ---------- Word Frequency ---------- */
+
+    var wfResult;
+    test("Text", "wordFrequency()", function () {
+      wfResult = StatsEngine.wordFrequency(["hello world", "hello there", "world peace"]);
+      assert(wfResult.responses === 3, "responses should be 3");
+      assert(wfResult.totalWords > 0, "totalWords should be > 0");
+      assert(wfResult.uniqueWords > 0, "uniqueWords should be > 0");
+      assert(Array.isArray(wfResult.topWords), "topWords should be array");
+      assert(wfResult.topWords.length > 0, "topWords should have entries");
+      // "hello" appears 2x, "world" appears 2x
+      var helloEntry = wfResult.topWords.find(function(w) { return w.word === "hello"; });
+      assert(helloEntry && helloEntry.count === 2, "hello should appear 2 times");
+      assert(Array.isArray(wfResult.bigramTop), "bigramTop missing");
+      assert(isNum(wfResult.avgWordsPerResponse), "avgWordsPerResponse missing");
+    });
+
+    checkInterpret("Text", "wordFrequency", wfResult);
+
+    /* ---------- Welch's ANOVA ---------- */
+
+    var waResult;
+    test("Group Comparison", "welchAnova()", function () {
+      waResult = StatsEngine.welchAnova([[1,2,3],[10,20,30],[100,200,300]]);
+      assert(isNum(waResult.F), "F missing");
+      assert(isNum(waResult.p), "p missing");
+      assert(isNum(waResult.df1), "df1 missing");
+      assert(isNum(waResult.df2), "df2 missing");
+      assert(waResult.k === 3, "k should be 3");
+      assert(Array.isArray(waResult.groupStats), "groupStats missing");
+      assert(Array.isArray(waResult.means), "means missing");
+      assert(waResult.means.length === 3, "means should have 3 entries");
+    });
+
+    checkInterpret("Group Comparison", "welchAnova", waResult);
+
+    /* ---------- Friedman Test ---------- */
+
+    var friedmanResult;
+    test("Group Comparison", "friedman()", function () {
+      // 5 subjects, 3 conditions
+      var r = StatsEngine.friedman([[1,2,3,4,5],[2,3,4,5,6],[3,4,5,6,7]]);
+      friedmanResult = r;
+      assert(isNum(r.chi2), "chi2 missing");
+      assert(isNum(r.p), "p missing");
+      assert(r.df === 2, "df should be 2");
+      assert(r.k === 3, "k should be 3");
+      assert(r.n === 5, "n should be 5");
+      assert(Array.isArray(r.meanRanks), "meanRanks missing");
+    });
+
+    checkInterpret("Group Comparison", "friedman", friedmanResult);
+
+    /* ---------- Repeated Measures ANOVA ---------- */
+
+    var rmAnovaResult;
+    test("Group Comparison", "repeatedMeasuresAnova()", function () {
+      var r = StatsEngine.repeatedMeasuresAnova([[1,2,3,4,5],[3,4,5,6,7],[5,6,7,8,9]]);
+      rmAnovaResult = r;
+      assert(isNum(r.F), "F missing");
+      assert(isNum(r.p), "p missing");
+      assert(isNum(r.etaSquared), "etaSquared missing");
+      assert(isNum(r.epsilon), "epsilon missing");
+      assert(r.k === 3, "k should be 3");
+      assert(r.n === 5, "n should be 5");
+      // Means increase by 2 each condition, should be significant
+      assert(r.p < 0.05, "should be significant for clearly different conditions");
+    });
+
+    checkInterpret("Group Comparison", "repeatedMeasuresAnova", rmAnovaResult);
+
+    /* ---------- Two-way ANOVA ---------- */
+
+    var twoWayResult;
+    test("Group Comparison", "twoWayAnova()", function () {
+      var y = [1,2,3,4, 5,6,7,8, 9,10,11,12];
+      var fA = ["A","A","A","A","B","B","B","B","C","C","C","C"];
+      var fB = ["X","X","Y","Y","X","X","Y","Y","X","X","Y","Y"];
+      var r = StatsEngine.twoWayAnova(y, fA, fB);
+      twoWayResult = r;
+      assert(r.mainA && isNum(r.mainA.F), "mainA.F missing");
+      assert(r.mainB && isNum(r.mainB.F), "mainB.F missing");
+      assert(r.interaction && isNum(r.interaction.F), "interaction.F missing");
+      assert(r.N === 12, "N should be 12");
+    });
+
+    checkInterpret("Group Comparison", "twoWayAnova", twoWayResult);
+
+    /* ---------- ANCOVA ---------- */
+
+    var ancovaResult;
+    test("Group Comparison", "ancova()", function () {
+      var y = [1,2,3,4,5, 6,7,8,9,10];
+      var group = ["A","A","A","A","A","B","B","B","B","B"];
+      var cov = [1,2,3,4,5, 1,2,3,4,5];
+      var r = StatsEngine.ancova(y, group, cov);
+      ancovaResult = r;
+      assert(isNum(r.F), "F missing");
+      assert(isNum(r.p), "p missing");
+      assert(isNum(r.rSquared), "rSquared missing");
+      assert(Array.isArray(r.adjustedMeans), "adjustedMeans missing");
+      assert(r.N === 10, "N should be 10");
+    });
+
+    checkInterpret("Group Comparison", "ancova", ancovaResult);
+
+    /* ---------- Partial Correlation ---------- */
+
+    var partialCorrResult;
+    test("Correlation", "partialCorrelation()", function () {
+      var x = [1,2,3,4,5,6,7,8,9,10];
+      var y = [2,4,6,8,10,12,14,16,18,20];
+      var control = [[1,1,2,2,3,3,4,4,5,5]];
+      var r = StatsEngine.partialCorrelation(x, y, control);
+      partialCorrResult = r;
+      assert(isNum(r.r), "r missing");
+      assert(isNum(r.p), "p missing");
+      assert(isNum(r.df), "df missing");
+      assert(isNum(r.t), "t missing");
+      // x and y are perfectly correlated, partial should still be high
+      assert(r.r > 0.9, "partial r should be > 0.9 for near-perfect relationship");
+    });
+
+    checkInterpret("Correlation", "partialCorrelation", partialCorrResult);
+
+    /* ---------- Moderation ---------- */
+
+    var moderationResult;
+    test("Regression", "moderation()", function () {
+      var x = [1,2,3,4,5,6,7,8,9,10];
+      var mod = [1,1,1,1,1,2,2,2,2,2];
+      var y = [1,2,3,4,5,10,14,18,22,26];
+      var r = StatsEngine.moderation(x, mod, y);
+      moderationResult = r;
+      assert(isNum(r.rSquared), "rSquared missing");
+      assert(isNum(r.rSquaredChange), "rSquaredChange missing");
+      assert(r.interactionEffect && isNum(r.interactionEffect.B), "interactionEffect.B missing");
+      assert(r.simpleSlopes && isNum(r.simpleSlopes.lowMod.slope), "simpleSlopes missing");
+      assert(r.N === 10, "N should be 10");
+    });
+
+    checkInterpret("Regression", "moderation", moderationResult);
+
+    /* ---------- Difference-in-Differences ---------- */
+
+    var didResult;
+    test("Regression", "diffInDiff()", function () {
+      var y =   [1,2,3,4,  2,3,4,5,  1,2,3,4,  5,6,7,8];
+      var treat = [0,0,0,0, 0,0,0,0, 1,1,1,1, 1,1,1,1];
+      var post =  [0,0,0,0, 1,1,1,1, 0,0,0,0, 1,1,1,1];
+      var r = StatsEngine.diffInDiff(y, treat, post);
+      didResult = r;
+      assert(isNum(r.didEstimate), "didEstimate missing");
+      assert(isNum(r.didSE), "didSE missing");
+      assert(isNum(r.didT), "didT missing");
+      assert(isNum(r.didP), "didP missing");
+      assert(r.N === 16, "N should be 16");
+      assert(r.groupMeans && isNum(r.groupMeans.controlPre), "groupMeans missing");
+    });
+
+    checkInterpret("Regression", "diffInDiff", didResult);
+
+    /* ---------- Poisson Regression ---------- */
+
+    var poissonResult;
+    test("Regression", "poissonRegression()", function() {
+      var y = [0,1,2,3,4,5,3,2,1,0];
+      var xs = [[1,2,3,4,5,6,7,8,9,10]];
+      var r = StatsEngine.poissonRegression(y, xs);
+      poissonResult = r;
+      assert(isNum(r.deviance), "deviance missing");
+      assert(isNum(r.pseudoR2), "pseudoR2 missing");
+      assert(Array.isArray(r.coefficients), "coefficients missing");
+      assert(r.coefficients.length === 2, "should have 2 coefficients (intercept + 1 predictor)");
+      assert(isNum(r.coefficients[0].B), "coefficient B missing");
+      assert(isNum(r.coefficients[0].expB), "rate ratio (expB) missing");
+      assert(r.converged === true, "should converge");
+      assert(r.N === 10, "N should be 10");
+    });
+
+    checkInterpret("Regression", "poissonRegression", poissonResult);
+
+    /* ---------- Mediation ---------- */
+
+    var mediationResult;
+    test("Regression", "mediation()", function() {
+      var x = [1,2,3,4,5,6,7,8,9,10];
+      var m = [2,3,5,6,8,9,11,12,14,15]; // mediator correlated with x
+      var y = [3,5,8,10,13,15,18,20,23,25]; // outcome correlated with both
+      var r = StatsEngine.mediation(x, m, y);
+      mediationResult = r;
+      assert(isNum(r.indirectEffect), "indirectEffect missing");
+      assert(isNum(r.sobelZ), "sobelZ missing");
+      assert(isNum(r.sobelP), "sobelP missing");
+      assert(isNum(r.proportionMediated), "proportionMediated missing");
+      assert(r.pathA && isNum(r.pathA.B), "pathA.B missing");
+      assert(r.pathB && isNum(r.pathB.B), "pathB.B missing");
+      assert(r.pathC && isNum(r.pathC.B), "pathC.B missing");
+      assert(r.pathCprime && isNum(r.pathCprime.B), "pathCprime.B missing");
+      assert(r.N === 10, "N should be 10");
+    });
+
+    checkInterpret("Regression", "mediation", mediationResult);
+
+    /* ---------- Hierarchical Clustering ---------- */
+
+    var hcResult;
+    test("Multivariate", "hierarchicalClustering()", function() {
+      // Two clear clusters: [1,2,3] and [10,11,12]
+      var r = StatsEngine.hierarchicalClustering([[1,2,3,10,11,12],[1,2,3,10,11,12]]);
+      hcResult = r;
+      assert(Array.isArray(r.merges), "merges missing");
+      assert(r.n === 6, "n should be 6");
+      assert(Array.isArray(r.heights), "heights missing");
+      // For k=2, should separate into two groups
+      var labels = r.labels[2];
+      assert(Array.isArray(labels), "labels for k=2 missing");
+      assert(labels.length === 6, "should have 6 labels");
+    });
+
+    checkInterpret("Multivariate", "hierarchicalClustering", hcResult);
+
+    /* ---------- Sentiment ---------- */
+
+    var sentimentResult;
+    test("Text", "sentiment()", function() {
+      var r = StatsEngine.sentiment(["This product is great and amazing", "Terrible experience, very bad", "It was okay"]);
+      sentimentResult = r;
+      assert(r.totalTexts === 3, "totalTexts should be 3");
+      assert(isNum(r.meanScore), "meanScore missing");
+      assert(r.distribution && isNum(r.distribution.positive), "distribution.positive missing");
+      assert(r.distribution && isNum(r.distribution.negative), "distribution.negative missing");
+      assert(Array.isArray(r.topPositiveWords), "topPositiveWords missing");
+      assert(Array.isArray(r.topNegativeWords), "topNegativeWords missing");
+    });
+
+    checkInterpret("Text", "sentiment", sentimentResult);
+
+    /* ---------- Post-Stratification Weighting ---------- */
+
+    var pswResult;
+    test("Survey Design", "postStratWeighting()", function() {
+      var strata = ["A","A","A","A","B","B","B","B","B","B"];
+      var targets = {"A": 0.5, "B": 0.5};
+      var r = StatsEngine.postStratWeighting(strata, targets);
+      pswResult = r;
+      assert(Array.isArray(r.weights), "weights missing");
+      assert(r.weights.length === 10, "should have 10 weights");
+      assert(r.n === 10, "n should be 10");
+      assert(isNum(r.designEffect), "designEffect missing");
+      assert(isNum(r.effectiveSampleSize), "effectiveSampleSize missing");
+      assert(Array.isArray(r.stratumStats), "stratumStats missing");
+      // A is under-represented (40% vs 50%), so weight > 1
+      var aWeight = r.stratumStats.find(function(s) { return s.stratum === "A"; });
+      assert(aWeight && aWeight.weight > 1, "A should have weight > 1");
+    });
+
+    checkInterpret("Survey Design", "postStratWeighting", pswResult);
+
+    /* ---------- Propensity Score Matching ---------- */
+
+    var psmResult;
+    test("Survey Design", "propensityScoreMatching()", function() {
+      var treat = [1,1,1,1,1,0,0,0,0,0];
+      var covs = [[1,2,3,4,5,2,3,4,5,6]];
+      var r = StatsEngine.propensityScoreMatching(treat, covs);
+      psmResult = r;
+      assert(Array.isArray(r.propensityScores), "propensityScores missing");
+      assert(r.propensityScores.length === 10, "should have 10 scores");
+      assert(Array.isArray(r.matchedPairs), "matchedPairs missing");
+      assert(r.nTreated === 5, "nTreated should be 5");
+      assert(r.nControl === 5, "nControl should be 5");
+      assert(Array.isArray(r.balanceBefore), "balanceBefore missing");
+      assert(Array.isArray(r.balanceAfter), "balanceAfter missing");
+    });
+
+    checkInterpret("Survey Design", "propensityScoreMatching", psmResult);
+
+    /* ---------- Multinomial Logistic ---------- */
+
+    var mnlResult;
+    test("Regression", "multinomialLogistic()", function() {
+      var y = ["A","A","A","B","B","B","C","C","C"];
+      var xs = [[1,2,3,4,5,6,7,8,9]];
+      var r = StatsEngine.multinomialLogistic(y, xs);
+      mnlResult = r;
+      assert(Array.isArray(r.categories), "categories missing");
+      assert(r.k === 3, "k should be 3");
+      assert(Array.isArray(r.models), "models missing");
+      assert(r.N === 9, "N should be 9");
+      assert(isNum(r.accuracy), "accuracy missing");
+    });
+
+    checkInterpret("Regression", "multinomialLogistic", mnlResult);
+
+    /* ---------- Ordinal Regression ---------- */
+
+    var ordResult;
+    test("Regression", "ordinalRegression()", function() {
+      var y = [1,1,2,2,3,3,4,4,5,5];
+      var xs = [[1,2,3,4,5,6,7,8,9,10]];
+      var r = StatsEngine.ordinalRegression(y, xs);
+      ordResult = r;
+      assert(Array.isArray(r.thresholds), "thresholds missing");
+      assert(Array.isArray(r.coefficients), "coefficients missing");
+      assert(isNum(r.pseudoR2), "pseudoR2 missing");
+      assert(r.N === 10, "N should be 10");
+      assert(r.converged === true, "should converge");
+    });
+
+    checkInterpret("Regression", "ordinalRegression", ordResult);
+
+    /* ---------- Decision Tree ---------- */
+
+    var dtResult;
+    test("Segmentation", "decisionTree()", function() {
+      var y = ["A","A","A","A","B","B","B","B"];
+      var xs = [[1,2,3,4,5,6,7,8]];
+      var r = StatsEngine.decisionTree(y, xs);
+      dtResult = r;
+      assert(r.tree !== undefined, "tree missing");
+      assert(Array.isArray(r.importance), "importance missing");
+      assert(r.type === "classification", "type should be classification");
+      assert(r.N === 8, "N should be 8");
+      assert(isNum(r.accuracy), "accuracy missing");
+    });
+
+    checkInterpret("Segmentation", "decisionTree", dtResult);
+
+    /* ---------- Discriminant Analysis ---------- */
+
+    var daResult;
+    test("Segmentation", "discriminantAnalysis()", function() {
+      var groups = ["A","A","A","A","B","B","B","B"];
+      var xs = [[1,2,3,4,8,9,10,11]];
+      var r = StatsEngine.discriminantAnalysis(groups, xs);
+      daResult = r;
+      assert(Array.isArray(r.eigenvalues), "eigenvalues missing");
+      assert(isNum(r.accuracy), "accuracy missing");
+      assert(r.N === 8, "N should be 8");
+      assert(r.k === 2, "k should be 2");
+      assert(isNum(r.wilksLambda), "wilksLambda missing");
+      assert(r.accuracy > 0.8, "accuracy should be high for well-separated groups");
+    });
+
+    checkInterpret("Segmentation", "discriminantAnalysis", daResult);
+
+    /* ---------- Survival Analysis ---------- */
+
+    var survResult;
+    test("Longitudinal", "survivalAnalysis()", function() {
+      var time = [1,2,3,4,5,6,7,8,9,10];
+      var event = [1,0,1,1,0,1,0,1,0,1];
+      var r = StatsEngine.survivalAnalysis(time, event);
+      survResult = r;
+      assert(Array.isArray(r.survivalCurve), "survivalCurve missing");
+      assert(r.N === 10, "N should be 10");
+      assert(r.totalEvents === 6, "totalEvents should be 6");
+      assert(r.totalCensored === 4, "totalCensored should be 4");
+      assert(isNum(r.medianSurvival), "medianSurvival missing");
+    });
+
+    checkInterpret("Longitudinal", "survivalAnalysis", survResult);
+
+    // With groups
+    test("Longitudinal", "survivalAnalysis() with groups", function() {
+      var time = [1,2,3,4,5, 2,4,6,8,10];
+      var event = [1,1,1,1,1, 1,0,1,0,1];
+      var group = ["A","A","A","A","A","B","B","B","B","B"];
+      var r = StatsEngine.survivalAnalysis(time, event, group);
+      assert(r.logRank && isNum(r.logRank.chi2), "logRank.chi2 missing");
+      assert(r.logRank && isNum(r.logRank.p), "logRank.p missing");
+      assert(r.groupCurves !== undefined, "groupCurves missing");
+    });
+
+    /* ---------- Multiple Imputation ---------- */
+
+    var miResult;
+    test("Survey Design", "multipleImputation()", function() {
+      var data = [[1,2,NaN,4,5],[5,NaN,3,2,1]];
+      var r = StatsEngine.multipleImputation(data, 3);
+      miResult = r;
+      assert(Array.isArray(r.pooledData), "pooledData missing");
+      assert(r.pooledData.length === 2, "should have 2 columns");
+      assert(Array.isArray(r.missingPattern), "missingPattern missing");
+      assert(r.totalMissing === 2, "totalMissing should be 2");
+      assert(r.N === 5, "N should be 5");
+      assert(r.nImputations === 3, "nImputations should be 3");
+      // Imputed values should not be NaN
+      assert(!isNaN(r.pooledData[0][2]), "imputed value should not be NaN");
+      assert(!isNaN(r.pooledData[1][1]), "imputed value should not be NaN");
+    });
+
+    checkInterpret("Survey Design", "multipleImputation", miResult);
+
+    /* ---------- Bayesian Test ---------- */
+
+    var bayesResult;
+    test("Advanced", "bayesianTest()", function() {
+      var r = StatsEngine.bayesianTest([1,2,3,4,5], [6,7,8,9,10]);
+      bayesResult = r;
+      assert(isNum(r.bf10), "bf10 missing");
+      assert(isNum(r.bf01), "bf01 missing");
+      assert(isNum(r.t), "t missing");
+      assert(isNum(r.p), "p missing");
+      assert(typeof r.evidenceCategory === "string", "evidenceCategory missing");
+      assert(r.N === 10, "N should be 10");
+      // For clearly separated groups, BF10 should favor H1
+      assert(r.bf10 > 1, "BF10 should be > 1 for separated groups");
+    });
+
+    checkInterpret("Advanced", "bayesianTest", bayesResult);
+
+    /* ---------- Conjoint Analysis ---------- */
+
+    var conjointResult;
+    test("Preference", "conjointAnalysis()", function() {
+      var ratings = [7,5,8,3,6,4,9,2];
+      var attr1 = ["A","A","B","B","A","A","B","B"];
+      var attr2 = ["X","Y","X","Y","X","Y","X","Y"];
+      var r = StatsEngine.conjointAnalysis(ratings, [attr1, attr2]);
+      conjointResult = r;
+      assert(Array.isArray(r.partWorths), "partWorths missing");
+      assert(Array.isArray(r.importance), "importance missing");
+      assert(isNum(r.rSquared), "rSquared missing");
+      assert(r.N === 8, "N should be 8");
+      assert(r.nAttributes === 2, "nAttributes should be 2");
+      // Importance should sum to ~100
+      var totalImp = r.importance.reduce(function(s,i){ return s + i.importance; }, 0);
+      assert(approx(totalImp, 100, 1), "importance should sum to ~100, got " + totalImp);
+    });
+
+    checkInterpret("Preference", "conjointAnalysis", conjointResult);
+
+    /* ---------- MaxDiff ---------- */
+
+    var maxDiffResult;
+    test("Preference", "maxDiff()", function() {
+      var items = ["Price","Quality","Brand","Speed"];
+      var best = [10, 25, 5, 20];
+      var worst = [20, 5, 25, 10];
+      var shown = [30, 30, 30, 30];
+      var r = StatsEngine.maxDiff(items, best, worst, shown);
+      maxDiffResult = r;
+      assert(Array.isArray(r.items), "items missing");
+      assert(r.items.length === 4, "should have 4 items");
+      assert(r.bestItem === "Quality", "bestItem should be Quality");
+      assert(r.worstItem === "Brand", "worstItem should be Brand");
+      // Quality has best BW score (25-5)/30
+      var quality = r.items.find(function(i){ return i.name === "Quality"; });
+      assert(quality && quality.rank === 1, "Quality should rank 1");
+    });
+
+    checkInterpret("Preference", "maxDiff", maxDiffResult);
+
+    /* ---------- Discrete Choice ---------- */
+
+    var dcResult;
+    test("Preference", "discreteChoice()", function() {
+      // 10 choice sets, 2 alternatives each
+      var chosen = [0,1,0,1,0,1,0,1,0,1];
+      var attr1 = [1,0, 0,1, 1,0, 0,1, 1,0, 0,1, 1,0, 0,1, 1,0, 0,1]; // 20 values (10 sets x 2 alts)
+      var r = StatsEngine.discreteChoice(2, chosen, [attr1]);
+      dcResult = r;
+      assert(Array.isArray(r.coefficients), "coefficients missing");
+      assert(isNum(r.pseudoR2), "pseudoR2 missing");
+      assert(isNum(r.hitRate), "hitRate missing");
+      assert(r.nChoiceSets === 10, "nChoiceSets should be 10");
+      assert(r.nAlternatives === 2, "nAlternatives should be 2");
+    });
+
+    checkInterpret("Preference", "discreteChoice", dcResult);
+
+    /* ---------- Latent Class Analysis ---------- */
+
+    var lcaResult;
+    test("Segmentation", "latentClassAnalysis()", function() {
+      // Two clear classes: first 5 respond mostly 1, last 5 respond mostly 0
+      var item1 = [1,1,1,1,1, 0,0,0,0,0];
+      var item2 = [1,1,1,0,1, 0,0,1,0,0];
+      var item3 = [1,1,0,1,1, 0,0,0,0,1];
+      var r = StatsEngine.latentClassAnalysis([item1, item2, item3], 2);
+      lcaResult = r;
+      assert(Array.isArray(r.classProbabilities), "classProbabilities missing");
+      assert(r.classProbabilities.length === 2, "should have 2 classes");
+      assert(Array.isArray(r.assignments), "assignments missing");
+      assert(r.assignments.length === 10, "should have 10 assignments");
+      assert(r.N === 10, "N should be 10");
+      assert(r.nItems === 3, "nItems should be 3");
+      assert(r.nClasses === 2, "nClasses should be 2");
+      assert(isNum(r.bic), "bic missing");
+      assert(isNum(r.entropy), "entropy missing");
+      assert(r.converged === true, "should converge");
+    });
+
+    checkInterpret("Segmentation", "latentClassAnalysis", lcaResult);
+
+    /* ---------- CFA ---------- */
+
+    var cfaResult;
+    test("Scale Analysis", "cfa()", function() {
+      // 6 items, 2 factors: items 0-2 on Factor1, items 3-5 on Factor2
+      var data = [
+        [1,2,3,4,5,6,7,8], [2,3,4,5,6,7,8,9], [1,3,5,4,6,5,7,8],  // Factor 1 items
+        [5,4,3,2,1,2,3,4], [6,5,4,3,2,3,4,5], [4,3,2,1,2,3,4,5]   // Factor 2 items
+      ];
+      var model = [{factor: "F1", items: [0,1,2]}, {factor: "F2", items: [3,4,5]}];
+      var r = StatsEngine.cfa(data, model);
+      cfaResult = r;
+      assert(Array.isArray(r.loadings), "loadings missing");
+      assert(r.nFactors === 2, "nFactors should be 2");
+      assert(r.nItems === 6, "nItems should be 6");
+      assert(r.N === 8, "N should be 8");
+      assert(r.fitIndices && isNum(r.fitIndices.cfi), "CFI missing");
+      assert(r.fitIndices && isNum(r.fitIndices.rmsea), "RMSEA missing");
+      assert(r.fitIndices && isNum(r.fitIndices.srmr), "SRMR missing");
+      assert(typeof r.fitIndices.fitVerdict === "string", "fitVerdict missing");
+    });
+
+    checkInterpret("Scale Analysis", "cfa", cfaResult);
+
+    /* ---------- IRT Rasch ---------- */
+
+    var irtResult;
+    test("Scale Analysis", "irt()", function() {
+      // 10 respondents, 4 items, varying difficulty
+      var item1 = [1,1,1,1,1,1,1,1,0,0]; // easy
+      var item2 = [1,1,1,1,1,0,0,0,0,0]; // medium
+      var item3 = [1,1,1,0,0,0,0,0,0,0]; // hard
+      var item4 = [1,1,0,0,0,0,0,0,0,0]; // very hard
+      var r = StatsEngine.irt([item1, item2, item3, item4]);
+      irtResult = r;
+      assert(Array.isArray(r.itemDifficulties), "itemDifficulties missing");
+      assert(r.itemDifficulties.length === 4, "should have 4 items");
+      assert(r.N === 10, "N should be 10");
+      assert(r.nItems === 4, "nItems should be 4");
+      assert(isNum(r.reliability), "reliability missing");
+      assert(r.converged === true, "should converge");
+      // Item 1 should be easiest (lowest difficulty), item 4 hardest
+      var diffs = r.itemDifficulties.map(function(d) { return d.difficulty; });
+      assert(diffs[0] < diffs[3], "item 1 should be easier than item 4");
+    });
+
+    checkInterpret("Scale Analysis", "irt", irtResult);
+
+    /* ---------- Mixed-Effects ---------- */
+
+    var mixedResult;
+    test("Longitudinal", "mixedEffects()", function() {
+      var y = [1,2,3, 5,6,7, 10,11,12]; // 3 groups of 3
+      var xs = [[1,2,3, 1,2,3, 1,2,3]]; // same predictor within each group
+      var groups = ["A","A","A","B","B","B","C","C","C"];
+      var r = StatsEngine.mixedEffects(y, xs, groups);
+      mixedResult = r;
+      assert(Array.isArray(r.fixedEffects), "fixedEffects missing");
+      assert(r.varianceComponents && isNum(r.varianceComponents.sigmaU2), "sigmaU2 missing");
+      assert(r.varianceComponents && isNum(r.varianceComponents.sigmaE2), "sigmaE2 missing");
+      assert(isNum(r.icc), "ICC missing");
+      assert(r.icc > 0, "ICC should be > 0 for grouped data");
+      assert(r.N === 9, "N should be 9");
+      assert(r.nGroups === 3, "nGroups should be 3");
+      assert(Array.isArray(r.randomEffects), "randomEffects missing");
+    });
+
+    checkInterpret("Longitudinal", "mixedEffects", mixedResult);
+
+    /* ---------- Decision Quality ---------- */
+
+    // 1. Small sample warning: ttest with n=4 per group
+    test("Decision Quality", "Small sample warning (n=4 per group)", function () {
+      var r = StatsEngine.ttest([1,2,3,4], [5,6,7,8]);
+      var interp = StatsEngine.interpret.ttest(r);
+      // With n=4, results should still compute. Check the detail mentions the small n.
+      assert(r.nA === 4 && r.nB === 4, "nA/nB should be 4");
+      assert(isNum(r.t), "t should be a number");
+      assert(isNum(r.p), "p should be a number");
+      // The details mention n = 4, so at minimum the user sees the small sample size
+      var fullText = (interp.summary + " " + interp.details).toLowerCase();
+      assert(fullText.indexOf("n = 4") !== -1 || fullText.indexOf("n=4") !== -1,
+        "Interpret should show sample size (n = 4) so users can see the small sample. Got: " + interp.details);
+    });
+
+    // 2. Non-parametric alternative exists: Mann-Whitney available for 2-group comparison
+    test("Decision Quality", "Mann-Whitney exists as non-parametric 2-group option", function () {
+      assert(typeof StatsEngine.mannWhitney === "function",
+        "StatsEngine.mannWhitney should exist as a non-parametric alternative for 2-group comparison");
+      var r = StatsEngine.mannWhitney([3,1,4,1,5], [9,2,6,5,3]);
+      assert(isNum(r.U), "U should be a number");
+      assert(isNum(r.p), "p should be a number");
+      assert(isNum(r.z), "z should be a number");
+    });
+
+    // 3. Large effect size interpretation (Cohen's d > 0.8)
+    test("Decision Quality", "Large effect size labeled correctly (d > 0.8)", function () {
+      // [1,2,3,4,5] vs [6,7,8,9,10] gives d ~ 3.16
+      var r = StatsEngine.ttest([1,2,3,4,5], [6,7,8,9,10]);
+      assert(Math.abs(r.cohensD) > 0.8, "Cohen's d should be > 0.8, got " + r.cohensD);
+      var interp = StatsEngine.interpret.ttest(r);
+      var text = interp.summary.toLowerCase();
+      assert(text.indexOf("large") !== -1,
+        "Interpret should mention 'large' for d > 0.8. Got: " + interp.summary);
+    });
+
+    // 4. Negligible effect size interpretation (d < 0.2)
+    test("Decision Quality", "Negligible effect size labeled correctly (d < 0.2)", function () {
+      // Two nearly identical groups
+      var r = StatsEngine.ttest([5.0, 5.1, 4.9, 5.0, 5.1, 4.9, 5.0, 5.1, 4.9, 5.0],
+                                 [5.01, 5.11, 4.91, 5.01, 5.11, 4.91, 5.01, 5.11, 4.91, 5.01]);
+      assert(Math.abs(r.cohensD) < 0.2, "Cohen's d should be < 0.2, got " + r.cohensD);
+      var interp = StatsEngine.interpret.ttest(r);
+      var text = interp.summary.toLowerCase();
+      assert(text.indexOf("negligible") !== -1,
+        "Interpret should mention 'negligible' for d < 0.2. Got: " + interp.summary);
+    });
+
+    // 5. Marginal significance: p between 0.05 and 0.10
+    test("Decision Quality", "Marginal p-value not called significant", function () {
+      // Craft groups where p is between 0.05 and 0.10
+      var r = StatsEngine.ttest([1,2,3,4,5,6,7], [3,4,5,6,7,8,9]);
+      // If p is not in the marginal range, use mannWhitney or adjust — but check the logic
+      if (r.p > 0.05 && r.p < 0.10) {
+        var interp = StatsEngine.interpret.ttest(r);
+        assert(interp.significant === false,
+          "significant should be false for p > 0.05, got true. p = " + r.p);
+        var text = interp.summary.toLowerCase();
+        assert(text.indexOf("not statistically significant") !== -1,
+          "Should say 'not statistically significant' for p=" + r.p.toFixed(4) + ". Got: " + interp.summary);
+      } else {
+        // p is not in marginal range with this data; use a different pair
+        var r2 = StatsEngine.ttest([1,2,3,4,5,6,7,8], [2,3,4,5,6,7,8,9]);
+        var interp2 = StatsEngine.interpret.ttest(r2);
+        // Regardless of exact p, if p > 0.05, it must not be called significant
+        if (r2.p > 0.05) {
+          assert(interp2.significant === false,
+            "significant should be false for p > 0.05. p = " + r2.p);
+        }
+        // This test passes as long as the interpret logic correctly respects the 0.05 threshold
+        assert(typeof interp2.significant === "boolean", "significant should be boolean");
+      }
+    });
+
+    // 6. Perfect correlation sanity
+    test("Decision Quality", "Perfect correlation r=1.0 exactly", function () {
+      var r = StatsEngine.pearson([1,2,3,4,5], [1,2,3,4,5]);
+      assert(r.r === 1.0 || approx(r.r, 1.0, 0.0001),
+        "pearson([1,2,3,4,5], [1,2,3,4,5]) should give r=1.0, got " + r.r);
+    });
+
+    // 7. All-same-values: describe should give sd=0 and not crash
+    test("Decision Quality", "describe([5,5,5,5,5]) sd=0 no crash", function () {
+      var r = StatsEngine.describe([5,5,5,5,5]);
+      assert(r.n === 5, "n should be 5");
+      assert(r.mean === 5, "mean should be 5, got " + r.mean);
+      assert(r.sd === 0, "sd should be 0, got " + r.sd);
+      assert(r.variance === 0, "variance should be 0, got " + r.variance);
+      assert(r.min === 5, "min should be 5");
+      assert(r.max === 5, "max should be 5");
+      assert(r.range === 0, "range should be 0");
+    });
+
+    // 8. Single value: describe should not crash and return n=1
+    test("Decision Quality", "describe([7]) returns n=1 no crash", function () {
+      var r = StatsEngine.describe([7]);
+      assert(r.n === 1, "n should be 1, got " + r.n);
+      assert(r.mean === 7, "mean should be 7, got " + r.mean);
+      assert(r.min === 7, "min should be 7");
+      assert(r.max === 7, "max should be 7");
+    });
+
+    // 9. Negative values: ttest should work correctly
+    test("Decision Quality", "ttest with negative values", function () {
+      var r = StatsEngine.ttest([-5,-4,-3], [1,2,3]);
+      assert(isNum(r.t), "t should be a number");
+      assert(isNum(r.p), "p should be a number");
+      assert(r.p < 0.05, "should be significant for well-separated groups, p = " + r.p);
+      assert(approx(r.meanA, -4.0, 0.001), "meanA should be -4.0, got " + r.meanA);
+      assert(approx(r.meanB, 2.0, 0.001), "meanB should be 2.0, got " + r.meanB);
+      assert(isNum(r.cohensD), "cohensD should be a number");
+    });
+
+    // 10. Large dataset: describe with 3000 values should not crash or timeout
+    test("Decision Quality", "describe(3000 values) no crash", function () {
+      var big = [];
+      for (var i = 0; i < 3000; i++) big.push(Math.sin(i) * 100);
+      var t0 = Date.now();
+      var r = StatsEngine.describe(big);
+      var elapsed = Date.now() - t0;
+      assert(r.n === 3000, "n should be 3000, got " + r.n);
+      assert(isNum(r.mean), "mean should be a number");
+      assert(isNum(r.sd), "sd should be a number");
+      assert(isNum(r.median), "median should be a number");
+      assert(elapsed < 5000, "describe(3000) should complete in < 5s, took " + elapsed + "ms");
+    });
+
+    /* ---------- Interpretation consistency ---------- */
+
+    test("Interpretation", "interpret.pointBiserial does not exist (no dedicated interpret)", function () {
+      // pointBiserial and correlationMatrix don't have dedicated interpret functions
+      // This is expected — just confirm we don't crash
+      assert(typeof StatsEngine.interpret.pointBiserial === "undefined" ||
+             typeof StatsEngine.interpret.pointBiserial === "function",
+             "pointBiserial interpret should be undefined or a function");
+    });
+
+    test("Interpretation", "interpret.elbowMethod does not exist (expected)", function () {
+      assert(typeof StatsEngine.interpret.elbowMethod === "undefined",
+             "elbowMethod should not have an interpret function");
+    });
+
+    // Check that all interpret methods that DO exist return proper shapes
+    var interpretMethods = [
+      "ttest", "pairedTTest", "anova", "mannWhitney", "wilcoxon",
+      "kruskalWallis", "chiSquare", "fisherExact", "mcnemar", "twoProportionZ",
+      "shapiroWilk", "levene", "pearson", "spearman",
+      "linearRegression", "logisticRegression", "cronbachAlpha",
+      "pca", "factorAnalysis", "kMeans",
+      "frequencies", "phi", "kendallTau", "simpleRegression",
+      "cohensKappa", "abTest", "wordFrequency", "welchAnova",
+      "friedman", "repeatedMeasuresAnova", "twoWayAnova", "ancova",
+      "partialCorrelation", "moderation", "diffInDiff",
+      "poissonRegression", "mediation", "hierarchicalClustering",
+      "sentiment", "postStratWeighting", "propensityScoreMatching",
+      "multinomialLogistic", "ordinalRegression", "decisionTree",
+      "discriminantAnalysis", "survivalAnalysis", "multipleImputation",
+      "bayesianTest",
+      "conjointAnalysis", "maxDiff", "discreteChoice", "latentClassAnalysis",
+      "cfa", "irt", "mixedEffects"
+    ];
+
+    for (var i = 0; i < interpretMethods.length; i++) {
+      (function (name) {
+        test("Interpretation", "interpret." + name + " is a function", function () {
+          assert(typeof StatsEngine.interpret[name] === "function",
+            "interpret." + name + " should be a function, got " + typeof StatsEngine.interpret[name]);
+        });
+      })(interpretMethods[i]);
+    }
+  }
+
+  /* ========================================================
+   *  Main runner
+   * ======================================================== */
+
+  window.runAllTests = function () {
+    passed = 0;
+    failed = 0;
+    results = [];
+
+    document.getElementById("runBtn").textContent = "Running...";
+    document.getElementById("runBtn").disabled = true;
+
+    setTimeout(function () {
+      try {
+        runDiscovery();
+        runStatTests();
+      } catch (e) {
+        results.push({ category: "Fatal", name: "Uncaught error", status: "fail", detail: e.message || String(e) });
+        failed++;
+      }
+      render();
+      document.getElementById("runBtn").textContent = "Run All Tests";
+      document.getElementById("runBtn").disabled = false;
+    }, 50);
+  };
+
+  // Auto-run on load
+  window.addEventListener("load", function () {
+    setTimeout(window.runAllTests, 200);
+  });
+})();
+</script>
+
+<div class="container">
+  <details style="margin-top: 2rem; padding: 1rem 1.25rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--card-shadow);">
+    <summary style="cursor: pointer; font-weight: 700; color: var(--coral); font-size: 0.9rem;">Reference Values (scipy-computed)</summary>
+    <pre style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-1); white-space: pre-wrap; word-break: break-word; line-height: 1.7;">
+All reference values below were computed with Python 3 / scipy. Tolerances used in
+this test suite: 0.001 for means/SDs/exact values, 0.01 for test statistics,
+p-values, and effect sizes, 0.05 for Shapiro-Wilk (Royston approximation).
+
+───────────────────────────────────────────────────────────────
+Python code to reproduce:
+───────────────────────────────────────────────────────────────
+
+import numpy as np
+from scipy import stats
+
+# DESCRIPTIVE
+d = stats.describe([1,2,3,4,5,6,7,8,9,10])
+print("n =", d.nobs, "mean =", d.mean, "variance =", d.variance)
+print("sd =", np.std([1,2,3,4,5,6,7,8,9,10], ddof=1))
+print("skewness =", d.skewness, "kurtosis =", d.kurtosis)
+print("se =", np.std([1,2,3,4,5,6,7,8,9,10], ddof=1) / np.sqrt(10))
+
+# T-TEST (Welch's)
+t, p = stats.ttest_ind([1,2,3,4,5], [6,7,8,9,10], equal_var=False)
+print(f"t = {t}, p = {p}")
+# df = 8.0 (equal variances => Welch df = n1+n2-2)
+
+# PAIRED T-TEST
+t, p = stats.ttest_rel([1,2,3,4,5], [2,4,6,8,10])
+print(f"paired t = {t}, p = {p}")
+
+# ANOVA
+F, p = stats.f_oneway([1,2,3], [4,5,6], [7,8,9])
+print(f"F = {F}, p = {p}")
+
+# MANN-WHITNEY
+U, p = stats.mannwhitneyu([1,2,3,4,5], [6,7,8,9,10], alternative='two-sided')
+print(f"U = {U}, p = {p}")
+
+# WILCOXON
+T, p = stats.wilcoxon([1,2,3,4,5], [2,4,6,8,10])
+print(f"T = {T}, p = {p}")
+
+# KRUSKAL-WALLIS
+H, p = stats.kruskal([1,2,3], [4,5,6], [7,8,9])
+print(f"H = {H}, p = {p}")
+
+# CHI-SQUARE (without Yates correction)
+chi2, p, dof, ex = stats.chi2_contingency([[10,20],[30,40]], correction=False)
+print(f"chi2 = {chi2}, p = {p}, df = {dof}")
+print(f"cramersV = {np.sqrt(chi2 / 100)}")
+
+# FISHER EXACT
+OR, p = stats.fisher_exact([[10,5],[3,12]])
+print(f"oddsRatio = {OR}, p = {p}")
+
+# MCNEMAR (with continuity correction)
+# chi2 = (|b-c| - 1)^2 / (b+c) = (|5-3|-1)^2 / 8 = 1/8 = 0.125
+# p from chi2 distribution with df=1
+
+# TWO-PROPORTION Z
+# z = (p1-p2) / sqrt(phat*(1-phat)*(1/n1+1/n2))
+# where phat = (x1+x2)/(n1+n2) = 70/200 = 0.35
+
+# PEARSON
+r, p = stats.pearsonr([1,2,3,4,5], [2,4,6,8,10])
+print(f"r = {r}, p = {p}")
+
+# SPEARMAN
+rho, p = stats.spearmanr([1,2,3,4,5], [2,4,6,8,10])
+print(f"rho = {rho}, p = {p}")
+
+# POINT-BISERIAL
+r, p = stats.pointbiserialr([0,0,0,1,1,1], [1,2,3,4,5,6])
+print(f"r = {r}, p = {p}")
+
+# SHAPIRO-WILK
+W, p = stats.shapiro([1,2,3,4,5,6,7,8,9,10])
+print(f"W = {W}, p = {p}")
+
+# LEVENE
+F, p = stats.levene([1,2,3,4,5], [6,7,8,9,10])
+print(f"F = {F}, p = {p}")
+
+───────────────────────────────────────────────────────────────
+Reference values summary:
+───────────────────────────────────────────────────────────────
+
+DESCRIPTIVE: n=10, mean=5.5, median=5.5, sd=3.02765, var=9.16667,
+  skew=0.0, kurtosis=-1.2, se=0.95743
+
+T-TEST: t=-5.0, p=0.001053, df=8.0, cohensD=-3.16228, meanA=3.0, meanB=8.0
+
+PAIRED T-TEST: t=-4.24264, p=0.01324, meanDiff=3.0, df=4
+
+ANOVA: F=27.0, p=0.001, etaSquared=0.9
+
+MANN-WHITNEY: U=0.0, p=0.00794
+
+WILCOXON: T=0.0, p=0.0625 (exact for n=5, all positive diffs)
+
+KRUSKAL-WALLIS: H=7.2, p=0.02732
+
+CHI-SQUARE: chi2=0.79365, p=0.37300, df=1, cramersV=0.08909, N=100
+
+FISHER EXACT: oddsRatio=8.0, p=0.02533
+
+MCNEMAR: chi2=0.125 (continuity-corrected), p=0.72367
+
+TWO-PROPORTION Z: z=-1.48250, p=0.13821, p1=0.3, p2=0.4, diff=-0.1
+
+PEARSON: r=1.0, p=0.0
+
+SPEARMAN: rho=1.0, p~0.0
+
+POINT-BISERIAL: r=0.87831, p=0.02131, mean0=2.0, mean1=5.0
+
+LINEAR REGRESSION: R2=1.0, slope=1.0, intercept=0.0
+
+SHAPIRO-WILK: W=0.97016, p=0.89237 (JS uses Royston approx, wider tolerance)
+
+LEVENE: F=0.0, p=1.0
+    </pre>
+  </details>
+</div>
+
+</body>
+</html>

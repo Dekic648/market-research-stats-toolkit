@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How It Works — Market Research Statistics Toolkit</title>
+  <style>
+    /* ========================================
+       CSS Variables — Light / Dark
+       ======================================== */
+    :root {
+      --bg-0: #ffffff;
+      --bg-1: #f5f2f0;
+      --bg-2: #eeebe9;
+      --bg-card: rgba(255, 255, 255, 0.65);
+      --text-0: #1a1a18;
+      --text-1: #5f5a58;
+      --text-2: #887f7d;
+      --rose: #D4587A;
+      --rose-glow: rgba(212, 88, 122, 0.25);
+      --rose-soft: rgba(212, 88, 122, 0.08);
+      --coral: #E08860;
+      --coral-soft: rgba(224, 136, 96, 0.10);
+      --border: rgba(0, 0, 0, 0.06);
+      --border-hover: rgba(212, 88, 122, 0.35);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+      --card-shadow-hover: 0 8px 30px rgba(212, 88, 122, 0.18), 0 2px 8px rgba(0,0,0,0.06);
+      --dot-color: rgba(0, 0, 0, 0.04);
+      --mesh-a: rgba(212, 88, 122, 0.12);
+      --mesh-b: rgba(224, 136, 96, 0.10);
+      --mesh-c: rgba(212, 88, 122, 0.06);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-0: #1c1c1a;
+        --bg-1: #252523;
+        --bg-2: #2e2e2b;
+        --bg-card: rgba(37, 37, 35, 0.6);
+        --text-0: #f0ede8;
+        --text-1: #b4aba8;
+        --text-2: #887f7d;
+        --rose: #E8829E;
+        --rose-glow: rgba(232, 130, 158, 0.22);
+        --rose-soft: rgba(232, 130, 158, 0.10);
+        --coral: #F0A882;
+        --coral-soft: rgba(240, 168, 130, 0.10);
+        --border: rgba(255, 255, 255, 0.06);
+        --border-hover: rgba(232, 130, 158, 0.35);
+        --card-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
+        --card-shadow-hover: 0 8px 30px rgba(232, 130, 158, 0.15), 0 2px 8px rgba(0,0,0,0.3);
+        --dot-color: rgba(255, 255, 255, 0.03);
+        --mesh-a: rgba(232, 130, 158, 0.10);
+        --mesh-b: rgba(240, 168, 130, 0.08);
+        --mesh-c: rgba(232, 130, 158, 0.05);
+      }
+    }
+
+    /* Manual theme overrides */
+    :root.light {
+      --bg-0: #ffffff;
+      --bg-1: #f5f2f0;
+      --bg-2: #eeebe9;
+      --bg-card: rgba(255, 255, 255, 0.65);
+      --text-0: #1a1a18;
+      --text-1: #5f5a58;
+      --text-2: #887f7d;
+      --rose: #D4587A;
+      --rose-glow: rgba(212, 88, 122, 0.25);
+      --rose-soft: rgba(212, 88, 122, 0.08);
+      --coral: #E08860;
+      --coral-soft: rgba(224, 136, 96, 0.10);
+      --border: rgba(0, 0, 0, 0.06);
+      --border-hover: rgba(212, 88, 122, 0.35);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+      --card-shadow-hover: 0 8px 30px rgba(212, 88, 122, 0.18), 0 2px 8px rgba(0,0,0,0.06);
+      --dot-color: rgba(0, 0, 0, 0.04);
+      --mesh-a: rgba(212, 88, 122, 0.12);
+      --mesh-b: rgba(224, 136, 96, 0.10);
+      --mesh-c: rgba(212, 88, 122, 0.06);
+    }
+
+    :root.dark {
+      --bg-0: #1c1c1a;
+      --bg-1: #252523;
+      --bg-2: #2e2e2b;
+      --bg-card: rgba(37, 37, 35, 0.6);
+      --text-0: #f0ede8;
+      --text-1: #b4aba8;
+      --text-2: #887f7d;
+      --rose: #E8829E;
+      --rose-glow: rgba(232, 130, 158, 0.22);
+      --rose-soft: rgba(232, 130, 158, 0.10);
+      --coral: #F0A882;
+      --coral-soft: rgba(240, 168, 130, 0.10);
+      --border: rgba(255, 255, 255, 0.06);
+      --border-hover: rgba(232, 130, 158, 0.35);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
+      --card-shadow-hover: 0 8px 30px rgba(232, 130, 158, 0.15), 0 2px 8px rgba(0,0,0,0.3);
+      --dot-color: rgba(255, 255, 255, 0.03);
+      --mesh-a: rgba(232, 130, 158, 0.10);
+      --mesh-b: rgba(240, 168, 130, 0.08);
+      --mesh-c: rgba(232, 130, 158, 0.05);
+    }
+
+    /* ========================================
+       Reset & Base
+       ======================================== */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-0);
+      color: var(--text-0);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ========================================
+       Dot Pattern Overlay
+       ======================================== */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(var(--dot-color) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ========================================
+       Shared Animations
+       ======================================== */
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes heroGlow {
+      0%   { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+      100% { opacity: 0.85; transform: translate(-50%, -50%) scale(1.12); }
+    }
+
+    /* ========================================
+       Selection color
+       ======================================== */
+    ::selection {
+      background: var(--rose-glow);
+      color: var(--text-0);
+    }
+
+    /* ========================================
+       Scrollbar
+       ======================================== */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ========================================
+       Top Bar
+       ======================================== */
+    .top-bar {
+      position: fixed;
+      top: 1.25rem;
+      right: 1.25rem;
+      z-index: 99;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: fadeSlideUp 0.6s ease 0.1s both;
+    }
+
+    .theme-toggle {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.05rem;
+      color: var(--text-1);
+      transition: border-color 0.3s, background 0.3s, transform 0.2s;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--border-hover);
+      background: var(--rose-soft);
+      transform: scale(1.08);
+    }
+
+    .github-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0.5rem 0.9rem;
+      border-radius: 10px;
+      height: 38px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      text-decoration: none;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-2);
+      transition: border-color 0.3s ease, color 0.3s ease;
+    }
+
+    .github-cta:hover {
+      border-color: var(--border-hover);
+      color: var(--rose);
+    }
+
+    .github-cta svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    /* ========================================
+       Breadcrumb Nav
+       ======================================== */
+    .breadcrumb {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 5rem 2rem 0;
+      position: relative;
+      z-index: 1;
+      animation: fadeSlideUp 0.6s ease 0.1s both;
+    }
+
+    .breadcrumb a {
+      font-size: 0.82rem;
+      color: var(--text-2);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .breadcrumb a:hover {
+      color: var(--rose);
+    }
+
+    .breadcrumb span {
+      font-size: 0.82rem;
+      color: var(--text-2);
+      margin: 0 6px;
+    }
+
+    .breadcrumb .current {
+      font-size: 0.82rem;
+      color: var(--text-1);
+      font-weight: 500;
+    }
+
+    /* ========================================
+       Hero
+       ======================================== */
+    .hero {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 3rem 2rem 2rem;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--rose-glow) 0%, transparent 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation: heroGlow 8s ease-in-out infinite alternate;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .hero > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1.08;
+      margin-bottom: 1rem;
+      color: var(--text-0);
+      animation: fadeSlideUp 0.8s ease 0.1s both;
+    }
+
+    .hero h1 .accent {
+      background: linear-gradient(135deg, var(--rose), var(--coral));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p.subtitle {
+      max-width: 560px;
+      font-size: 1.05rem;
+      color: var(--text-1);
+      line-height: 1.7;
+      animation: fadeSlideUp 0.8s ease 0.2s both;
+    }
+
+    /* ========================================
+       Section Layout
+       ======================================== */
+    .section {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 0 2rem 3rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--rose);
+      margin-bottom: 2rem;
+    }
+
+    /* ========================================
+       Story Intro Card
+       ======================================== */
+    .story-intro {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem 2.25rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--card-shadow);
+      margin-bottom: 2.5rem;
+      opacity: 0;
+      animation: fadeSlideUp 0.6s ease 0.3s both;
+    }
+
+    .story-intro p {
+      font-size: 1rem;
+      color: var(--text-1);
+      line-height: 1.75;
+    }
+
+    .story-intro p strong {
+      color: var(--text-0);
+    }
+
+    /* ========================================
+       Chapter Cards
+       ======================================== */
+    .chapters {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .chapter-card {
+      position: relative;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--card-shadow);
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-start;
+      transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1),
+                  box-shadow 0.35s cubic-bezier(0.23, 1, 0.32, 1),
+                  border-color 0.3s ease;
+      opacity: 0;
+      animation: fadeSlideUp 0.6s ease both;
+    }
+
+    .chapter-card:nth-child(1) { animation-delay: 0.3s; }
+    .chapter-card:nth-child(2) { animation-delay: 0.4s; }
+    .chapter-card:nth-child(3) { animation-delay: 0.5s; }
+    .chapter-card:nth-child(4) { animation-delay: 0.6s; }
+    .chapter-card:nth-child(5) { animation-delay: 0.7s; }
+    .chapter-card:nth-child(6) { animation-delay: 0.8s; }
+    .chapter-card:nth-child(7) { animation-delay: 0.9s; }
+
+    .chapter-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--card-shadow-hover);
+      border-color: var(--border-hover);
+    }
+
+    .chapter-number {
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      border-radius: 50%;
+      background: var(--rose-soft);
+      color: var(--rose);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .chapter-content h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-0);
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, var(--rose), var(--coral));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .chapter-content .story-text {
+      font-size: 0.92rem;
+      color: var(--text-1);
+      line-height: 1.65;
+      margin-bottom: 1rem;
+    }
+
+    /* Method tags */
+    .method-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 0.85rem;
+    }
+
+    .method-tags-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-2);
+      width: 100%;
+      margin-bottom: 2px;
+    }
+
+    .method-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.76rem;
+      font-weight: 500;
+      background: var(--rose-soft);
+      color: var(--rose);
+      border: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    .method-tag:hover {
+      border-color: var(--rose);
+    }
+
+    /* Decision guide */
+    .decision-guide {
+      background: var(--bg-1);
+      border-radius: 10px;
+      padding: 0.85rem 1.1rem;
+      margin-top: 0.25rem;
+    }
+
+    .decision-guide-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--coral);
+      margin-bottom: 4px;
+    }
+
+    .decision-guide p {
+      font-size: 0.84rem;
+      color: var(--text-1);
+      line-height: 1.55;
+    }
+
+    .decision-guide code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.78rem;
+      background: var(--rose-soft);
+      color: var(--rose);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    /* ========================================
+       Flowchart
+       ======================================== */
+    .flowchart-section {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 0 2rem 3rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .flowchart {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem 2.25rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--card-shadow);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.8rem;
+      line-height: 1.85;
+      color: var(--text-1);
+      overflow-x: auto;
+      opacity: 0;
+      animation: fadeSlideUp 0.6s ease 0.4s both;
+    }
+
+    .flowchart .q {
+      color: var(--rose);
+      font-weight: 700;
+    }
+
+    .flowchart .arrow {
+      color: var(--coral);
+      font-weight: 600;
+    }
+
+    .flowchart .method {
+      color: var(--text-0);
+      font-weight: 600;
+    }
+
+    .flowchart .indent {
+      padding-left: 1.5rem;
+    }
+
+    .flowchart .indent-2 {
+      padding-left: 3rem;
+    }
+
+    .flowchart .indent-3 {
+      padding-left: 4.5rem;
+    }
+
+    /* ========================================
+       FAQ
+       ======================================== */
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .faq-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem 1.75rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--card-shadow);
+      opacity: 0;
+      animation: fadeSlideUp 0.6s ease both;
+    }
+
+    .faq-item:nth-child(1) { animation-delay: 0.3s; }
+    .faq-item:nth-child(2) { animation-delay: 0.38s; }
+    .faq-item:nth-child(3) { animation-delay: 0.46s; }
+    .faq-item:nth-child(4) { animation-delay: 0.54s; }
+    .faq-item:nth-child(5) { animation-delay: 0.62s; }
+    .faq-item:nth-child(6) { animation-delay: 0.70s; }
+    .faq-item:nth-child(7) { animation-delay: 0.78s; }
+    .faq-item:nth-child(8) { animation-delay: 0.86s; }
+
+    .faq-item h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-0);
+      margin-bottom: 0.4rem;
+    }
+
+    .faq-item p {
+      font-size: 0.9rem;
+      color: var(--text-1);
+      line-height: 1.6;
+    }
+
+    /* ========================================
+       CTA Section
+       ======================================== */
+    .cta-section {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 0 2rem 4rem;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+      animation: fadeSlideUp 0.8s ease 0.6s both;
+    }
+
+    .cta-inner {
+      border-top: 1px solid var(--border);
+      padding-top: 3rem;
+    }
+
+    .cta-inner h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.6rem;
+      color: var(--text-0);
+    }
+
+    .cta-inner p {
+      font-size: 0.95rem;
+      color: var(--text-1);
+      max-width: 480px;
+      margin: 0 auto 1.5rem;
+      line-height: 1.6;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.75rem 2rem;
+      border-radius: 12px;
+      background: var(--rose-soft);
+      border: 1px solid var(--rose);
+      color: var(--rose);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    }
+
+    .cta-btn:hover {
+      background: var(--rose);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px var(--rose-glow);
+    }
+
+    .cta-btn .arrow {
+      transition: transform 0.25s ease;
+    }
+
+    .cta-btn:hover .arrow {
+      transform: translateX(3px);
+    }
+
+    /* ========================================
+       Mole (subtle, bottom-right of CTA)
+       ======================================== */
+    .mole-wrap {
+      position: relative;
+      margin: 2rem auto 0;
+      width: fit-content;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .mole-pixel {
+      width: 6px;
+      height: 6px;
+      background: transparent;
+      position: relative;
+      bottom: 8px;
+      animation: moleBlink 1s step-end infinite;
+      box-shadow:
+        /* Hair */
+        6px -12px 0 #8B2040, 12px -12px 0 #8B2040, 18px -12px 0 #8B2040, 24px -12px 0 #8B2040, 30px -12px 0 #8B2040, 36px -12px 0 #8B2040,
+        0px -6px 0 #8B2040, 6px -6px 0 #8B2040, 12px -6px 0 #8B2040, 30px -6px 0 #8B2040, 36px -6px 0 #8B2040, 42px -6px 0 #8B2040,
+        /* R0 */
+        12px 0 0 var(--rose), 18px 0 0 var(--rose), 24px 0 0 var(--rose), 30px 0 0 var(--rose),
+        /* Hair strands */
+        -6px -6px 0 #8B2040, -6px 0px 0 #8B2040, -6px 6px 0 #8B2040,
+        48px -6px 0 #8B2040, 48px 0px 0 #8B2040, 48px 6px 0 #8B2040,
+        /* R1 */
+        6px 6px 0 var(--rose), 12px 6px 0 var(--rose), 18px 6px 0 var(--rose), 24px 6px 0 var(--rose), 30px 6px 0 var(--rose), 36px 6px 0 var(--rose),
+        /* R2 — eyes open */
+        0px 12px 0 var(--rose), 6px 12px 0 var(--rose), 12px 12px 0 #fff, 18px 12px 0 var(--rose), 24px 12px 0 var(--rose), 30px 12px 0 #fff, 36px 12px 0 var(--rose), 42px 12px 0 var(--rose),
+        /* R3 */
+        0px 18px 0 var(--rose), 6px 18px 0 var(--rose), 12px 18px 0 var(--rose), 18px 18px 0 var(--rose), 24px 18px 0 var(--rose), 30px 18px 0 var(--rose), 36px 18px 0 var(--rose), 42px 18px 0 var(--rose),
+        /* R4 — nose */
+        6px 24px 0 var(--rose), 12px 24px 0 var(--rose), 18px 24px 0 #d4845a, 24px 24px 0 #d4845a, 30px 24px 0 var(--rose), 36px 24px 0 var(--rose),
+        /* R5 — chin */
+        12px 30px 0 var(--rose), 18px 30px 0 var(--rose), 24px 30px 0 var(--rose), 30px 30px 0 var(--rose),
+        /* R6 — paws */
+        6px 36px 0 var(--rose), 12px 36px 0 var(--rose), 18px 36px 0 var(--rose), 24px 36px 0 var(--rose), 30px 36px 0 var(--rose), 36px 36px 0 var(--rose);
+    }
+
+    @keyframes moleBlink {
+      0%, 90%, 100% {
+        box-shadow:
+          6px -12px 0 #8B2040, 12px -12px 0 #8B2040, 18px -12px 0 #8B2040, 24px -12px 0 #8B2040, 30px -12px 0 #8B2040, 36px -12px 0 #8B2040,
+          0px -6px 0 #8B2040, 6px -6px 0 #8B2040, 12px -6px 0 #8B2040, 30px -6px 0 #8B2040, 36px -6px 0 #8B2040, 42px -6px 0 #8B2040,
+          12px 0 0 var(--rose), 18px 0 0 var(--rose), 24px 0 0 var(--rose), 30px 0 0 var(--rose),
+          -6px -6px 0 #8B2040, -6px 0px 0 #8B2040, -6px 6px 0 #8B2040,
+          48px -6px 0 #8B2040, 48px 0px 0 #8B2040, 48px 6px 0 #8B2040,
+          6px 6px 0 var(--rose), 12px 6px 0 var(--rose), 18px 6px 0 var(--rose), 24px 6px 0 var(--rose), 30px 6px 0 var(--rose), 36px 6px 0 var(--rose),
+          0px 12px 0 var(--rose), 6px 12px 0 var(--rose), 12px 12px 0 #fff, 18px 12px 0 var(--rose), 24px 12px 0 var(--rose), 30px 12px 0 #fff, 36px 12px 0 var(--rose), 42px 12px 0 var(--rose),
+          0px 18px 0 var(--rose), 6px 18px 0 var(--rose), 12px 18px 0 var(--rose), 18px 18px 0 var(--rose), 24px 18px 0 var(--rose), 30px 18px 0 var(--rose), 36px 18px 0 var(--rose), 42px 18px 0 var(--rose),
+          6px 24px 0 var(--rose), 12px 24px 0 var(--rose), 18px 24px 0 #d4845a, 24px 24px 0 #d4845a, 30px 24px 0 var(--rose), 36px 24px 0 var(--rose),
+          12px 30px 0 var(--rose), 18px 30px 0 var(--rose), 24px 30px 0 var(--rose), 30px 30px 0 var(--rose),
+          6px 36px 0 var(--rose), 12px 36px 0 var(--rose), 18px 36px 0 var(--rose), 24px 36px 0 var(--rose), 30px 36px 0 var(--rose), 36px 36px 0 var(--rose);
+      }
+      93%, 97% {
+        box-shadow:
+          6px -12px 0 #8B2040, 12px -12px 0 #8B2040, 18px -12px 0 #8B2040, 24px -12px 0 #8B2040, 30px -12px 0 #8B2040, 36px -12px 0 #8B2040,
+          0px -6px 0 #8B2040, 6px -6px 0 #8B2040, 12px -6px 0 #8B2040, 30px -6px 0 #8B2040, 36px -6px 0 #8B2040, 42px -6px 0 #8B2040,
+          12px 0 0 var(--rose), 18px 0 0 var(--rose), 24px 0 0 var(--rose), 30px 0 0 var(--rose),
+          -6px -6px 0 #8B2040, -6px 0px 0 #8B2040, -6px 6px 0 #8B2040,
+          48px -6px 0 #8B2040, 48px 0px 0 #8B2040, 48px 6px 0 #8B2040,
+          6px 6px 0 var(--rose), 12px 6px 0 var(--rose), 18px 6px 0 var(--rose), 24px 6px 0 var(--rose), 30px 6px 0 var(--rose), 36px 6px 0 var(--rose),
+          0px 12px 0 var(--rose), 6px 12px 0 var(--rose), 12px 12px 0 var(--rose), 18px 12px 0 var(--rose), 24px 12px 0 var(--rose), 30px 12px 0 var(--rose), 36px 12px 0 var(--rose), 42px 12px 0 var(--rose),
+          0px 18px 0 var(--rose), 6px 18px 0 var(--rose), 12px 18px 0 var(--rose), 18px 18px 0 var(--rose), 24px 18px 0 var(--rose), 30px 18px 0 var(--rose), 36px 18px 0 var(--rose), 42px 18px 0 var(--rose),
+          6px 24px 0 var(--rose), 12px 24px 0 var(--rose), 18px 24px 0 #d4845a, 24px 24px 0 #d4845a, 30px 24px 0 var(--rose), 36px 24px 0 var(--rose),
+          12px 30px 0 var(--rose), 18px 30px 0 var(--rose), 24px 30px 0 var(--rose), 30px 30px 0 var(--rose),
+          6px 36px 0 var(--rose), 12px 36px 0 var(--rose), 18px 36px 0 var(--rose), 24px 36px 0 var(--rose), 30px 36px 0 var(--rose), 36px 36px 0 var(--rose);
+      }
+    }
+
+    /* ========================================
+       Footer
+       ======================================== */
+    footer {
+      padding: 2.5rem 2rem;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    footer p {
+      font-size: 0.82rem;
+      color: var(--text-2);
+      letter-spacing: 0.01em;
+    }
+
+    footer span {
+      color: var(--text-1);
+      font-weight: 500;
+    }
+
+    /* ========================================
+       Responsive
+       ======================================== */
+    @media (max-width: 680px) {
+      .hero {
+        padding: 2rem 1.5rem 1.5rem;
+      }
+
+      .hero h1 {
+        font-size: 1.7rem;
+      }
+
+      .hero p.subtitle {
+        font-size: 0.9rem;
+      }
+
+      .breadcrumb {
+        padding: 4rem 1.25rem 0;
+      }
+
+      .section {
+        padding: 0 1.25rem 2.5rem;
+      }
+
+      .chapter-card {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1.5rem;
+      }
+
+      .story-intro {
+        padding: 1.5rem;
+      }
+
+      .flowchart-section {
+        padding: 0 1.25rem 2.5rem;
+      }
+
+      .flowchart {
+        padding: 1.5rem;
+        font-size: 0.72rem;
+      }
+
+      .cta-section {
+        padding: 0 1.25rem 3rem;
+      }
+
+      .top-bar { top: 0.75rem; right: 0.75rem; }
+      .theme-toggle { width: 34px; height: 34px; font-size: 0.95rem; }
+      .github-cta { font-size: 0; height: 34px; padding: 0 0.5rem; }
+      .github-cta svg { width: 18px; height: 18px; }
+
+      .mole-wrap { transform: scale(0.75); }
+    }
+
+    @media (max-width: 400px) {
+      .hero {
+        padding: 1.5rem 1rem 1rem;
+      }
+
+      .hero h1 {
+        font-size: 1.45rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ====== Top Bar ====== -->
+  <div class="top-bar">
+    <a href="https://github.com/Dekic648/market-research-stats-toolkit" target="_blank" rel="noopener" class="github-cta">
+      <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      Star &middot; Contribute
+    </a>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">&#9790;</button>
+  </div>
+
+  <!-- ====== Breadcrumb ====== -->
+  <nav class="breadcrumb">
+    <a href="index.html">Home</a>
+    <span>/</span>
+    <span class="current">How It Works</span>
+  </nav>
+
+  <!-- ====== Hero ====== -->
+  <section class="hero">
+    <h1>A Day in <span class="accent">Sarah's Research</span></h1>
+    <p class="subtitle">Follow a market researcher from raw survey data to boardroom-ready insights &mdash; and learn which method to use at every step.</p>
+  </section>
+
+  <!-- ====== Story Intro ====== -->
+  <section class="section">
+    <div class="story-intro">
+      <p><strong>Meet Sarah.</strong> She's a market researcher who just received 2,000 survey responses about a new product launch. Her stakeholders want answers by Friday. Here's how she uses statistical analysis to turn raw data into insights &mdash; and how you can too.</p>
+      <p style="margin-top:0.75rem;font-size:0.88rem;color:var(--text-2)">This tool is the market research companion to our <a href="https://dekic648.github.io/ux-stats-toolkit/" target="_blank" rel="noopener" style="color:var(--rose);text-decoration:none;font-weight:500">UX Research Statistics Toolkit</a> &mdash; built for UX researchers doing usability studies.</p>
+    </div>
+  </section>
+
+  <!-- ====== Chapters ====== -->
+  <section class="section">
+    <div class="section-label">Sarah's Journey</div>
+    <div class="chapters">
+
+      <!-- Chapter 1 -->
+      <div class="chapter-card">
+        <div class="chapter-number">1</div>
+        <div class="chapter-content">
+          <h3>"What does the data look like?"</h3>
+          <p class="story-text">Sarah starts where every good analyst starts &mdash; by getting a feel for the data. How many respondents completed the survey? What are the average satisfaction scores? Are there outliers that could skew her results? She runs descriptive statistics to build a baseline before diving deeper.</p>
+          <div class="method-tags">
+            <div class="method-tags-label">Methods for this</div>
+            <span class="method-tag">Summary Statistics</span>
+            <span class="method-tag">Distribution Checker</span>
+            <span class="method-tag">Frequencies</span>
+            <span class="method-tag">Confidence Intervals</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chapter 2 -->
+      <div class="chapter-card">
+        <div class="chapter-number">2</div>
+        <div class="chapter-content">
+          <h3>"Are customers in different regions responding differently?"</h3>
+          <p class="story-text">Sarah's boss asks: "Is customer satisfaction the same across all four regions?" She has satisfaction ratings (1&ndash;10) broken down by region. Time to compare groups and see if the differences are real or just noise in the data.</p>
+          <div class="method-tags">
+            <div class="method-tags-label">Methods for this</div>
+            <span class="method-tag">ANOVA</span>
+            <span class="method-tag">t-test</span>
+            <span class="method-tag">Kruskal-Wallis</span>
+            <span class="method-tag">Mann-Whitney U</span>
+            <span class="method-tag">Chi-Square</span>
+            <span class="method-tag">Welch's ANOVA</span>
+          </div>
+          <div class="decision-guide">
+            <div class="decision-guide-label">How to decide</div>
+            <p>Comparing <code>2 groups</code>? Use a t-test. Comparing <code>3+ groups</code>? Use ANOVA. Data not normally distributed or ordinal? Use the non-parametric alternatives (Mann-Whitney for 2, Kruskal-Wallis for 3+). Comparing proportions? Chi-Square.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chapter 3 -->
+      <div class="chapter-card">
+        <div class="chapter-number">3</div>
+        <div class="chapter-content">
+          <h3>"What drives satisfaction?"</h3>
+          <p class="story-text">Now Sarah needs to find what predicts high satisfaction scores. Is it price perception? Brand trust? Ease of use? She starts by looking at how these variables relate to each other, then builds a model to identify which factors matter most.</p>
+          <div class="method-tags">
+            <div class="method-tags-label">Methods for this</div>
+            <span class="method-tag">Pearson Correlation</span>
+            <span class="method-tag">Spearman Correlation</span>
+            <span class="method-tag">Multiple Regression</span>
+            <span class="method-tag">Logistic Regression</span>
+            <span class="method-tag">Partial Correlation</span>
+          </div>
+          <div class="decision-guide">
+            <div class="decision-guide-label">How to decide</div>
+            <p>Exploring relationships? Start with <code>correlation</code>. Predicting a continuous outcome (like a score)? Use <code>linear regression</code>. Predicting a yes/no outcome (like churn)? Use <code>logistic regression</code>. Need to control for confounders? Partial correlation.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chapter 4 -->
+      <div class="chapter-card">
+        <div class="chapter-number">4</div>
+        <div class="chapter-content">
+          <h3>"Are there distinct customer types?"</h3>
+          <p class="story-text">Marketing wants to know if there are natural customer segments they can target differently. Sarah looks for clusters &mdash; groups of respondents who answered similarly &mdash; to build data-driven personas for the campaign team.</p>
+          <div class="method-tags">
+            <div class="method-tags-label">Methods for this</div>
+            <span class="method-tag">K-Means Clustering</span>
+            <span class="method-tag">Latent Class Analysis</span>
+            <span class="method-tag">Hierarchical Clustering</span>
+            <span class="method-tag">Factor Analysis</span>
+          </div>
+          <div class="decision-guide">
+            <div class="decision-guide-label">How to decide</div>
+            <p>Numeric data with known cluster count? <code>K-Means</code>. Binary or categorical survey responses? <code>Latent Class Analysis</code>. Want to see the hierarchy of how groups merge? <code>Hierarchical clustering</code>. Want to reduce many variables into a few dimensions first? <code>Factor Analysis</code>.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chapter 5 -->
+      <div class="chapter-card">
+        <div class="chapter-number">5</div>
+        <div class="chapter-content">
+          <h3>"Does our scale actually work?"</h3>
+          <p class="story-text">Before publishing her findings, Sarah needs to validate that her 8-item satisfaction scale is measuring what it's supposed to measure. Are the items internally consistent? Do they load onto the expected factors? This is about the quality of the instrument itself.</p>
+          <div class="method-tags">
+            <div class="method-tags-label">Methods for this</div>
+            <span class="method-tag">Cronbach's Alpha</span>
+            <span class="method-tag">Exploratory Factor Analysis</span>
+            <span class="method-tag">Confirmatory Factor Analysis</span>
+            <span class="method-tag">Item Response Theory</span>
+          </div>
+          <div class="decision-guide">
+            <div class="decision-guide-label">How to decide</div>
+            <p>Checking if items are consistent? <code>Cronbach's Alpha</code>. Discovering what structure your items have? <code>EFA</code> (exploratory). Confirming a hypothesized structure? <code>CFA</code> (confirmatory). Analyzing item difficulty and discrimination? <code>IRT</code>.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chapter 6 -->
+      <div class="chapter-card">
+        <div class="chapter-number">6</div>
+        <div class="chapter-content">
+          <h3>"Which product features matter most?"</h3>
+          <p class="story-text">The product team is debating which features to prioritize for v2. Sarah designs a preference study to find out which features drive purchase intent &mdash; and which trade-offs customers are actually willing to make.</p>
+          <div class="method-tags">
+            <div class="method-tags-label">Methods for this</div>
+            <span class="method-tag">Conjoint Analysis</span>
+            <span class="method-tag">MaxDiff</span>
+            <span class="method-tag">Discrete Choice</span>
+          </div>
+          <div class="decision-guide">
+            <div class="decision-guide-label">How to decide</div>
+            <p>Ranking which items are most/least important? <code>MaxDiff</code>. Understanding trade-offs between product features (price vs. quality vs. speed)? <code>Conjoint</code>. Simulating realistic purchase decisions? <code>Discrete Choice</code>.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chapter 7 -->
+      <div class="chapter-card">
+        <div class="chapter-number">7</div>
+        <div class="chapter-content">
+          <h3>"Did the campaign work?"</h3>
+          <p class="story-text">Finally, Sarah needs to evaluate whether last month's marketing campaign actually moved the needle. Did the test group buy more than the control? Was it the campaign, or would it have happened anyway? She needs causal evidence, not just correlation.</p>
+          <div class="method-tags">
+            <div class="method-tags-label">Methods for this</div>
+            <span class="method-tag">A/B Test</span>
+            <span class="method-tag">Difference-in-Differences</span>
+            <span class="method-tag">Propensity Score Matching</span>
+            <span class="method-tag">Bayesian Test</span>
+          </div>
+          <div class="decision-guide">
+            <div class="decision-guide-label">How to decide</div>
+            <p>Ran a randomized experiment? <code>A/B test</code>. Observational data with a before/after and treatment/control? <code>Difference-in-Differences</code>. Need to create comparable groups from non-random data? <code>Propensity Score Matching</code>. Want probability of improvement instead of p-values? <code>Bayesian test</code>.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ====== Flowchart ====== -->
+  <section class="flowchart-section">
+    <div class="section-label">Method Decision Flowchart</div>
+    <div class="flowchart">
+      <div><span class="q">What are you trying to do?</span></div>
+      <br>
+      <div class="indent"><span class="arrow">--></span> <span class="q">Summarize data</span> <span class="arrow">--></span> <span class="method">Summary Statistics / Frequencies</span></div>
+      <br>
+      <div class="indent"><span class="arrow">--></span> <span class="q">Compare groups</span></div>
+      <div class="indent-2"><span class="arrow">--></span> How many groups?</div>
+      <div class="indent-3"><span class="arrow">--></span> 2 groups, normal data <span class="arrow">--></span> <span class="method">t-test</span></div>
+      <div class="indent-3"><span class="arrow">--></span> 2 groups, non-normal <span class="arrow">--></span> <span class="method">Mann-Whitney U</span></div>
+      <div class="indent-3"><span class="arrow">--></span> 3+ groups, normal data <span class="arrow">--></span> <span class="method">ANOVA</span></div>
+      <div class="indent-3"><span class="arrow">--></span> 3+ groups, non-normal <span class="arrow">--></span> <span class="method">Kruskal-Wallis</span></div>
+      <div class="indent-3"><span class="arrow">--></span> Categorical counts <span class="arrow">--></span> <span class="method">Chi-Square</span></div>
+      <br>
+      <div class="indent"><span class="arrow">--></span> <span class="q">Find relationships</span></div>
+      <div class="indent-2"><span class="arrow">--></span> Explore association <span class="arrow">--></span> <span class="method">Correlation (Pearson / Spearman)</span></div>
+      <div class="indent-2"><span class="arrow">--></span> Predict continuous outcome <span class="arrow">--></span> <span class="method">Linear Regression</span></div>
+      <div class="indent-2"><span class="arrow">--></span> Predict yes/no outcome <span class="arrow">--></span> <span class="method">Logistic Regression</span></div>
+      <br>
+      <div class="indent"><span class="arrow">--></span> <span class="q">Find segments</span></div>
+      <div class="indent-2"><span class="arrow">--></span> Numeric data <span class="arrow">--></span> <span class="method">K-Means</span></div>
+      <div class="indent-2"><span class="arrow">--></span> Binary / categorical <span class="arrow">--></span> <span class="method">Latent Class Analysis</span></div>
+      <div class="indent-2"><span class="arrow">--></span> Want hierarchy <span class="arrow">--></span> <span class="method">Hierarchical Clustering</span></div>
+      <br>
+      <div class="indent"><span class="arrow">--></span> <span class="q">Validate a scale</span></div>
+      <div class="indent-2"><span class="arrow">--></span> Check consistency <span class="arrow">--></span> <span class="method">Cronbach's Alpha</span></div>
+      <div class="indent-2"><span class="arrow">--></span> Discover structure <span class="arrow">--></span> <span class="method">EFA</span></div>
+      <div class="indent-2"><span class="arrow">--></span> Confirm structure <span class="arrow">--></span> <span class="method">CFA</span></div>
+      <br>
+      <div class="indent"><span class="arrow">--></span> <span class="q">Understand preferences</span></div>
+      <div class="indent-2"><span class="arrow">--></span> Rank importance <span class="arrow">--></span> <span class="method">MaxDiff</span></div>
+      <div class="indent-2"><span class="arrow">--></span> Feature trade-offs <span class="arrow">--></span> <span class="method">Conjoint Analysis</span></div>
+      <br>
+      <div class="indent"><span class="arrow">--></span> <span class="q">Test causality</span></div>
+      <div class="indent-2"><span class="arrow">--></span> Randomized experiment <span class="arrow">--></span> <span class="method">A/B Test</span></div>
+      <div class="indent-2"><span class="arrow">--></span> Observational data <span class="arrow">--></span> <span class="method">DiD / Propensity Matching</span></div>
+    </div>
+  </section>
+
+  <!-- ====== FAQ ====== -->
+  <section class="section">
+    <div class="section-label">Frequently Asked Questions</div>
+    <div class="faq-list">
+
+      <div class="faq-item">
+        <h4>Is my data safe?</h4>
+        <p>Yes. Everything runs in your browser. No data is sent to any server.</p>
+      </div>
+
+      <div class="faq-item">
+        <h4>What file formats work?</h4>
+        <p>Just paste values from any spreadsheet &mdash; Excel, Google Sheets, CSV.</p>
+      </div>
+
+      <div class="faq-item">
+        <h4>How many rows can it handle?</h4>
+        <p>Up to 3,000 rows per column. Most methods run instantly up to 1,000 rows. Heavier methods (regression, factor analysis, clustering) may take a few seconds with 2,000-3,000 rows.</p>
+      </div>
+
+      <div class="faq-item">
+        <h4>How many columns can I use?</h4>
+        <p>Most methods work with 2-10 columns. Regression and factor analysis can handle up to 15-20 columns comfortably. Beyond 20 columns with 3,000 rows, some methods may slow down.</p>
+      </div>
+
+      <div class="faq-item">
+        <h4>What about checkbox / multi-response questions?</h4>
+        <p>Yes! If your survey has &ldquo;select all that apply&rdquo; questions, paste all the columns at once (tab-separated) into a single input box. The tool detects multiple columns automatically and analyzes selection patterns.</p>
+      </div>
+
+      <div class="faq-item">
+        <h4>Can I run multiple analyses on the same data?</h4>
+        <p>Yes. After each analysis, you&rsquo;ll see a &ldquo;What would you like to do next?&rdquo; panel with options to run different methods without re-entering your data question.</p>
+      </div>
+
+      <div class="faq-item">
+        <h4>How do I know which method to use?</h4>
+        <p>Start with the guided conversation &mdash; answer a few plain questions and the tool picks the right method. Or read &ldquo;A Day in Sarah&rsquo;s Research&rdquo; above for real-world scenarios. Power users can browse all 59+ methods directly.</p>
+      </div>
+
+      <div class="faq-item">
+        <h4>Do I need to know statistics?</h4>
+        <p>No. The tool guides you to the right method and explains results in plain language.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ====== CTA ====== -->
+  <section class="cta-section">
+    <div class="cta-inner">
+      <h2>Ready to start?</h2>
+      <p>Sarah delivered her insights on time. Every method she used is available in this toolkit &mdash; for free, in your browser. Start with the question you need to answer, and the tool will guide you to the right method.</p>
+      <a href="analyze.html" class="cta-btn">Start Analyzing <span class="arrow">&#8594;</span></a>
+      <div class="mole-wrap"><div class="mole-pixel"></div></div>
+    </div>
+  </section>
+
+  <!-- ====== Footer ====== -->
+  <footer>
+    <p>Built by <span>Milo Vandekic</span> &middot; Grounded in <a href="https://groundedly.vercel.app" target="_blank" rel="noopener" style="color:var(--rose);text-decoration:none;font-weight:500">Groundedly</a></p>
+  </footer>
+
+<script>
+(function(){
+  /* ---- Theme toggle ---- */
+  var toggle = document.getElementById('themeToggle');
+  var root = document.documentElement;
+
+  function applyTheme(theme) {
+    root.classList.remove('light', 'dark');
+    if (theme !== 'auto') root.classList.add(theme);
+    toggle.textContent = theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches) ? '\u2600' : '\u263E';
+    localStorage.setItem('mr-toolkit-theme', theme);
+  }
+
+  var saved = localStorage.getItem('mr-toolkit-theme') || 'auto';
+  if (saved !== 'auto') applyTheme(saved);
+  else {
+    toggle.textContent = window.matchMedia('(prefers-color-scheme: dark)').matches ? '\u2600' : '\u263E';
+  }
+
+  toggle.addEventListener('click', function() {
+    var isDark = root.classList.contains('dark') ||
+      (!root.classList.contains('light') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    applyTheme(isDark ? 'light' : 'dark');
+  });
+})();
+</script>
+</body>
+</html>
