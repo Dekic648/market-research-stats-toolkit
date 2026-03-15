@@ -11299,6 +11299,22 @@
      Start
      ================================================================== */
   function startConversation() {
+    // Check for deep-link: analyze.html?method=ttest
+    var params = new URLSearchParams(window.location.search);
+    var deepMethod = params.get('method');
+    if (deepMethod) {
+      // Find method in METHOD_REGISTRY
+      var found = null;
+      METHOD_REGISTRY.forEach(function(cat) {
+        cat.methods.forEach(function(m) {
+          if (m.id === deepMethod) found = m;
+        });
+      });
+      if (found && found.implemented) {
+        selectMethod(found);
+        return;
+      }
+    }
     runNode(TREE);
   }
 
