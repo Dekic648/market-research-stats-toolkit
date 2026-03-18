@@ -11013,7 +11013,7 @@
       '<div class="single-col-grid" style="max-width:100%">' +
         '<div class="group-card multi-response-card">' +
           '<div class="group-card-label">Multi-Response Data</div>' +
-          '<textarea id="mrData" placeholder="Paste one or more columns from your spreadsheet.\nIf pasting multiple columns (e.g., a checkbox question), they\u2019ll be detected automatically.\n\nExpected format: each column = one option, values = 1 (selected) or 0 (not selected).\nColumns separated by tabs."></textarea>' +
+          '<textarea id="mrData" placeholder="Paste one or more columns from your spreadsheet.\nIf pasting multiple columns (e.g., a checkbox question), they\u2019ll be detected automatically.\n\nExpected format: each column = one option.\nValues can be 1/0, Yes/No, True/False, text, or any number \u2014 non-empty and non-zero = selected.\nColumns separated by tabs (paste directly from a spreadsheet)."></textarea>' +
           '<div class="value-count" id="mrCount">No data detected</div>' +
           '<div id="mrColNames" class="col-name-inputs" style="display:none"></div>' +
           '<div class="desc-label" style="margin-top:0.75rem">What does this question represent?</div>' +
@@ -11085,13 +11085,19 @@
     var nCols = data.nColumns;
     var columns = data.columns;
 
-    // Convert to numeric (1/0)
+    // Convert to numeric (1/0) — accept multiple truthy formats
     var numCols = [];
+    var falsySet = { '': 1, '0': 1, 'no': 1, 'false': 1, 'ne': 1, 'n': 1, 'nan': 1, 'null': 1, 'undefined': 1, 'n/a': 1, 'na': 1, '-': 1 };
     for (var c = 0; c < nCols; c++) {
       var col = [];
       for (var r = 0; r < nRows; r++) {
-        var v = parseFloat(columns[c][r]);
-        col.push(v === 1 ? 1 : 0);
+        var raw = (columns[c][r] || '').trim().toLowerCase();
+        if (falsySet[raw]) {
+          col.push(0);
+        } else {
+          var num = parseFloat(raw);
+          col.push((!isNaN(num) && num === 0) ? 0 : 1);
+        }
       }
       numCols.push(col);
     }
