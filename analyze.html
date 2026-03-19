@@ -2676,7 +2676,7 @@
       factor_analysis: "<strong>Factor Analysis</strong> discovers the hidden constructs behind your survey items &mdash; which questions measure the same thing? Paste 3 or more columns.",
       distribution: "<strong>Distribution Checker</strong> &mdash; check how your data is distributed. Is it normal? Skewed? Has outliers?",
       summary: "<strong>Summary Statistics</strong> will give you a full descriptive profile of your data: means, medians, standard deviations, confidence intervals, and more.",
-      frequencies: "<strong>Frequencies & Crosstabs</strong> &mdash; get a frequency table with counts and percentages for your categorical data. Paste one categorical value per line.",
+      frequencies: "<strong>Frequencies & Crosstabs</strong> &mdash; get a frequency table with counts and percentages. For a single variable, paste one value per line. For a crosstab, paste two columns (Row Variable and Column Variable) to see grouped distributions with row percentages.",
       phi: "The <strong>Phi Coefficient</strong> measures the association between two binary variables. Enter counts in a 2&times;2 contingency table.",
       kendall: "<strong>Kendall's Tau</strong> measures the ordinal association between two variables. It's robust for small samples and tied ranks. Paste two columns of paired values.",
       simple_regression: "<strong>Simple Linear Regression</strong> predicts a numeric outcome from a single predictor. Paste two columns: X (predictor) and Y (outcome).",
@@ -2738,7 +2738,7 @@
       factor_analysis: showFactorAnalysisInput,
       distribution: showSingleColumnInput.bind(null, 'Your Data', 'Paste values, one per line...', 3, function(vals, desc) { runDistribution(vals, desc); }),
       summary: showSingleColumnInput.bind(null, 'Your Data', 'Paste values, one per line...', 3, function(vals, desc) { runSummary(vals, desc); }),
-      frequencies: showCategoricalInput.bind(null, 'Categorical Data', 'Paste categorical values \u2014 e.g., Yes/No, product names, age groups\nOne value per line...', 3, function(vals) { runFrequencies(vals); }),
+      frequencies: showFrequenciesCrosstabInput,
       phi: showPhiInput,
       kendall: showTwoColumnInput.bind(null, 'Variable X', 'Variable Y', 3, function(a, b, dA, dB) { runKendall(a, b, dA, dB); }),
       simple_regression: showTwoColumnInput.bind(null, 'Predictor (X)', 'Outcome (Y)', 3, function(a, b, dA, dB) { runSimpleRegression(a, b, dA, dB); }),
@@ -5370,6 +5370,79 @@
   /* ==================================================================
      1. Frequencies & Crosstabs
      ================================================================== */
+
+  // --- Input UI: two textareas (Row Variable + Column Variable) ---
+  function showFrequenciesCrosstabInput() {
+    var section = document.createElement('div');
+    section.className = 'data-input-section';
+    section.innerHTML =
+      '<div class="input-grid">' +
+        '<div class="group-card">' +
+          '<div class="group-card-label">Row Variable (required)</div>' +
+          '<textarea id="freqRowData" placeholder="Paste categorical values \u2014 e.g., 18-24, 25-34, 35-44\nOne value per line..."></textarea>' +
+          '<div class="value-count" id="freqRowCount">No values detected</div>' +
+        '</div>' +
+        '<div class="group-card">' +
+          '<div class="group-card-label">Column Variable (optional \u2014 for crosstab)</div>' +
+          '<textarea id="freqColData" placeholder="Paste a second categorical variable \u2014 e.g., Facebook, YouTube, TikTok\nOne value per line (same length as Row Variable)..."></textarea>' +
+          '<div class="value-count" id="freqColCount">Leave empty for simple frequency</div>' +
+        '</div>' +
+      '</div>' +
+      '<button class="run-btn" id="runBtn" disabled>Run Analysis</button>';
+    container.appendChild(section);
+    scrollToBottom();
+
+    var rowEl = section.querySelector('#freqRowData');
+    var colEl = section.querySelector('#freqColData');
+    var rowCountEl = section.querySelector('#freqRowCount');
+    var colCountEl = section.querySelector('#freqColCount');
+    var runBtn = section.querySelector('#runBtn');
+
+    function updateCounts() {
+      var rowLines = parseCategorical(rowEl.value);
+      var colLines = parseCategorical(colEl.value);
+      if (rowLines.length === 0) {
+        rowCountEl.textContent = 'No values detected';
+        rowCountEl.className = 'value-count';
+      } else {
+        var unique = {};
+        rowLines.forEach(function(v) { unique[v] = true; });
+        rowCountEl.textContent = rowLines.length + ' value' + (rowLines.length !== 1 ? 's' : '') + ' detected, ' + Object.keys(unique).length + ' unique categories';
+        rowCountEl.className = 'value-count valid';
+      }
+      if (colLines.length === 0) {
+        colCountEl.textContent = 'Leave empty for simple frequency';
+        colCountEl.className = 'value-count';
+      } else {
+        var unique2 = {};
+        colLines.forEach(function(v) { unique2[v] = true; });
+        colCountEl.textContent = colLines.length + ' value' + (colLines.length !== 1 ? 's' : '') + ' detected, ' + Object.keys(unique2).length + ' unique categories';
+        colCountEl.className = 'value-count valid';
+        if (rowLines.length > 0 && colLines.length !== rowLines.length) {
+          colCountEl.textContent += ' \u2014 \u26A0 length mismatch with Row Variable';
+          colCountEl.className = 'value-count';
+        }
+      }
+      runBtn.disabled = rowLines.length < 3;
+    }
+
+    rowEl.addEventListener('input', updateCounts);
+    colEl.addEventListener('input', updateCounts);
+
+    runBtn.addEventListener('click', function() {
+      var rowLines = parseCategorical(rowEl.value);
+      var colLines = parseCategorical(colEl.value);
+      runBtn.disabled = true;
+      runBtn.textContent = 'Running...';
+      if (colLines.length > 0 && colLines.length === rowLines.length) {
+        runCrosstab(rowLines, colLines);
+      } else {
+        runFrequencies(rowLines);
+      }
+    });
+  }
+
+  // --- Single-variable frequency (original behavior) ---
   function runFrequencies(vals) {
     var freqs = {};
     vals.forEach(function(v) { freqs[v] = (freqs[v] || 0) + 1; });
@@ -5417,6 +5490,211 @@
     });
     drawBarChart(chartId, bars);
     showNextSteps('descriptive', { n: total });
+  }
+
+  // --- Crosstab: two variables → grouped bar chart (row %) + crosstab table ---
+  function runCrosstab(rowVals, colVals) {
+    var n = rowVals.length;
+
+    // Build row/col labels (sorted)
+    var rowSet = {}, colSet = {};
+    for (var i = 0; i < n; i++) {
+      rowSet[rowVals[i]] = true;
+      colSet[colVals[i]] = true;
+    }
+    var rowLabels = Object.keys(rowSet).sort();
+    var colLabels = Object.keys(colSet).sort();
+
+    // Build count table [row][col]
+    var table = [];
+    var rowTotals = [];
+    for (var r = 0; r < rowLabels.length; r++) {
+      table.push([]);
+      for (var c = 0; c < colLabels.length; c++) table[r].push(0);
+    }
+    for (var i = 0; i < n; i++) {
+      var ri = rowLabels.indexOf(rowVals[i]);
+      var ci = colLabels.indexOf(colVals[i]);
+      table[ri][ci]++;
+    }
+    for (var r = 0; r < rowLabels.length; r++) {
+      var rt = 0;
+      for (var c = 0; c < colLabels.length; c++) rt += table[r][c];
+      rowTotals.push(rt);
+    }
+    var colTotals = [];
+    for (var c = 0; c < colLabels.length; c++) {
+      var ct = 0;
+      for (var r = 0; r < rowLabels.length; r++) ct += table[r][c];
+      colTotals.push(ct);
+    }
+
+    // Row percentages table [row][col]
+    var rowPct = [];
+    for (var r = 0; r < rowLabels.length; r++) {
+      rowPct.push([]);
+      for (var c = 0; c < colLabels.length; c++) {
+        rowPct[r].push(rowTotals[r] > 0 ? (table[r][c] / rowTotals[r] * 100) : 0);
+      }
+    }
+
+    // Plain English
+    var maxPct = 0, maxRow = '', maxCol = '';
+    for (var r = 0; r < rowLabels.length; r++) {
+      for (var c = 0; c < colLabels.length; c++) {
+        if (rowPct[r][c] > maxPct) { maxPct = rowPct[r][c]; maxRow = rowLabels[r]; maxCol = colLabels[c]; }
+      }
+    }
+    var plainText = 'Cross-tabulation of ' + n + ' observations across ' + rowLabels.length + ' row categories and ' + colLabels.length + ' column categories. ' +
+      'The highest row percentage is ' + maxPct.toFixed(1) + '% for "' + maxCol + '" within the "' + maxRow + '" group.';
+
+    // Crosstab HTML table with row %
+    var ctHtml = '<div style="overflow-x:auto"><table class="freq-table">';
+    ctHtml += '<tr><th></th>';
+    for (var c = 0; c < colLabels.length; c++) ctHtml += '<th>' + escHtml(colLabels[c]) + '</th>';
+    ctHtml += '<th>Total</th><th>N</th></tr>';
+    for (var r = 0; r < rowLabels.length; r++) {
+      ctHtml += '<tr><td><strong>' + escHtml(rowLabels[r]) + '</strong></td>';
+      for (var c = 0; c < colLabels.length; c++) {
+        ctHtml += '<td>' + rowPct[r][c].toFixed(1) + '%</td>';
+      }
+      ctHtml += '<td>100.0%</td><td>' + rowTotals[r] + '</td></tr>';
+    }
+    // Base (N) row
+    ctHtml += '<tr style="border-top:2px solid var(--border)"><td><strong>Base (N)</strong></td>';
+    for (var c = 0; c < colLabels.length; c++) ctHtml += '<td>' + colTotals[c] + '</td>';
+    ctHtml += '<td></td><td>' + n + '</td></tr>';
+    ctHtml += '</table></div>';
+    ctHtml += '<div style="margin-top:6px;font-size:0.82em;color:var(--text-2)">Total N = ' + n + ' &middot; Metric: Row %</div>';
+
+    var chartId = 'crosstabChart_' + Date.now();
+    // Chart dimensions
+    var chartW = Math.max(600, rowLabels.length * colLabels.length * 22 + 120);
+    var chartH = 400;
+
+    var html =
+      '<div class="results-section">' +
+      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
+        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
+      '<div class="result-card"><div class="result-card-title">Summary</div><div class="test-results-grid">' +
+        testStat('Total N', n) + testStat('Row Categories', rowLabels.length) + testStat('Column Categories', colLabels.length) +
+      '</div></div>' +
+      '<div class="result-card"><div class="result-card-title">Distribution by Group (Row %)</div>' +
+        '<canvas id="' + chartId + '" width="' + chartW + '" height="' + chartH + '" style="width:100%;max-width:' + chartW + 'px;display:block;margin:0 auto;"></canvas></div>' +
+      '<div class="result-card"><div class="result-card-title">Crosstab Table (Row %)</div>' + ctHtml + '</div>' +
+      '</div>';
+
+    container.insertAdjacentHTML('beforeend', html);
+    scrollToBottom();
+
+    drawVerticalGroupedBarChart(chartId, chartW, chartH, rowLabels, colLabels, rowPct);
+    showNextSteps('descriptive', { n: n });
+  }
+
+  // --- Vertical grouped bar chart for crosstabs (row % distribution) ---
+  function drawVerticalGroupedBarChart(canvasId, canvasW, canvasH, groupLabels, seriesLabels, data) {
+    var c = initCanvas(canvasId, canvasW, canvasH);
+    if (!c) return;
+    var ctx = c.ctx, w = c.w, h = c.h;
+    var colors = getColors();
+
+    var pad = { left: 50, right: 20, top: 40, bottom: 60 };
+    var cw = w - pad.left - pad.right;
+    var ch = h - pad.top - pad.bottom;
+
+    var nGroups = groupLabels.length;
+    var nSeries = seriesLabels.length;
+    var groupW = cw / nGroups;
+    var barW = Math.max(8, Math.min(28, (groupW - 12) / nSeries));
+    var totalBarsW = nSeries * barW;
+
+    // Find max value for y-axis
+    var maxVal = 0;
+    for (var r = 0; r < data.length; r++) {
+      for (var cc = 0; cc < data[r].length; cc++) {
+        if (data[r][cc] > maxVal) maxVal = data[r][cc];
+      }
+    }
+    maxVal = Math.ceil(maxVal / 10) * 10;
+    if (maxVal < 10) maxVal = 10;
+    var yStep = maxVal <= 20 ? 5 : maxVal <= 50 ? 10 : 20;
+
+    function yPos(val) { return pad.top + ch - (val / maxVal) * ch; }
+
+    // Y-axis gridlines and labels
+    ctx.font = '500 11px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (var yy = 0; yy <= maxVal; yy += yStep) {
+      var py = yPos(yy);
+      ctx.strokeStyle = colors.border;
+      ctx.globalAlpha = 0.3;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, py);
+      ctx.lineTo(pad.left + cw, py);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = colors.subtext;
+      ctx.fillText(yy, pad.left - 8, py);
+    }
+
+    // Legend (top)
+    ctx.font = '500 10px -apple-system, BlinkMacSystemFont, sans-serif';
+    var legendX = pad.left;
+    var legendY = 10;
+    var maxLegendWidth = cw;
+    var currentX = legendX;
+    for (var s = 0; s < nSeries; s++) {
+      var lbl = seriesLabels[s].length > 20 ? seriesLabels[s].substring(0, 18) + '...' : seriesLabels[s];
+      var lblW = ctx.measureText(lbl).width + 20;
+      if (currentX + lblW > legendX + maxLegendWidth && s > 0) {
+        legendY += 14;
+        currentX = legendX;
+      }
+      ctx.fillStyle = CHART_COLORS[s % CHART_COLORS.length];
+      ctx.fillRect(currentX, legendY, 10, 10);
+      ctx.fillStyle = colors.text;
+      ctx.textAlign = 'left';
+      ctx.fillText(lbl, currentX + 13, legendY + 8);
+      currentX += lblW + 8;
+    }
+
+    // Bars
+    for (var g = 0; g < nGroups; g++) {
+      var gx = pad.left + g * groupW + (groupW - totalBarsW) / 2;
+      for (var s = 0; s < nSeries; s++) {
+        var val = data[g][s];
+        var bx = gx + s * barW;
+        var by = yPos(val);
+        var bh = yPos(0) - by;
+
+        ctx.fillStyle = CHART_COLORS[s % CHART_COLORS.length];
+        ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(bx, by, barW - 1, bh, [3, 3, 0, 0]);
+        else ctx.rect(bx, by, barW - 1, bh);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // Value label on top of bar
+        if (val > 0 && barW >= 12) {
+          ctx.fillStyle = colors.text;
+          ctx.font = '600 ' + Math.max(8, Math.min(10, barW - 2)) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(val.toFixed(1), bx + (barW - 1) / 2, by - 2);
+        }
+      }
+
+      // Group label (x-axis)
+      ctx.fillStyle = colors.text;
+      ctx.font = '500 11px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      var gLabel = groupLabels[g].length > 12 ? groupLabels[g].substring(0, 10) + '...' : groupLabels[g];
+      ctx.fillText(gLabel, pad.left + g * groupW + groupW / 2, pad.top + ch + 6);
+    }
   }
 
   /* ==================================================================
