@@ -5408,7 +5408,8 @@
         var selected = [];
         for (var j = 0; j < cells.length; j++) {
           var v = cells[j].trim();
-          if (v !== '' && v !== '0') {
+          var vLower = v.toLowerCase();
+          if (v !== '' && v !== '0' && vLower !== 'no' && vLower !== 'false' && vLower !== 'n/a' && vLower !== 'na') {
             selected.push(v);
             allItems[v] = true;
           }
@@ -5424,8 +5425,17 @@
         valCountEl.textContent = 'No values detected';
         valCountEl.className = 'value-count';
       } else {
-        valCountEl.textContent = parsed.rows.length + ' respondent' + (parsed.rows.length !== 1 ? 's' : '') +
+        var statusText = parsed.rows.length + ' respondent' + (parsed.rows.length !== 1 ? 's' : '') +
           ', ' + parsed.uniqueItems.length + ' unique option' + (parsed.uniqueItems.length !== 1 ? 's' : '') + ' detected';
+        // Detect if data looks like binary checkbox columns (all values are 1, yes, true, selected)
+        var binaryVals = new Set(['1', 'yes', 'true', 'selected']);
+        var allBinary = parsed.uniqueItems.length > 0 && parsed.uniqueItems.every(function(item) {
+          return binaryVals.has(item.toLowerCase());
+        });
+        if (allBinary && parsed.uniqueItems.length <= 2) {
+          statusText += ' \u2014 \u26A0 This looks like binary (0/1) checkbox data. Column headers will be used as option labels.';
+        }
+        valCountEl.textContent = statusText;
         valCountEl.className = 'value-count valid';
       }
       runBtn.disabled = parsed.rows.length < 3;
@@ -5511,7 +5521,7 @@
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     drawBarChart(chartId, chartData.map(function(d, i) {
-      return { label: d.value, value: d.count, color: CHART_COLORS[i % CHART_COLORS.length] };
+      return { label: d.value, value: parseFloat(d.pct.toFixed(2)), color: CHART_COLORS[i % CHART_COLORS.length] };
     }));
     showNextSteps('descriptive', { n: nRespondents });
   }
