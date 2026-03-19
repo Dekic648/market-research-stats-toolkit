@@ -5379,37 +5379,54 @@
 
   // --- Input UI: multi-response variable (left) + grouping variable (right) ---
   function showFrequenciesCrosstabInput() {
+    var uid = 'freq_' + Date.now();
     var section = document.createElement('div');
     section.className = 'data-input-section';
-    section.innerHTML =
-      '<div class="input-grid">' +
-        '<div class="group-card">' +
-          '<div class="group-card-label">Variable to Analyze (single or multi-response)</div>' +
-          '<textarea id="freqRowData" placeholder="One line per respondent.\n\nSingle-response \u2014 one value per line:\nFacebook\nYouTube\nTikTok\n\nMulti-response \u2014 comma or tab separated:\nFacebook, YouTube\nTikTok, Instagram, Snapchat\nFacebook"></textarea>' +
-          '<div class="value-count" id="freqRowCount">No values detected</div>' +
-        '</div>' +
-        '<div class="group-card">' +
-          '<div class="group-card-label">Grouping Variable (optional \u2014 for crosstab)</div>' +
-          '<textarea id="freqColData" placeholder="One value per line \u2014 same number of lines as left column.\n\ne.g., age group, segment, region:\n18-24\n25-34\n35-44\n25-34\n18-24"></textarea>' +
-          '<div class="value-count" id="freqColCount">Leave empty for simple frequency</div>' +
-        '</div>' +
-      '</div>' +
-      '<button class="run-btn" id="runBtn" disabled>Run Analysis</button>';
+
+    var grid = document.createElement('div');
+    grid.className = 'input-grid';
+
+    // Left card: variable to analyze
+    var leftCard = document.createElement('div');
+    leftCard.className = 'group-card';
+    leftCard.innerHTML =
+      '<div class="group-card-label">Variable to Analyze (single or multi-response)</div>' +
+      '<textarea class="freq-row-data" placeholder="One line per respondent.\nSingle-response: one value per line\nMulti-response: comma-separated\n\ne.g.:\nFacebook, YouTube\nTikTok, Instagram\nFacebook"></textarea>' +
+      '<div class="value-count freq-row-count">No values detected</div>';
+
+    // Right card: grouping variable
+    var rightCard = document.createElement('div');
+    rightCard.className = 'group-card';
+    rightCard.innerHTML =
+      '<div class="group-card-label">Grouping Variable (optional &mdash; for crosstab)</div>' +
+      '<textarea class="freq-col-data" placeholder="One value per line, same row count as left.\n\ne.g.:\n18-24\n25-34\n35-44"></textarea>' +
+      '<div class="value-count freq-col-count">Leave empty for simple frequency</div>';
+
+    grid.appendChild(leftCard);
+    grid.appendChild(rightCard);
+
+    var runBtn = document.createElement('button');
+    runBtn.className = 'run-btn';
+    runBtn.textContent = 'Run Analysis';
+    runBtn.disabled = true;
+
+    section.appendChild(grid);
+    section.appendChild(runBtn);
     container.appendChild(section);
     scrollToBottom();
 
-    var rowEl = section.querySelector('#freqRowData');
-    var colEl = section.querySelector('#freqColData');
-    var rowCountEl = section.querySelector('#freqRowCount');
-    var colCountEl = section.querySelector('#freqColCount');
-    var runBtn = section.querySelector('#runBtn');
+    // Get references via class within the section (avoids ID collisions)
+    var rowEl = section.querySelector('.freq-row-data');
+    var colEl = section.querySelector('.freq-col-data');
+    var rowCountEl = section.querySelector('.freq-row-count');
+    var colCountEl = section.querySelector('.freq-col-count');
 
     function updateCounts() {
       var rowLines = parseCategorical(rowEl.value);
       var colLines = parseCategorical(colEl.value);
       if (rowLines.length === 0) {
         rowCountEl.textContent = 'No values detected';
-        rowCountEl.className = 'value-count';
+        rowCountEl.className = 'value-count freq-row-count';
       } else {
         // Detect unique items across all lines (splitting multi-response)
         var uniqueItems = {};
@@ -5423,19 +5440,19 @@
         rowCountEl.textContent = rowLines.length + ' respondent' + (rowLines.length !== 1 ? 's' : '') +
           ', ' + nUnique + ' unique item' + (nUnique !== 1 ? 's' : '') +
           (isMulti ? ' (multi-response detected)' : '');
-        rowCountEl.className = 'value-count valid';
+        rowCountEl.className = 'value-count freq-row-count valid';
       }
       if (colLines.length === 0) {
         colCountEl.textContent = 'Leave empty for simple frequency';
-        colCountEl.className = 'value-count';
+        colCountEl.className = 'value-count freq-col-count';
       } else {
         var unique2 = {};
         colLines.forEach(function(v) { unique2[v] = true; });
         colCountEl.textContent = colLines.length + ' respondent' + (colLines.length !== 1 ? 's' : '') + ', ' + Object.keys(unique2).length + ' groups';
-        colCountEl.className = 'value-count valid';
+        colCountEl.className = 'value-count freq-col-count valid';
         if (rowLines.length > 0 && colLines.length !== rowLines.length) {
           colCountEl.textContent += ' \u2014 \u26A0 row count mismatch (' + rowLines.length + ' vs ' + colLines.length + ')';
-          colCountEl.className = 'value-count';
+          colCountEl.className = 'value-count freq-col-count';
         }
       }
       runBtn.disabled = rowLines.length < 3;
@@ -5443,6 +5460,9 @@
 
     rowEl.addEventListener('input', updateCounts);
     colEl.addEventListener('input', updateCounts);
+    // Also listen for paste events (some browsers fire paste before input)
+    rowEl.addEventListener('paste', function() { setTimeout(updateCounts, 0); });
+    colEl.addEventListener('paste', function() { setTimeout(updateCounts, 0); });
 
     runBtn.addEventListener('click', function() {
       var rowLines = parseCategorical(rowEl.value);
