@@ -5375,77 +5375,60 @@
   function showFrequenciesCrosstabInput() {
     var section = document.createElement('div');
     section.className = 'data-input-section';
-
-    var grid = document.createElement('div');
-    grid.className = 'input-grid';
-
-    // Left card: categorical values
-    var leftCard = document.createElement('div');
-    leftCard.className = 'group-card';
-    leftCard.innerHTML =
-      '<div class="group-card-label">Categorical Values</div>' +
-      '<textarea class="freq-val-data" placeholder="One value per line:\nFacebook\nYouTube\nTikTok\nFacebook\nInstagram\n..."></textarea>' +
-      '<div class="value-count freq-val-count">No values detected</div>';
-
-    // Right card: grouping variable
-    var rightCard = document.createElement('div');
-    rightCard.className = 'group-card';
-    rightCard.innerHTML =
-      '<div class="group-card-label">Grouping Variable (optional &mdash; for crosstab)</div>' +
-      '<textarea class="freq-grp-data" placeholder="One value per line (same row count):\n25-34\n35-44\n18-24\n25-34\n18-24\n..."></textarea>' +
-      '<div class="value-count freq-grp-count">Leave empty for simple frequency</div>';
-
-    grid.appendChild(leftCard);
-    grid.appendChild(rightCard);
-
-    var runBtn = document.createElement('button');
-    runBtn.className = 'run-btn';
-    runBtn.textContent = 'Run Analysis';
-    runBtn.disabled = true;
-
-    section.appendChild(grid);
-    section.appendChild(runBtn);
+    section.innerHTML =
+      '<div class="input-grid">' +
+        '<div class="group-card">' +
+          '<div class="group-card-label">Categorical Values</div>' +
+          '<textarea id="freqVals" placeholder="One value per line:\nFacebook\nYouTube\nTikTok\nFacebook\nInstagram"></textarea>' +
+          '<div class="value-count" id="freqValsCount">No values detected</div>' +
+        '</div>' +
+        '<div class="group-card">' +
+          '<div class="group-card-label">Grouping Variable (optional)</div>' +
+          '<textarea id="freqGrp" placeholder="One value per line (same row count):\n25-34\n35-44\n18-24\n25-34\n18-24"></textarea>' +
+          '<div class="value-count" id="freqGrpCount">Leave empty for simple frequency</div>' +
+        '</div>' +
+      '</div>' +
+      '<button class="run-btn" id="freqRunBtn" disabled>Run Analysis</button>';
     container.appendChild(section);
     scrollToBottom();
 
-    var valEl = section.querySelector('.freq-val-data');
-    var grpEl = section.querySelector('.freq-grp-data');
-    var valCountEl = section.querySelector('.freq-val-count');
-    var grpCountEl = section.querySelector('.freq-grp-count');
+    var valEl = section.querySelector('#freqVals');
+    var grpEl = section.querySelector('#freqGrp');
+    var valCountEl = section.querySelector('#freqValsCount');
+    var grpCountEl = section.querySelector('#freqGrpCount');
+    var runBtn = section.querySelector('#freqRunBtn');
 
-    function updateCounts() {
-      var valLines = parseCategorical(valEl.value);
-      var grpLines = parseCategorical(grpEl.value);
-      if (valLines.length === 0) {
+    valEl.addEventListener('input', function() {
+      var lines = parseCategorical(valEl.value);
+      if (lines.length === 0) {
         valCountEl.textContent = 'No values detected';
-        valCountEl.className = 'value-count freq-val-count';
+        valCountEl.className = 'value-count';
       } else {
         var unique = {};
-        valLines.forEach(function(v) { unique[v] = true; });
-        valCountEl.textContent = valLines.length + ' value' + (valLines.length !== 1 ? 's' : '') +
-          ', ' + Object.keys(unique).length + ' unique';
-        valCountEl.className = 'value-count freq-val-count valid';
+        lines.forEach(function(v) { unique[v] = true; });
+        valCountEl.textContent = lines.length + ' value' + (lines.length !== 1 ? 's' : '') + ', ' + Object.keys(unique).length + ' unique';
+        valCountEl.className = 'value-count valid';
       }
+      runBtn.disabled = lines.length < 3;
+    });
+
+    grpEl.addEventListener('input', function() {
+      var grpLines = parseCategorical(grpEl.value);
+      var valLines = parseCategorical(valEl.value);
       if (grpLines.length === 0) {
         grpCountEl.textContent = 'Leave empty for simple frequency';
-        grpCountEl.className = 'value-count freq-grp-count';
+        grpCountEl.className = 'value-count';
       } else {
         var unique2 = {};
         grpLines.forEach(function(v) { unique2[v] = true; });
         grpCountEl.textContent = grpLines.length + ' value' + (grpLines.length !== 1 ? 's' : '') + ', ' + Object.keys(unique2).length + ' groups';
-        grpCountEl.className = 'value-count freq-grp-count valid';
+        grpCountEl.className = 'value-count valid';
         if (valLines.length > 0 && grpLines.length !== valLines.length) {
           grpCountEl.textContent += ' \u2014 \u26A0 mismatch (' + valLines.length + ' vs ' + grpLines.length + ')';
-          grpCountEl.className = 'value-count freq-grp-count';
+          grpCountEl.className = 'value-count';
         }
       }
-      runBtn.disabled = valLines.length < 3;
-    }
-
-    valEl.addEventListener('input', updateCounts);
-    grpEl.addEventListener('input', updateCounts);
-    valEl.addEventListener('paste', function() { setTimeout(updateCounts, 0); });
-    grpEl.addEventListener('paste', function() { setTimeout(updateCounts, 0); });
+    });
 
     runBtn.addEventListener('click', function() {
       var valLines = parseCategorical(valEl.value);
