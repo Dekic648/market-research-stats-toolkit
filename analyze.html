@@ -2676,7 +2676,7 @@
       factor_analysis: "<strong>Factor Analysis</strong> discovers the hidden constructs behind your survey items &mdash; which questions measure the same thing? Paste 3 or more columns.",
       distribution: "<strong>Distribution Checker</strong> &mdash; check how your data is distributed. Is it normal? Skewed? Has outliers?",
       summary: "<strong>Summary Statistics</strong> will give you a full descriptive profile of your data: means, medians, standard deviations, confidence intervals, and more.",
-      frequencies: "<strong>Frequencies & Crosstabs</strong> &mdash; get a frequency table with counts and percentages. For a single variable, paste one value per line. For a crosstab, paste two columns (Row Variable and Column Variable) to see grouped distributions with row percentages.",
+      frequencies: "<strong>Frequencies & Crosstabs</strong> &mdash; analyze single or multi-response categorical data. Left column: paste your responses (one line per respondent; comma-separate if multi-response). Right column (optional): paste a grouping variable (e.g., age, segment) to get a crosstab with grouped bar charts showing row %.",
       phi: "The <strong>Phi Coefficient</strong> measures the association between two binary variables. Enter counts in a 2&times;2 contingency table.",
       kendall: "<strong>Kendall's Tau</strong> measures the ordinal association between two variables. It's robust for small samples and tied ranks. Paste two columns of paired values.",
       simple_regression: "<strong>Simple Linear Regression</strong> predicts a numeric outcome from a single predictor. Paste two columns: X (predictor) and Y (outcome).",
@@ -5371,20 +5371,26 @@
      1. Frequencies & Crosstabs
      ================================================================== */
 
-  // --- Input UI: two textareas (Row Variable + Column Variable) ---
+  // --- Helper: parse multi-response line into individual items ---
+  function parseMultiResponse(line) {
+    // Split on tab, comma, or semicolon — trim each item
+    return line.split(/[\t,;]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
+  }
+
+  // --- Input UI: multi-response variable (left) + grouping variable (right) ---
   function showFrequenciesCrosstabInput() {
     var section = document.createElement('div');
     section.className = 'data-input-section';
     section.innerHTML =
       '<div class="input-grid">' +
         '<div class="group-card">' +
-          '<div class="group-card-label">Row Variable (required)</div>' +
-          '<textarea id="freqRowData" placeholder="Paste categorical values \u2014 e.g., 18-24, 25-34, 35-44\nOne value per line..."></textarea>' +
+          '<div class="group-card-label">Variable to Analyze (single or multi-response)</div>' +
+          '<textarea id="freqRowData" placeholder="One line per respondent.\n\nSingle-response \u2014 one value per line:\nFacebook\nYouTube\nTikTok\n\nMulti-response \u2014 comma or tab separated:\nFacebook, YouTube\nTikTok, Instagram, Snapchat\nFacebook"></textarea>' +
           '<div class="value-count" id="freqRowCount">No values detected</div>' +
         '</div>' +
         '<div class="group-card">' +
-          '<div class="group-card-label">Column Variable (optional \u2014 for crosstab)</div>' +
-          '<textarea id="freqColData" placeholder="Paste a second categorical variable \u2014 e.g., Facebook, YouTube, TikTok\nOne value per line (same length as Row Variable)..."></textarea>' +
+          '<div class="group-card-label">Grouping Variable (optional \u2014 for crosstab)</div>' +
+          '<textarea id="freqColData" placeholder="One value per line \u2014 same number of lines as left column.\n\ne.g., age group, segment, region:\n18-24\n25-34\n35-44\n25-34\n18-24"></textarea>' +
           '<div class="value-count" id="freqColCount">Leave empty for simple frequency</div>' +
         '</div>' +
       '</div>' +
@@ -5405,9 +5411,18 @@
         rowCountEl.textContent = 'No values detected';
         rowCountEl.className = 'value-count';
       } else {
-        var unique = {};
-        rowLines.forEach(function(v) { unique[v] = true; });
-        rowCountEl.textContent = rowLines.length + ' value' + (rowLines.length !== 1 ? 's' : '') + ' detected, ' + Object.keys(unique).length + ' unique categories';
+        // Detect unique items across all lines (splitting multi-response)
+        var uniqueItems = {};
+        var isMulti = false;
+        rowLines.forEach(function(line) {
+          var items = parseMultiResponse(line);
+          if (items.length > 1) isMulti = true;
+          items.forEach(function(item) { uniqueItems[item] = true; });
+        });
+        var nUnique = Object.keys(uniqueItems).length;
+        rowCountEl.textContent = rowLines.length + ' respondent' + (rowLines.length !== 1 ? 's' : '') +
+          ', ' + nUnique + ' unique item' + (nUnique !== 1 ? 's' : '') +
+          (isMulti ? ' (multi-response detected)' : '');
         rowCountEl.className = 'value-count valid';
       }
       if (colLines.length === 0) {
@@ -5416,10 +5431,10 @@
       } else {
         var unique2 = {};
         colLines.forEach(function(v) { unique2[v] = true; });
-        colCountEl.textContent = colLines.length + ' value' + (colLines.length !== 1 ? 's' : '') + ' detected, ' + Object.keys(unique2).length + ' unique categories';
+        colCountEl.textContent = colLines.length + ' respondent' + (colLines.length !== 1 ? 's' : '') + ', ' + Object.keys(unique2).length + ' groups';
         colCountEl.className = 'value-count valid';
         if (rowLines.length > 0 && colLines.length !== rowLines.length) {
-          colCountEl.textContent += ' \u2014 \u26A0 length mismatch with Row Variable';
+          colCountEl.textContent += ' \u2014 \u26A0 row count mismatch (' + rowLines.length + ' vs ' + colLines.length + ')';
           colCountEl.className = 'value-count';
         }
       }
@@ -5444,28 +5459,38 @@
 
   // --- Single-variable frequency (original behavior) ---
   function runFrequencies(vals) {
+    // Explode multi-response lines into individual items for frequency count
+    var allItems = [];
+    var nRespondents = vals.length;
+    vals.forEach(function(line) {
+      var items = parseMultiResponse(line);
+      items.forEach(function(item) { allItems.push(item); });
+    });
+
     var freqs = {};
-    vals.forEach(function(v) { freqs[v] = (freqs[v] || 0) + 1; });
-    var total = vals.length;
+    allItems.forEach(function(v) { freqs[v] = (freqs[v] || 0) + 1; });
 
     // Sort by count descending
     var sorted = Object.keys(freqs).map(function(k) {
-      return { value: k, count: freqs[k], pct: (freqs[k] / total * 100) };
+      return { value: k, count: freqs[k], pct: (freqs[k] / nRespondents * 100) };
     }).sort(function(a, b) { return b.count - a.count; });
 
     var mode = sorted[0].value;
     var chartId = 'freqChart_' + Date.now();
+    var isMulti = allItems.length > nRespondents;
 
     // Frequency table
-    var tableHtml = '<table class="freq-table"><tr><th>Value</th><th>Count</th><th>Percentage</th></tr>';
+    var tableHtml = '<table class="freq-table"><tr><th>Value</th><th>Count</th><th>% of Respondents</th></tr>';
     sorted.forEach(function(row) {
+      var barWidth = Math.min(row.pct, 100);
       tableHtml += '<tr><td>' + escHtml(row.value) + '</td><td>' + row.count + '</td>' +
-        '<td class="pct-bar-cell"><span class="pct-bar" style="width:' + row.pct.toFixed(1) + '%"></span><span>' + row.pct.toFixed(1) + '%</span></td></tr>';
+        '<td class="pct-bar-cell"><span class="pct-bar" style="width:' + barWidth.toFixed(1) + '%"></span><span>' + row.pct.toFixed(1) + '%</span></td></tr>';
     });
     tableHtml += '</table>';
 
-    var plainText = 'Frequency analysis of ' + total + ' values across ' + sorted.length + ' categories. ' +
-      'The most common value is "' + mode + '" (' + sorted[0].count + ' occurrences, ' + sorted[0].pct.toFixed(1) + '%).';
+    var plainText = 'Frequency analysis of ' + nRespondents + ' respondents across ' + sorted.length + ' categories. ' +
+      'The most common value is "' + mode + '" (' + sorted[0].count + ' respondents, ' + sorted[0].pct.toFixed(1) + '%).' +
+      (isMulti ? ' This is multi-response data \u2014 percentages may exceed 100% as respondents can select multiple items.' : '');
 
     // Top categories for chart (max 15)
     var chartData = sorted.slice(0, 15);
@@ -5475,7 +5500,8 @@
       '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
         '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
       '<div class="result-card"><div class="result-card-title">Summary</div><div class="test-results-grid">' +
-        testStat('Total Values', total) + testStat('Unique Categories', sorted.length) + testStat('Mode', mode) +
+        testStat('Respondents', nRespondents) + testStat('Unique Items', sorted.length) + testStat('Most Common', mode) +
+        (isMulti ? testStat('Total Mentions', allItems.length) : '') +
       '</div></div>' +
       '<div class="result-card"><div class="result-card-title">Frequency Table</div>' + tableHtml + '</div>' +
       '<div class="result-card"><div class="result-card-title">Top Categories</div>' +
@@ -5486,90 +5512,102 @@
     scrollToBottom();
 
     var bars = chartData.map(function(d, i) {
-      return { label: d.value, value: d.count, color: CHART_COLORS[i % CHART_COLORS.length] };
+      return { label: d.value, value: d.pct, color: CHART_COLORS[i % CHART_COLORS.length] };
     });
     drawBarChart(chartId, bars);
-    showNextSteps('descriptive', { n: total });
+    showNextSteps('descriptive', { n: nRespondents });
   }
 
-  // --- Crosstab: two variables → grouped bar chart (row %) + crosstab table ---
-  function runCrosstab(rowVals, colVals) {
-    var n = rowVals.length;
+  // --- Crosstab: multi-response × grouping variable → grouped bar chart + table ---
+  function runCrosstab(responseLines, groupLines) {
+    var n = responseLines.length;
 
-    // Build row/col labels (sorted)
-    var rowSet = {}, colSet = {};
+    // Collect all unique items from multi-response data
+    var itemSet = {};
+    var respondentItems = []; // array of arrays
     for (var i = 0; i < n; i++) {
-      rowSet[rowVals[i]] = true;
-      colSet[colVals[i]] = true;
+      var items = parseMultiResponse(responseLines[i]);
+      respondentItems.push(items);
+      items.forEach(function(item) { itemSet[item] = true; });
     }
-    var rowLabels = Object.keys(rowSet).sort();
-    var colLabels = Object.keys(colSet).sort();
+    var itemLabels = Object.keys(itemSet).sort();
 
-    // Build count table [row][col]
-    var table = [];
-    var rowTotals = [];
-    for (var r = 0; r < rowLabels.length; r++) {
-      table.push([]);
-      for (var c = 0; c < colLabels.length; c++) table[r].push(0);
-    }
+    // Collect group labels
+    var groupSet = {};
+    groupLines.forEach(function(g) { groupSet[g] = true; });
+    var groupLabels = Object.keys(groupSet).sort();
+
+    // Count respondents per group
+    var groupN = {};
+    groupLabels.forEach(function(g) { groupN[g] = 0; });
+    groupLines.forEach(function(g) { groupN[g]++; });
+
+    // Build count table: countTable[group][item] = number of respondents in that group who selected that item
+    var countTable = {};
+    groupLabels.forEach(function(g) {
+      countTable[g] = {};
+      itemLabels.forEach(function(item) { countTable[g][item] = 0; });
+    });
     for (var i = 0; i < n; i++) {
-      var ri = rowLabels.indexOf(rowVals[i]);
-      var ci = colLabels.indexOf(colVals[i]);
-      table[ri][ci]++;
-    }
-    for (var r = 0; r < rowLabels.length; r++) {
-      var rt = 0;
-      for (var c = 0; c < colLabels.length; c++) rt += table[r][c];
-      rowTotals.push(rt);
-    }
-    var colTotals = [];
-    for (var c = 0; c < colLabels.length; c++) {
-      var ct = 0;
-      for (var r = 0; r < rowLabels.length; r++) ct += table[r][c];
-      colTotals.push(ct);
+      var group = groupLines[i];
+      respondentItems[i].forEach(function(item) {
+        countTable[group][item]++;
+      });
     }
 
-    // Row percentages table [row][col]
-    var rowPct = [];
-    for (var r = 0; r < rowLabels.length; r++) {
-      rowPct.push([]);
-      for (var c = 0; c < colLabels.length; c++) {
-        rowPct[r].push(rowTotals[r] > 0 ? (table[r][c] / rowTotals[r] * 100) : 0);
+    // Row % table: pctTable[groupIdx][itemIdx] = % of respondents in group who selected item
+    var pctData = []; // [groupIdx][itemIdx]
+    for (var g = 0; g < groupLabels.length; g++) {
+      pctData.push([]);
+      var gName = groupLabels[g];
+      var gTotal = groupN[gName];
+      for (var c = 0; c < itemLabels.length; c++) {
+        pctData[g].push(gTotal > 0 ? (countTable[gName][itemLabels[c]] / gTotal * 100) : 0);
       }
+    }
+
+    // Column totals (total respondents who selected each item)
+    var itemTotals = [];
+    for (var c = 0; c < itemLabels.length; c++) {
+      var ct = 0;
+      for (var g = 0; g < groupLabels.length; g++) ct += countTable[groupLabels[g]][itemLabels[c]];
+      itemTotals.push(ct);
     }
 
     // Plain English
-    var maxPct = 0, maxRow = '', maxCol = '';
-    for (var r = 0; r < rowLabels.length; r++) {
-      for (var c = 0; c < colLabels.length; c++) {
-        if (rowPct[r][c] > maxPct) { maxPct = rowPct[r][c]; maxRow = rowLabels[r]; maxCol = colLabels[c]; }
+    var maxPct = 0, maxGroup = '', maxItem = '';
+    for (var g = 0; g < groupLabels.length; g++) {
+      for (var c = 0; c < itemLabels.length; c++) {
+        if (pctData[g][c] > maxPct) { maxPct = pctData[g][c]; maxGroup = groupLabels[g]; maxItem = itemLabels[c]; }
       }
     }
-    var plainText = 'Cross-tabulation of ' + n + ' observations across ' + rowLabels.length + ' row categories and ' + colLabels.length + ' column categories. ' +
-      'The highest row percentage is ' + maxPct.toFixed(1) + '% for "' + maxCol + '" within the "' + maxRow + '" group.';
+    var isMulti = respondentItems.some(function(items) { return items.length > 1; });
+    var plainText = 'Cross-tabulation of ' + n + ' respondents across ' + groupLabels.length + ' groups and ' + itemLabels.length + ' items. ' +
+      'The highest percentage is ' + maxPct.toFixed(1) + '% for "' + maxItem + '" in the "' + maxGroup + '" group.' +
+      (isMulti ? ' This is multi-response data \u2014 row percentages may exceed 100%.' : '');
 
     // Crosstab HTML table with row %
     var ctHtml = '<div style="overflow-x:auto"><table class="freq-table">';
     ctHtml += '<tr><th></th>';
-    for (var c = 0; c < colLabels.length; c++) ctHtml += '<th>' + escHtml(colLabels[c]) + '</th>';
-    ctHtml += '<th>Total</th><th>N</th></tr>';
-    for (var r = 0; r < rowLabels.length; r++) {
-      ctHtml += '<tr><td><strong>' + escHtml(rowLabels[r]) + '</strong></td>';
-      for (var c = 0; c < colLabels.length; c++) {
-        ctHtml += '<td>' + rowPct[r][c].toFixed(1) + '%</td>';
+    for (var c = 0; c < itemLabels.length; c++) ctHtml += '<th>' + escHtml(itemLabels[c]) + '</th>';
+    ctHtml += '<th>N</th></tr>';
+    for (var g = 0; g < groupLabels.length; g++) {
+      ctHtml += '<tr><td><strong>' + escHtml(groupLabels[g]) + '</strong></td>';
+      for (var c = 0; c < itemLabels.length; c++) {
+        ctHtml += '<td>' + pctData[g][c].toFixed(1) + '%</td>';
       }
-      ctHtml += '<td>100.0%</td><td>' + rowTotals[r] + '</td></tr>';
+      ctHtml += '<td>' + groupN[groupLabels[g]] + '</td></tr>';
     }
     // Base (N) row
     ctHtml += '<tr style="border-top:2px solid var(--border)"><td><strong>Base (N)</strong></td>';
-    for (var c = 0; c < colLabels.length; c++) ctHtml += '<td>' + colTotals[c] + '</td>';
-    ctHtml += '<td></td><td>' + n + '</td></tr>';
+    for (var c = 0; c < itemLabels.length; c++) ctHtml += '<td>' + itemTotals[c] + '</td>';
+    ctHtml += '<td>' + n + '</td></tr>';
     ctHtml += '</table></div>';
-    ctHtml += '<div style="margin-top:6px;font-size:0.82em;color:var(--text-2)">Total N = ' + n + ' &middot; Metric: Row %</div>';
+    ctHtml += '<div style="margin-top:6px;font-size:0.82em;color:var(--text-2)">Total N = ' + n + ' &middot; Metric: Row %' + (isMulti ? ' (multi-response \u2014 rows may exceed 100%)' : '') + '</div>';
 
     var chartId = 'crosstabChart_' + Date.now();
-    // Chart dimensions
-    var chartW = Math.max(600, rowLabels.length * colLabels.length * 22 + 120);
+    // Chart dimensions — scale with data
+    var chartW = Math.max(600, groupLabels.length * itemLabels.length * 22 + 120);
     var chartH = 400;
 
     var html =
@@ -5577,7 +5615,7 @@
       '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
         '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
       '<div class="result-card"><div class="result-card-title">Summary</div><div class="test-results-grid">' +
-        testStat('Total N', n) + testStat('Row Categories', rowLabels.length) + testStat('Column Categories', colLabels.length) +
+        testStat('Total N', n) + testStat('Groups', groupLabels.length) + testStat('Items', itemLabels.length) +
       '</div></div>' +
       '<div class="result-card"><div class="result-card-title">Distribution by Group (Row %)</div>' +
         '<canvas id="' + chartId + '" width="' + chartW + '" height="' + chartH + '" style="width:100%;max-width:' + chartW + 'px;display:block;margin:0 auto;"></canvas></div>' +
@@ -5587,7 +5625,7 @@
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
 
-    drawVerticalGroupedBarChart(chartId, chartW, chartH, rowLabels, colLabels, rowPct);
+    drawVerticalGroupedBarChart(chartId, chartW, chartH, groupLabels, itemLabels, pctData);
     showNextSteps('descriptive', { n: n });
   }
 
