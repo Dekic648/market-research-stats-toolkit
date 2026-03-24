@@ -836,7 +836,7 @@
     }
 
     .next-step-btn {
-      padding: 0.5rem 1rem;
+      padding: 0.6rem 1rem;
       border-radius: 10px;
       border: 1px solid var(--border);
       background: var(--bg-card);
@@ -848,21 +848,33 @@
       cursor: pointer;
       font-family: inherit;
       transition: border-color 0.25s, background 0.25s, transform 0.15s, box-shadow 0.25s, color 0.25s;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
+
+    .next-step-btn .ns-label { font-weight: 600; color: var(--text-0); font-size: 0.83rem; }
+    .next-step-btn .ns-desc { font-weight: 400; color: var(--text-2); font-size: 0.72rem; }
 
     .next-step-btn:hover {
       border-color: var(--border-hover);
       background: var(--rose-soft);
-      color: var(--rose);
       transform: translateY(-1px);
       box-shadow: var(--card-shadow-hover);
     }
+    .next-step-btn:hover .ns-label { color: var(--rose); }
+
+    .next-step-btn.contextual-btn {
+      border-color: var(--rose-soft);
+      background: var(--rose-soft);
+    }
+    .next-step-btn.contextual-btn .ns-label { color: var(--rose); }
 
     .next-step-btn.start-over-next {
       border-color: var(--border);
-      color: var(--text-2);
-      font-weight: 400;
     }
+    .next-step-btn.start-over-next .ns-label { color: var(--text-2); font-weight: 400; }
 
     /* ========================================
        Responsive
@@ -12702,29 +12714,90 @@
   /* ==================================================================
      Next Steps Panel
      ================================================================== */
+  // Contextual next steps based on what the user just ran
+  var CONTEXTUAL_NEXT = {
+    descriptive: [
+      { label: 'Compare across groups', desc: 'Split by a segment variable', method: 'frequencies' },
+      { label: 'Check correlation with another variable', desc: 'See if two things are related', method: 'spearman' },
+      { label: 'Check if scale is reliable', desc: 'Cronbach\u2019s Alpha for related items', method: 'cronbach' },
+      { label: 'Find segments in the data', desc: 'K-Means clustering', method: 'kmeans' }
+    ],
+    group_comparison: [
+      { label: 'Try non-parametric version', desc: 'Doesn\u2019t assume normal distribution', method: 'kruskal_wallis' },
+      { label: 'Check if data is normal', desc: 'Shapiro-Wilk test', method: 'shapiro_wilk' },
+      { label: 'Check correlation instead', desc: 'Are these related, not just different?', method: 'spearman' },
+      { label: 'Find what drives the outcome', desc: 'Regression analysis', method: 'linear_regression' }
+    ],
+    paired: [
+      { label: 'Try non-parametric version', desc: 'Wilcoxon signed-rank', method: 'wilcoxon' },
+      { label: 'Compare 3+ conditions', desc: 'Friedman or Repeated Measures', method: 'friedman' },
+      { label: 'Check the distribution', desc: 'Is my data normally distributed?', method: 'distribution' },
+      { label: 'Summarize each column', desc: 'Full descriptive stats', method: 'summary' }
+    ],
+    correlation: [
+      { label: 'Predict one from the other', desc: 'Simple regression', method: 'simple_regression' },
+      { label: 'Check multiple correlations at once', desc: 'Correlation matrix', method: 'corr_matrix' },
+      { label: 'Control for a third variable', desc: 'Partial correlation', method: 'partial_corr' },
+      { label: 'Compare groups instead', desc: 'Are groups different?', method: 'ttest' }
+    ],
+    regression: [
+      { label: 'Check residuals', desc: 'Is the model well-specified?', method: 'distribution' },
+      { label: 'Try multiple predictors', desc: 'Multiple regression', method: 'linear_regression' },
+      { label: 'Predict a category instead', desc: 'Logistic regression', method: 'logistic_regression' },
+      { label: 'Check correlations first', desc: 'Correlation matrix', method: 'corr_matrix' }
+    ],
+    scale: [
+      { label: 'Explore the factor structure', desc: 'Factor Analysis', method: 'factor_analysis' },
+      { label: 'Reduce to fewer dimensions', desc: 'PCA', method: 'pca' },
+      { label: 'Test a specific structure', desc: 'Confirmatory Factor Analysis', method: 'cfa' },
+      { label: 'Summarize each item', desc: 'Frequencies for each question', method: 'frequencies' }
+    ],
+    clustering: [
+      { label: 'Try a different number of segments', desc: 'Re-run with more/fewer K', method: 'kmeans' },
+      { label: 'Try hierarchical clustering', desc: 'Tree-based segmentation', method: 'hierarchical_clustering' },
+      { label: 'Find latent classes', desc: 'LCA for binary data', method: 'lca' },
+      { label: 'Profile the segments', desc: 'Compare segments on a variable', method: 'anova' }
+    ]
+  };
+
   function showNextSteps(methodType, result) {
     if (methodType) {
       showValidationChecklist(methodType, result || {});
     }
-    var nextSteps = [
-      { label: 'Summarize my data', branch: 'summary' },
-      { label: 'Compare groups', branch: 'groups_diff' },
-      { label: 'Check correlations', branch: 'related' },
-      { label: 'Find what drives an outcome', branch: 'drivers' },
-      { label: 'Find segments', branch: 'segments' },
-      { label: 'Check scale reliability', branch: 'reliability' },
-      { label: 'Check assumptions', branch: 'assumptions' }
+
+    // Get contextual suggestions, fall back to generic
+    var contextual = CONTEXTUAL_NEXT[methodType] || [];
+    var generic = [
+      { label: 'Summarize my data', desc: 'Frequencies, means, distributions', branch: 'summarize' },
+      { label: 'Compare groups', desc: 'T-test, ANOVA, Mann-Whitney', branch: 'groups_diff' },
+      { label: 'Check correlations', desc: 'Pearson, Spearman, Kendall', branch: 'related' },
+      { label: 'Find what drives an outcome', desc: 'Regression, prediction', branch: 'drivers' }
     ];
 
-    var html = '<div class="next-steps-card">' +
-      '<div class="next-steps-title">What would you like to do next?</div>' +
-      '<div class="next-steps-grid">';
+    var html = '<div class="next-steps-card">';
 
-    nextSteps.forEach(function(step, i) {
-      html += '<button class="next-step-btn" data-branch="' + step.branch + '">' + step.label + '</button>';
+    // Contextual suggestions (if any)
+    if (contextual.length > 0) {
+      html += '<div class="next-steps-title">Suggested Next Steps</div><div class="next-steps-grid">';
+      contextual.forEach(function(step) {
+        html += '<button class="next-step-btn contextual-btn" data-method="' + step.method + '" title="' + escHtml(step.desc) + '">' +
+          '<span class="ns-label">' + step.label + '</span>' +
+          '<span class="ns-desc">' + step.desc + '</span>' +
+        '</button>';
+      });
+      html += '</div>';
+    }
+
+    // Generic options
+    html += '<div class="next-steps-title" style="margin-top:' + (contextual.length > 0 ? '1.25rem' : '0') + '">Or explore another area</div><div class="next-steps-grid">';
+    generic.forEach(function(step) {
+      html += '<button class="next-step-btn" data-branch="' + step.branch + '">' +
+        '<span class="ns-label">' + step.label + '</span>' +
+        '<span class="ns-desc">' + step.desc + '</span>' +
+      '</button>';
     });
-
-    html += '<button class="next-step-btn start-over-next" data-action="reset">Start over with a new question</button>';
+    html += '<button class="next-step-btn start-over-next" data-action="reset">' +
+      '<span class="ns-label">Start over</span><span class="ns-desc">New question from scratch</span></button>';
     html += '</div></div>';
 
     container.insertAdjacentHTML('beforeend', html);
@@ -12736,18 +12809,22 @@
     card.querySelectorAll('.next-step-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
         var action = btn.getAttribute('data-action');
-        if (action === 'reset') {
-          resetChat();
+        if (action === 'reset') { resetChat(); return; }
+
+        // Direct method launch
+        var methodId = btn.getAttribute('data-method');
+        if (methodId) {
+          container.innerHTML = '';
+          launchMethod(methodId);
           return;
         }
+
+        // Tree branch navigation
         var branch = btn.getAttribute('data-branch');
         var targetNode = findNodeById(TREE, branch);
         if (targetNode) {
           resetChat();
-          setTimeout(function() {
-            container.innerHTML = '';
-            runNode(targetNode);
-          }, 50);
+          setTimeout(function() { container.innerHTML = ''; runNode(targetNode); }, 50);
         }
       });
     });
