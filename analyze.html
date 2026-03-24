@@ -2324,10 +2324,11 @@
         text: "I just need to summarize my data (e.g., averages, distributions, confidence intervals)",
         next: {
           id: 'summarize',
-          question: "What kind of data are you summarizing?",
+          question: "What kind of summary do you need?",
           options: [
-            { text: "Numbers (scores, amounts, revenue)", next: { id: 'summary', method: 'summary' } },
-            { text: "Frequencies & percentages for categories", next: { id: 'frequencies_node', method: 'frequencies' } },
+            { text: "Show % breakdown of responses (e.g., how many said 1, 2, 3... on a rating scale)", next: { id: 'frequencies_node', method: 'frequencies' } },
+            { text: "Show % breakdown split by groups (e.g., satisfaction by segment \u2014 grouped bar chart)", next: { id: 'frequencies_node', method: 'frequencies' } },
+            { text: "Calculate averages, medians, standard deviations for a numeric column", next: { id: 'summary', method: 'summary' } },
             { text: "Checkbox / multi-response question (select all that apply)", next: { id: 'multi_response_node', method: 'multi_response' } }
           ]
         }
@@ -5752,17 +5753,35 @@
 
     var sorted = Object.keys(freqs).map(function(k) {
       return { value: k, count: freqs[k], pct: (freqs[k] / nRespondents * 100) };
-    }).sort(function(a, b) { return b.count - a.count; });
+    });
 
     if (sorted.length === 0) { showError('No values found in the data.'); return; }
 
-    var mode = sorted[0].value;
     var totalMentions = 0;
     sorted.forEach(function(r) { totalMentions += r.count; });
     var isMulti = totalMentions > nRespondents;
+
+    // Detect if all values are numeric (Likert/scale data) → sort numerically, use distribution language
+    var allNumeric = sorted.every(function(r) { var n = parseFloat(r.value); return !isNaN(n) && isFinite(n); });
+    var isLikert = allNumeric && sorted.length >= 2 && sorted.length <= 11 && !isMulti;
+
+    if (isLikert) {
+      sorted.sort(function(a, b) { return parseFloat(a.value) - parseFloat(b.value); });
+    } else {
+      sorted.sort(function(a, b) { return b.count - a.count; });
+    }
+
+    var mode = isLikert ? sorted.reduce(function(a, b) { return a.count >= b.count ? a : b; }).value : sorted[0].value;
+    var modeEntry = sorted.find(function(r) { return r.value === mode; });
     var chartId = 'freqChart_' + Date.now();
 
-    var tableHtml = '<table class="freq-table"><tr><th>Value</th><th>Count</th><th>% of Respondents</th></tr>';
+    // Adaptive labels based on data type
+    var valueLabel = isLikert ? 'Response' : 'Value';
+    var pctLabel = isLikert ? '% of Responses' : '% of Respondents';
+    var titleLabel = isLikert ? 'Response Distribution' : 'Frequency Table';
+    var chartTitle = isLikert ? 'Response Distribution' : 'Top Categories';
+
+    var tableHtml = '<table class="freq-table"><tr><th>' + valueLabel + '</th><th>Count</th><th>' + pctLabel + '</th></tr>';
     sorted.forEach(function(row) {
       var barW = Math.min(row.pct, 100);
       tableHtml += '<tr><td>' + escHtml(row.value) + '</td><td>' + row.count + '</td>' +
@@ -5770,9 +5789,25 @@
     });
     tableHtml += '</table>';
 
-    var plainText = 'Frequency analysis of ' + nRespondents + ' respondents across ' + sorted.length + ' options. ' +
-      'The most selected is "' + mode + '" (' + sorted[0].count + ', ' + sorted[0].pct.toFixed(1) + '%).' +
-      (isMulti ? ' Multi-response: percentages based on respondents, may exceed 100%.' : '');
+    var plainText;
+    if (isLikert) {
+      plainText = 'Response distribution for ' + nRespondents + ' respondents on a ' + sorted[0].value + '\u2013' + sorted[sorted.length - 1].value + ' scale. ' +
+        'The most common response is "' + mode + '" (' + modeEntry.count + ' respondents, ' + modeEntry.pct.toFixed(1) + '%).';
+      // Add top/bottom box for Likert
+      var vals = sorted.map(function(r) { return parseFloat(r.value); });
+      var minVal = Math.min.apply(null, vals), maxVal = Math.max.apply(null, vals);
+      if (maxVal - minVal >= 4) {
+        var topTwo = sorted.filter(function(r) { return parseFloat(r.value) >= maxVal - 1; });
+        var botTwo = sorted.filter(function(r) { return parseFloat(r.value) <= minVal + 1; });
+        var topPct = topTwo.reduce(function(s, r) { return s + r.pct; }, 0);
+        var botPct = botTwo.reduce(function(s, r) { return s + r.pct; }, 0);
+        plainText += ' Top-2 box (' + (maxVal - 1) + '\u2013' + maxVal + '): ' + topPct.toFixed(1) + '%. Bottom-2 box (' + minVal + '\u2013' + (minVal + 1) + '): ' + botPct.toFixed(1) + '%.';
+      }
+    } else {
+      plainText = 'Frequency analysis of ' + nRespondents + ' respondents across ' + sorted.length + ' options. ' +
+        'The most selected is "' + mode + '" (' + modeEntry.count + ', ' + modeEntry.pct.toFixed(1) + '%).' +
+        (isMulti ? ' Multi-response: percentages based on respondents, may exceed 100%.' : '');
+    }
 
     var chartData = sorted.slice(0, 15);
     var html =
@@ -5780,11 +5815,13 @@
       '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
         '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
       '<div class="result-card"><div class="result-card-title">Summary</div><div class="test-results-grid">' +
-        testStat('Respondents', nRespondents) + testStat('Unique Options', sorted.length) + testStat('Most Selected', mode) +
+        testStat('Respondents', nRespondents) +
+        testStat(isLikert ? 'Scale Points' : 'Unique Options', sorted.length) +
+        testStat(isLikert ? 'Most Common Response' : 'Most Selected', mode) +
         (isMulti ? testStat('Total Mentions', totalMentions) : '') +
       '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Frequency Table</div>' + tableHtml + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Top Categories</div>' +
+      '<div class="result-card"><div class="result-card-title">' + titleLabel + '</div>' + tableHtml + '</div>' +
+      '<div class="result-card"><div class="result-card-title">' + chartTitle + '</div>' +
         '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, chartData.length * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
       '</div>';
 
@@ -5799,12 +5836,26 @@
   // --- Crosstab: multi-response × grouping variable ---
   function runCrosstab(parsed, groupLines) {
     var n = parsed.rows.length;
-    var optionLabels = parsed.uniqueItems.sort();
+    var optionLabels = parsed.uniqueItems.slice();
 
-    // Group labels and counts
+    // Sort numerically if all option labels are numbers (Likert/scale data)
+    var allNumericOpts = optionLabels.every(function(v) { var n = parseFloat(v); return !isNaN(n) && isFinite(n); });
+    if (allNumericOpts) {
+      optionLabels.sort(function(a, b) { return parseFloat(a) - parseFloat(b); });
+    } else {
+      optionLabels.sort();
+    }
+
+    // Group labels and counts — also sort numerically if applicable
     var groupSet = {};
     groupLines.forEach(function(g) { groupSet[g] = true; });
-    var groupLabels = Object.keys(groupSet).sort();
+    var groupLabels = Object.keys(groupSet);
+    var allNumericGroups = groupLabels.every(function(v) { var n = parseFloat(v); return !isNaN(n) && isFinite(n); });
+    if (allNumericGroups) {
+      groupLabels.sort(function(a, b) { return parseFloat(a) - parseFloat(b); });
+    } else {
+      groupLabels.sort();
+    }
     var groupN = {};
     groupLabels.forEach(function(g) { groupN[g] = 0; });
     groupLines.forEach(function(g) { groupN[g]++; });
