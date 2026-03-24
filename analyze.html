@@ -4957,27 +4957,56 @@
 
     var ratio = r.totalSS > 0 ? r.betweenSS / r.totalSS : 0;
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Clustering Summary</div><div class="test-results-grid">' +
-        testStat('K (clusters)', r.k) + testStat('n (observations)', r.n) +
-        testStat('Between SS / Total SS', (ratio * 100).toFixed(1) + '%') +
-        testStat('Total Within SS', round2(r.totalWithinSS)) +
-        testStat('Converged', r.converged ? 'Yes' : 'No') +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Cluster Centroids</div>' + centroidHtml + '</div>';
+    var html = '<div class="results-section">';
 
+    // Segment overview: sizes and quality
+    html += '<div class="result-card"><div class="result-card-title">Segments Found: ' + r.k + '</div>';
+    html += '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">';
+    for (var c = 0; c < r.k; c++) {
+      var pct = round2(r.clusterSizes[c] / r.n * 100);
+      html += '<div style="flex:1;min-width:90px;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
+        '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">Segment ' + (c + 1) + '</div>' +
+        '<div style="font-size:1.3rem;font-weight:700;margin:0.2rem 0;color:' + CHART_COLORS[c % CHART_COLORS.length] + '">' + r.clusterSizes[c] + '</div>' +
+        '<div style="font-size:0.72rem;color:var(--text-2)">' + pct + '% of total</div></div>';
+    }
+    html += '</div>';
+    html += '<div style="font-size:0.82rem;color:var(--text-2);text-align:center;margin-top:0.5rem">Separation quality: <strong>' + (ratio * 100).toFixed(1) + '%</strong> of variance explained by segments</div>';
+    html += '</div>';
+
+    // What makes each segment different (centroid profile)
+    html += '<div class="result-card"><div class="result-card-title">Segment Profiles</div>' + centroidHtml +
+      '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Values show the average score per variable in each segment. Higher = that segment scores higher on that variable.</div></div>';
+
+    // Chart
     if (data.length === 2) {
-      // 2-variable scatter plot colored by cluster
-      html += '<div class="result-card"><div class="result-card-title">Cluster Scatter Plot</div>' +
+      html += '<div class="result-card"><div class="result-card-title">Segment Scatter Plot</div>' +
         '<canvas id="' + chartId + '" width="500" height="350" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
     } else {
-      // Bar chart of cluster sizes
-      html += '<div class="result-card"><div class="result-card-title">Cluster Sizes</div>' +
+      html += '<div class="result-card"><div class="result-card-title">Segment Sizes</div>' +
         '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
     }
+
+    // Plain English describing each segment
+    var plainText2 = r.k + ' segments found from ' + r.n + ' respondents. ';
+    for (var c = 0; c < r.k; c++) {
+      var highest = { val: -Infinity, label: '' }, lowest = { val: Infinity, label: '' };
+      for (var j = 0; j < r.centroids[c].length; j++) {
+        if (r.centroids[c][j] > highest.val) { highest = { val: r.centroids[c][j], label: labels[j] }; }
+        if (r.centroids[c][j] < lowest.val) { lowest = { val: r.centroids[c][j], label: labels[j] }; }
+      }
+      plainText2 += 'Segment ' + (c + 1) + ' (' + r.clusterSizes[c] + ' people): highest on ' + highest.label + ', lowest on ' + lowest.label + '. ';
+    }
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText2 + '</div>' + makeCopyBtn(plainText2) + '</div>';
+
+    // Collapsed details
+    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Technical Details</summary>' +
+      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
+        testStat('K', r.k) + testStat('n', r.n) +
+        testStat('Between/Total SS', (ratio * 100).toFixed(1) + '%') + testStat('Within SS', round2(r.totalWithinSS)) +
+        testStat('Converged', r.converged ? 'Yes' : 'No') +
+      '</div></div></details></div>';
+
     html += '</div>';
 
     container.insertAdjacentHTML('beforeend', html);
@@ -5593,26 +5622,43 @@
     }
     loadHtml += '</table>';
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Variance Explained</div><div class="test-results-grid">';
-    for (var c = 0; c < r.eigenvalues.length; c++) {
-      html += testStat('PC' + (c + 1) + ' Eigenvalue', round4(r.eigenvalues[c]));
-    }
-    html += '</div>' +
-      statRow('Cumulative Variance', r.cumulativeVariance.map(function(v) { return (v * 100).toFixed(1) + '%'; }).join(', ')) +
-      '</div>' +
-      '<div class="result-card"><div class="result-card-title">Component Loadings</div>' + loadHtml +
-        '<div class="effect-interpretation">Bold values (>= 0.5) indicate strong loadings on that component.</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Scree Plot (Variance Explained)</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.eigenvalues.length * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    // How many components to keep (eigenvalue > 1 rule)
+    var nKeep = r.eigenvalues.filter(function(e) { return e > 1; }).length;
+    var totalVar = r.cumulativeVariance[Math.min(nKeep, r.cumulativeVariance.length) - 1] || 0;
 
+    var html = '<div class="results-section">';
+
+    // Key finding upfront
+    html += '<div class="result-card"><div class="result-card-title">Components Found</div>' +
+      '<div style="text-align:center">' +
+        '<div style="font-size:2.5rem;font-weight:700;color:var(--rose)">' + nKeep + '</div>' +
+        '<div style="font-size:0.9rem;color:var(--text-2)">components with eigenvalue > 1, explaining <strong>' + (totalVar * 100).toFixed(1) + '%</strong> of total variance</div>' +
+      '</div></div>';
+
+    // Variance bar chart
+    html += '<div class="result-card"><div class="result-card-title">Variance Explained per Component</div>' +
+      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.eigenvalues.length * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+
+    // Loadings table (collapsed for clean look)
+    html += '<div class="result-card"><details open><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Component Loadings</summary>' +
+      '<div style="margin-top:0.75rem">' + loadHtml +
+      '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Bold values (\u2265 0.5) = strong loading on that component.</div></div></details></div>';
+
+    // Plain English
+    var plainText2 = r.k + ' variables reduced to ' + nKeep + ' components explaining ' + (totalVar * 100).toFixed(1) + '% of variance. ';
+    for (var c = 0; c < Math.min(nKeep, 3); c++) {
+      var topLoaders = [];
+      for (var i = 0; i < r.k; i++) {
+        if (Math.abs(r.loadings[c][i]) >= 0.5) topLoaders.push(labels[i]);
+      }
+      if (topLoaders.length > 0) plainText2 += 'PC' + (c + 1) + ' is driven by: ' + topLoaders.join(', ') + '. ';
+    }
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText2 + '</div>' + makeCopyBtn(plainText2) + '</div>';
+
+    html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
-
     var bars = [];
     for (var c = 0; c < r.explainedVariance.length; c++) {
       bars.push({ label: 'PC' + (c + 1) + ' (' + (r.explainedVariance[c] * 100).toFixed(1) + '%)', value: r.explainedVariance[c] * 100, color: CHART_COLORS[c % CHART_COLORS.length] });
@@ -5739,31 +5785,48 @@
     }
     loadHtml += '</table>';
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Factor Summary</div><div class="test-results-grid">' +
-        testStat('Factors', r.nFactors) + testStat('Variables', r.k) + testStat('Observations', r.n) +
-      '</div>' +
-      statRow('Variance Explained', r.explainedVariance.map(function(v) { return (v * 100).toFixed(1) + '%'; }).join(', ')) +
-      '</div>' +
-      '<div class="result-card"><div class="result-card-title">Rotated Factor Loadings (Varimax)</div>' + loadHtml +
-        '<div class="effect-interpretation">Bold values (>= 0.4) indicate meaningful loadings. Each item should load strongly on at least one factor.</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Communalities</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    var html = '<div class="results-section">';
 
+    // Key finding: how many factors, what they represent
+    html += '<div class="result-card"><div class="result-card-title">Factors Discovered: ' + r.nFactors + '</div>';
+    html += '<div style="font-size:0.9rem;color:var(--text-2);margin-bottom:0.75rem">' + r.k + ' variables, ' + r.n + ' respondents</div>';
+    for (var f = 0; f < r.nFactors; f++) {
+      var topItems = [];
+      for (var i = 0; i < r.k; i++) {
+        if (Math.abs(r.loadings[i][f]) >= 0.4) topItems.push(labels[i]);
+      }
+      html += '<div style="padding:0.5rem 0;border-bottom:1px solid rgba(255,255,255,0.05)">' +
+        '<strong style="color:' + CHART_COLORS[f % CHART_COLORS.length] + '">Factor ' + (f + 1) + '</strong> (' + (r.explainedVariance[f] * 100).toFixed(1) + '% variance): ' +
+        (topItems.length > 0 ? topItems.join(', ') : 'no strong loadings') + '</div>';
+    }
+    html += '</div>';
+
+    // Communalities chart
+    html += '<div class="result-card"><div class="result-card-title">How Well Each Variable Is Explained</div>' +
+      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas>' +
+      '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Communality: proportion of each variable explained by the factors. Higher = better fit.</div></div>';
+
+    // Loading table (collapsed)
+    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Full Loading Table (Varimax Rotation)</summary>' +
+      '<div style="margin-top:0.75rem">' + loadHtml +
+      '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Bold (\u2265 0.4) = meaningful loading.</div></div></details></div>';
+
+    // Plain English
+    var plainText2 = r.nFactors + ' factors found. ';
+    for (var f = 0; f < r.nFactors; f++) {
+      var items = [];
+      for (var i = 0; i < r.k; i++) { if (Math.abs(r.loadings[i][f]) >= 0.4) items.push(labels[i]); }
+      plainText2 += 'Factor ' + (f + 1) + (items.length > 0 ? ' groups: ' + items.join(', ') : ' has no strong loadings') + '. ';
+    }
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText2 + '</div>' + makeCopyBtn(plainText2) + '</div>';
+
+    html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
-
     var bars = [];
     for (var i = 0; i < r.k; i++) {
-      bars.push({
-        label: labels[i],
-        value: r.communalities[i],
-        color: r.communalities[i] >= 0.4 ? CHART_COLORS[2] : CHART_COLORS[4]
-      });
+      bars.push({ label: labels[i], value: r.communalities[i], color: r.communalities[i] >= 0.4 ? CHART_COLORS[2] : CHART_COLORS[4] });
     }
     drawBarChart(chartId, bars);
     showNextSteps('scale', r);
@@ -7398,20 +7461,49 @@
       }
     }
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">ANOVA Table</div><div class="test-results-grid">' +
-        testStat('F (Factor A)', round4(r.mainA.F)) + testStat('p (Factor A)', round6(r.mainA.p), pcA) + testStat('Eta-sq (A)', round4(r.mainA.etaSquared)) +
-        testStat('F (Factor B)', round4(r.mainB.F)) + testStat('p (Factor B)', round6(r.mainB.p), pcB) + testStat('Eta-sq (B)', round4(r.mainB.etaSquared)) +
-        testStat('F (Interaction)', round4(r.interaction.F)) + testStat('p (Interaction)', round6(r.interaction.p), pcAB) + testStat('Eta-sq (AxB)', round4(r.interaction.etaSquared)) +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Cell Means</div>' + cellHtml + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Cell Means Chart</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, bars.length * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    var html = '<div class="results-section">';
 
+    // Three significance badges: Factor A, Factor B, Interaction
+    html += '<div class="result-card"><div class="result-card-title">Effects Summary</div>' +
+      '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:120px;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
+          '<div style="font-size:0.72rem;color:var(--text-2)">Factor A</div>' +
+          '<div style="font-size:1.1rem;font-weight:700;color:' + (sigA ? 'var(--green)' : 'var(--text-2)') + '">' + (sigA ? 'Significant' : 'Not sig.') + '</div>' +
+          '<div style="font-size:0.72rem;color:var(--text-2)">p = ' + round4(r.mainA.p) + '</div></div>' +
+        '<div style="flex:1;min-width:120px;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
+          '<div style="font-size:0.72rem;color:var(--text-2)">Factor B</div>' +
+          '<div style="font-size:1.1rem;font-weight:700;color:' + (sigB ? 'var(--green)' : 'var(--text-2)') + '">' + (sigB ? 'Significant' : 'Not sig.') + '</div>' +
+          '<div style="font-size:0.72rem;color:var(--text-2)">p = ' + round4(r.mainB.p) + '</div></div>' +
+        '<div style="flex:1;min-width:120px;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
+          '<div style="font-size:0.72rem;color:var(--text-2)">Interaction (A\u00d7B)</div>' +
+          '<div style="font-size:1.1rem;font-weight:700;color:' + (sigAB ? 'var(--amber)' : 'var(--text-2)') + '">' + (sigAB ? 'Significant' : 'Not sig.') + '</div>' +
+          '<div style="font-size:0.72rem;color:var(--text-2)">p = ' + round4(r.interaction.p) + '</div></div>' +
+      '</div></div>';
+
+    // Cell means chart
+    html += '<div class="result-card"><div class="result-card-title">Mean Scores by Combination</div>' +
+      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, bars.length * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+
+    // Cell means table
+    html += '<div class="result-card"><div class="result-card-title">Cell Means Table</div>' + cellHtml + '</div>';
+
+    // Statistical details (collapsed)
+    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">ANOVA Table Details</summary>' +
+      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
+        testStat('F (A)', round4(r.mainA.F)) + testStat('p (A)', round6(r.mainA.p), pcA) + testStat('\u03b7\u00b2 (A)', round4(r.mainA.etaSquared)) +
+        testStat('F (B)', round4(r.mainB.F)) + testStat('p (B)', round6(r.mainB.p), pcB) + testStat('\u03b7\u00b2 (B)', round4(r.mainB.etaSquared)) +
+        testStat('F (A\u00d7B)', round4(r.interaction.F)) + testStat('p (A\u00d7B)', round6(r.interaction.p), pcAB) + testStat('\u03b7\u00b2 (A\u00d7B)', round4(r.interaction.etaSquared)) +
+      '</div></div></details></div>';
+
+    // Plain English
+    var plainText2 = 'Two-way ANOVA (n=' + r.N + '): ';
+    plainText2 += 'Factor A ' + (sigA ? 'has a significant effect' : 'no significant effect') + '. ';
+    plainText2 += 'Factor B ' + (sigB ? 'has a significant effect' : 'no significant effect') + '. ';
+    plainText2 += sigAB ? 'The combination of A and B matters \u2014 the effect of one factor depends on the level of the other.' : 'No significant interaction \u2014 the effects of A and B are independent.';
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText2 + '</div>' + makeCopyBtn(plainText2) + '</div>';
+
+    html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     drawBarChart(chartId, bars);
@@ -8141,50 +8233,53 @@
       centroids.push(centroid);
     }
 
-    var plainText = 'Hierarchical clustering with ' + linkage + ' linkage produced ' + k + ' clusters from ' + nObs + ' observations. ' +
-      'Cluster sizes: ' + clusterSizes.map(function(s, i) { return 'Cluster ' + (i + 1) + ' = ' + s; }).join(', ') + '.';
-
     // Centroid table
-    var centroidHtml = '<table class="coeff-table"><tr><th>Cluster</th><th>Size</th>';
+    var centroidHtml = '<table class="coeff-table"><tr><th>Segment</th><th>Size</th>';
     labels.forEach(function(l) { centroidHtml += '<th>' + escHtml(l) + '</th>'; });
     centroidHtml += '</tr>';
     for (var c = 0; c < k; c++) {
-      centroidHtml += '<tr><td>Cluster ' + (c + 1) + '</td><td>' + clusterSizes[c] + '</td>';
-      for (var j = 0; j < centroids[c].length; j++) {
-        centroidHtml += '<td>' + round4(centroids[c][j]) + '</td>';
-      }
+      centroidHtml += '<tr><td>Segment ' + (c + 1) + '</td><td>' + clusterSizes[c] + '</td>';
+      for (var j = 0; j < centroids[c].length; j++) centroidHtml += '<td>' + round4(centroids[c][j]) + '</td>';
       centroidHtml += '</tr>';
     }
     centroidHtml += '</table>';
 
-    // Merge heights info
-    var mergeHtml = '';
-    if (mergeHeights.length > 0) {
-      var lastMerges = mergeHeights.slice(-Math.min(5, mergeHeights.length));
-      mergeHtml = '<div class="effect-interpretation">Last merge heights: ' + lastMerges.map(function(h) { return round4(h); }).join(', ') + '</div>';
-    }
-
     var chartId = 'hierChart_' + Date.now();
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Clustering Summary</div><div class="test-results-grid">' +
-        testStat('K (clusters)', k) + testStat('n (observations)', nObs) +
-        testStat('Linkage', linkage) + testStat('Variables', nVars) +
-      '</div>' + mergeHtml + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Cluster Centroids</div>' + centroidHtml + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Cluster Sizes</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    var html = '<div class="results-section">';
 
+    // Segment overview
+    html += '<div class="result-card"><div class="result-card-title">Segments Found: ' + k + '</div>';
+    html += '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">';
+    for (var c = 0; c < k; c++) {
+      html += '<div style="flex:1;min-width:90px;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
+        '<div style="font-size:0.72rem;color:var(--text-2)">Segment ' + (c + 1) + '</div>' +
+        '<div style="font-size:1.3rem;font-weight:700;color:' + CHART_COLORS[c % CHART_COLORS.length] + '">' + clusterSizes[c] + '</div>' +
+        '<div style="font-size:0.72rem;color:var(--text-2)">' + round2(clusterSizes[c] / nObs * 100) + '%</div></div>';
+    }
+    html += '</div></div>';
+
+    html += '<div class="result-card"><div class="result-card-title">Segment Profiles</div>' + centroidHtml + '</div>';
+
+    html += '<div class="result-card"><div class="result-card-title">Segment Sizes</div>' +
+      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+
+    // Plain English
+    var plainText = k + ' segments found from ' + nObs + ' respondents using ' + linkage + ' linkage. ';
+    for (var c = 0; c < k; c++) {
+      var high = { val: -Infinity, label: '' };
+      for (var j = 0; j < centroids[c].length; j++) {
+        if (centroids[c][j] > high.val) { high = { val: centroids[c][j], label: labels[j] }; }
+      }
+      plainText += 'Segment ' + (c + 1) + ' (' + clusterSizes[c] + '): highest on ' + high.label + '. ';
+    }
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+
+    html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
-
     var bars = [];
-    for (var c = 0; c < k; c++) {
-      bars.push({ label: 'Cluster ' + (c + 1), value: clusterSizes[c], color: CHART_COLORS[c % CHART_COLORS.length] });
-    }
+    for (var c = 0; c < k; c++) bars.push({ label: 'Segment ' + (c + 1), value: clusterSizes[c], color: CHART_COLORS[c % CHART_COLORS.length] });
     drawBarChart(chartId, bars);
     showNextSteps('clustering', { n: nObs });
   }
@@ -8973,19 +9068,35 @@
       bars.push({ label: labels[j + 1] || 'Predictor ' + (j + 1), value: oddsRatios[j], color: oddsRatios[j] >= 1 ? CHART_COLORS[2] : CHART_COLORS[6] });
     }
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Model Summary</div><div class="test-results-grid">' +
-        testStat('Levels', K) + testStat('n', n) + testStat('Pseudo R\u00b2', pseudoR2) +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Thresholds</div>' + threshHtml + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Coefficients & Odds Ratios</div>' + coeffHtml + '</div>';
+    var html = '<div class="results-section">';
+
+    // Key metrics
+    html += '<div class="result-card"><div class="result-card-title">Model Summary</div><div class="test-results-grid">' +
+      testStat('Scale Levels', K + ' (' + levels.join(', ') + ')') +
+      testStat('Pseudo R\u00b2', pseudoR2) + testStat('n', n) +
+    '</div></div>';
+
+    // Odds ratios chart
     if (bars.length > 0) {
-      html += '<div class="result-card"><div class="result-card-title">Odds Ratios (>1 = higher category, <1 = lower category)</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + Math.max(120, bars.length * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+      html += '<div class="result-card"><div class="result-card-title">What Moves Respondents Up the Scale</div>' +
+        '<canvas id="' + chartId + '" width="500" height="' + Math.max(120, bars.length * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas>' +
+        '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Odds ratio > 1 = pushes toward higher category. < 1 = pushes toward lower.</div></div>';
     }
+
+    // Tables (collapsed)
+    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Coefficient &amp; Threshold Tables</summary>' +
+      '<div style="margin-top:0.75rem">' + coeffHtml + '<div style="margin-top:1rem"><strong>Thresholds</strong></div>' + threshHtml + '</div></details></div>';
+
+    // Plain English
+    var plainText2 = 'Ordinal regression predicting a ' + K + '-point scale. ';
+    for (var j = 0; j < nPred; j++) {
+      var orVal = oddsRatios[j];
+      var predName = labels[j + 1] || 'Predictor ' + (j + 1);
+      plainText2 += predName + ': odds ratio = ' + orVal + (orVal > 1 ? ' (increases odds of higher rating)' : ' (decreases odds)') + '. ';
+    }
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText2 + '</div>' + makeCopyBtn(plainText2) + '</div>';
+
     html += '</div>';
 
     container.insertAdjacentHTML('beforeend', html);
@@ -10782,19 +10893,43 @@
     var chartId = 'lcaChart_' + Date.now();
     var chartHeight = Math.max(150, nItems * (nClasses * 20 + 24) + 40);
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Class Sizes</div>' + sizeHtml + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Item Probabilities by Class</div>' + tableHtml + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Model Fit</div><div class="test-results-grid">' +
+    var html = '<div class="results-section">';
+
+    // Class overview upfront
+    html += '<div class="result-card"><div class="result-card-title">Classes Found: ' + nClasses + '</div>';
+    html += '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">';
+    for (var c = 0; c < nClasses; c++) {
+      var highItems = [];
+      for (var j = 0; j < nItems; j++) { if (theta[c][j] > 0.6) highItems.push(labels[j]); }
+      html += '<div style="flex:1;min-width:120px;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem">' +
+        '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">Class ' + (c + 1) + '</div>' +
+        '<div style="font-size:1.3rem;font-weight:700;color:' + CHART_COLORS[c % CHART_COLORS.length] + '">' + classCounts[c] + ' <span style="font-size:0.7rem;color:var(--text-2)">(' + round2(pi[c] * 100) + '%)</span></div>' +
+        '<div style="font-size:0.78rem;color:var(--text-2);margin-top:0.3rem">' + (highItems.length > 0 ? 'High on: ' + highItems.join(', ') : 'Low across items') + '</div></div>';
+    }
+    html += '</div>';
+    html += '<div style="font-size:0.82rem;color:var(--text-2);text-align:center;margin-top:0.5rem">Class separation: entropy = ' + round4(relativeEntropy) + (relativeEntropy > 0.8 ? ' (good)' : relativeEntropy > 0.6 ? ' (moderate)' : ' (weak)') + '</div>';
+    html += '</div>';
+
+    // Item probabilities chart
+    html += '<div class="result-card"><div class="result-card-title">What Defines Each Class</div>' +
+      '<canvas id="' + chartId + '" width="500" height="' + chartHeight + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+
+    // Probability table (collapsed)
+    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Item Probability Table</summary>' +
+      '<div style="margin-top:0.75rem">' + tableHtml + '</div></details></div>';
+
+    // Technical details (collapsed)
+    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Model Fit Details</summary>' +
+      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
         testStat('BIC', round2(BIC)) + testStat('Entropy', round4(relativeEntropy)) +
         testStat('Log-Likelihood', round2(prevLL)) + testStat('Parameters', nParams) +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Item Probabilities by Class</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + chartHeight + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+      '</div></div></details></div>';
+
+    // Plain English
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+
+    html += '</div>';
 
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
@@ -11218,24 +11353,40 @@
     var chartId = 'cfaChart_' + Date.now();
     var chartHeight = Math.max(180, nItems * 55 + 30);
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Model Fit Indices</div><div class="test-results-grid">' +
-        testStat('CFI', round4(cfi), fitColor('cfi', cfi)) + testStat('RMSEA', round4(rmsea), fitColor('rmsea', rmsea)) +
-        testStat('SRMR', round4(srmr), fitColor('srmr', srmr)) + testStat('Chi-Square', round2(chiSq)) +
-        testStat('df', df) + testStat('n', n) +
-      '</div>' +
-      '<div class="effect-interpretation">' +
-        'CFI &ge; 0.95 = excellent, &ge; 0.90 = acceptable. RMSEA &le; 0.05 = excellent, &le; 0.08 = acceptable. SRMR &le; 0.05 = excellent, &le; 0.08 = acceptable.' +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Standardized Loadings</div>' + loadHtml +
-        '<div class="effect-interpretation">Values &ge; 0.4 indicate meaningful loadings. h&sup2; = communality (variance explained by factors).</div></div>' +
-      (corrHtml ? '<div class="result-card"><div class="result-card-title">Factor Correlations</div>' + corrHtml + '</div>' : '') +
-      '<div class="result-card"><div class="result-card-title">Standardized Loadings</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + chartHeight + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    var goodFit = cfi >= 0.90 && rmsea <= 0.08 && srmr <= 0.08;
+
+    var html = '<div class="results-section">';
+
+    // Big answer upfront: does the model fit?
+    html += '<div class="result-card"><div class="result-card-title">Does Your Model Fit the Data?</div>' +
+      '<div style="text-align:center">' +
+        '<div style="font-size:2.5rem;font-weight:700;color:' + (goodFit ? 'var(--green)' : 'var(--rose)') + '">' + (goodFit ? 'Yes' : 'Needs Work') + '</div>' +
+        '<div style="font-size:0.9rem;color:var(--text-2);margin-top:0.3rem">' + nFactors + '-factor model, ' + nItems + ' items, n=' + n + '</div>' +
+      '</div></div>';
+
+    // Fit indices with color coding
+    html += '<div class="result-card"><div class="result-card-title">Fit Indices</div><div class="test-results-grid">' +
+      testStat('CFI', round4(cfi) + ' (' + fitVerdict('cfi', cfi) + ')', fitColor('cfi', cfi)) +
+      testStat('RMSEA', round4(rmsea) + ' (' + fitVerdict('rmsea', rmsea) + ')', fitColor('rmsea', rmsea)) +
+      testStat('SRMR', round4(srmr) + ' (' + fitVerdict('srmr', srmr) + ')', fitColor('srmr', srmr)) +
+    '</div></div>';
+
+    // Loading chart
+    html += '<div class="result-card"><div class="result-card-title">Factor Loadings</div>' +
+      '<canvas id="' + chartId + '" width="500" height="' + chartHeight + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas>' +
+      '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Bar color = factor assignment. \u2265 0.4 = good loading.</div></div>';
+
+    // Detailed tables (collapsed)
+    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Loading Table &amp; Details</summary>' +
+      '<div style="margin-top:0.75rem">' + loadHtml +
+      (corrHtml ? '<div style="margin-top:1rem"><strong>Factor Correlations</strong></div>' + corrHtml : '') +
+      '</div></details></div>';
+
+    // Plain English
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+
+    html += '</div>';
 
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
