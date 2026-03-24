@@ -3910,27 +3910,30 @@
     var mA = round2(StatsEngine._helpers.mean(a)), mB = round2(StatsEngine._helpers.mean(b));
 
     var html = '<div class="results-section">';
-    html += groupMeansCard([a, b], [descA, descB], 'Paired Comparison');
-    html += sigBadge(r.p) + '</div>';
+    html += renderGroupCards([a, b], [descA, descB], 'Paired Comparison');
+    html += renderSigBadge(r.p) + '</div>';
 
-    html += '<div class="result-card"><div class="result-card-title">Mean Comparison</div>' +
-      '<canvas id="' + chartId + '" width="500" height="180" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Mean Comparison', 500, 180);
 
     html += groupDistTable([a, b], [descA, descB]);
 
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
-      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
-        testStat('t', round4(r.t)) + testStat('p-value', round6(r.p), pc) + testStat('df', r.df) +
-        testStat("Cohen's d", round4(r.cohensD)) + testStat('Mean Diff', round4(r.meanDiff)) +
-        testStat('95% CI', '[' + round4(r.ci95.lower) + ', ' + round4(r.ci95.upper) + ']') +
-      '</div><div class="effect-interpretation">Effect size: <strong>' + eff + '</strong></div></div></details></div>';
+    html += renderCollapsed('Statistical Details',
+      renderMetrics([
+        { label: 't', value: round4(r.t) },
+        { label: 'p-value', value: round6(r.p), cls: pc },
+        { label: 'df', value: r.df },
+        { label: "Cohen's d", value: round4(r.cohensD) },
+        { label: 'Mean Diff', value: round4(r.meanDiff) },
+        { label: '95% CI', value: '[' + round4(r.ci95.lower) + ', ' + round4(r.ci95.upper) + ']' }
+      ]) +
+      '<div class="effect-interpretation">Effect size: <strong>' + eff + '</strong></div>'
+    );
 
     var higher = mA > mB ? descA : descB;
     var plainText = r.p < 0.05 ?
       higher + ' scores significantly higher (mean ' + Math.max(mA, mB) + ' vs ' + Math.min(mA, mB) + '). Effect is ' + eff + '.' :
       'No significant difference between ' + descA + ' (mean ' + mA + ') and ' + descB + ' (mean ' + mB + ').';
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -3953,14 +3956,13 @@
     var html = '<div class="results-section">';
 
     // Group comparison card with significance
-    html += groupMeansCard(groups, labels, 'Group Comparison');
-    html += sigBadge(r.p) + '</div>';
+    html += renderGroupCards(groups, labels, 'Group Comparison');
+    html += renderSigBadge(r.p) + '</div>';
 
     // Means bar chart
     var sds = [];
     for (var i = 0; i < r.k; i++) sds.push(StatsEngine._helpers.sd(groups[i], 1));
-    html += '<div class="result-card"><div class="result-card-title">Mean Comparison</div>' +
-      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Mean Comparison', 500, Math.max(180, r.k * 55 + 30));
 
     // Per-group distribution
     html += groupDistTable(groups, labels);
@@ -3975,16 +3977,20 @@
           '<td' + sig + '>' + round6(ph.pBonferroni) + '</td><td>' + round4(ph.cohensD) + '</td></tr>';
       });
       phHtml += '</table>';
-      html += '<div class="result-card"><div class="result-card-title">Which Groups Differ? (Post-Hoc)</div>' + phHtml + '</div>';
+      html += RC('Which Groups Differ? (Post-Hoc)', phHtml);
     }
 
     // Statistical details (collapsed)
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
-      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
-        testStat('F-statistic', round4(r.F)) + testStat('p-value', round6(r.p), pc) +
-        testStat('df (between)', r.dfBetween) + testStat('df (within)', r.dfWithin) +
-        testStat('Eta-squared', round4(r.etaSquared)) + testStat('Grand Mean', round4(r.grandMean)) +
-      '</div></div></details></div>';
+    html += renderCollapsed('Statistical Details',
+      renderMetrics([
+        { label: 'F-statistic', value: round4(r.F) },
+        { label: 'p-value', value: round6(r.p), cls: pc },
+        { label: 'df (between)', value: r.dfBetween },
+        { label: 'df (within)', value: r.dfWithin },
+        { label: 'Eta-squared', value: round4(r.etaSquared) },
+        { label: 'Grand Mean', value: round4(r.grandMean) }
+      ])
+    );
 
     // Plain English
     var best = { mean: -Infinity, label: '' }, worst = { mean: Infinity, label: '' };
@@ -3995,8 +4001,7 @@
     var plainText = r.p < 0.05 ?
       'There is a significant difference across ' + r.k + ' groups. ' + best.label + ' scores highest (mean ' + round2(best.mean) + ') and ' + worst.label + ' scores lowest (mean ' + round2(worst.mean) + ').' :
       'No significant difference found across ' + r.k + ' groups (p = ' + round4(r.p) + '). The groups perform similarly.';
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -4023,22 +4028,24 @@
     var html = '<div class="results-section">';
 
     // Group comparison card with significance
-    html += groupMeansCard([a, b], [descA, descB], 'Group Comparison');
-    html += sigBadge(r.p) + '</div>';
+    html += renderGroupCards([a, b], [descA, descB], 'Group Comparison');
+    html += renderSigBadge(r.p) + '</div>';
 
     // Median bar chart
-    html += '<div class="result-card"><div class="result-card-title">Median Comparison</div>' +
-      '<canvas id="' + chartId + '" width="500" height="180" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Median Comparison', 500, 180);
 
     // Per-group distribution
     html += groupDistTable([a, b], [descA, descB]);
 
     // Statistical details (collapsed)
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
-      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
-        testStat('U statistic', round2(r.U)) + testStat('z', round4(r.z)) + testStat('p-value', round6(r.p), pc) +
-        testStat('Effect size r', round4(r.r)) +
-      '</div></div></details></div>';
+    html += renderCollapsed('Statistical Details',
+      renderMetrics([
+        { label: 'U statistic', value: round2(r.U) },
+        { label: 'z', value: round4(r.z) },
+        { label: 'p-value', value: round6(r.p), cls: pc },
+        { label: 'Effect size r', value: round4(r.r) }
+      ])
+    );
 
     // Plain English
     var higher = medA >= medB ? descA : descB;
@@ -4046,8 +4053,7 @@
     var plainText = r.p < 0.05 ?
       higher + ' scores significantly higher than ' + lower + ' (median ' + Math.max(medA, medB) + ' vs ' + Math.min(medA, medB) + ').' :
       'No significant difference between ' + descA + ' (median ' + medA + ') and ' + descB + ' (median ' + medB + ').';
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -4128,41 +4134,36 @@
     var html = '<div class="results-section">';
 
     // Key metrics
-    html += '<div class="result-card"><div class="result-card-title">Correlation Summary</div><div class="test-results-grid">' +
-      testStat('Correlation (r)', round4(r.r)) + testStat('Strength', strength) +
-      testStat('R\u00b2', (round4(r.rSquared * 100)) + '%') + testStat('n', r.n) +
-    '</div>' + sigBadge(r.p) + '</div>';
+    html += RC('Correlation Summary',
+      renderMetrics([
+        { label: 'Correlation (r)', value: round4(r.r) },
+        { label: 'Strength', value: strength },
+        { label: 'R\u00b2', value: round4(r.rSquared * 100) + '%' },
+        { label: 'n', value: r.n }
+      ]) + renderSigBadge(r.p)
+    );
 
     // Variable summaries
-    html += '<div class="result-card"><div class="result-card-title">Variable Summaries</div>' +
-      '<div style="display:flex;gap:0.5rem">' +
-        '<div style="flex:1;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
-          '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">' + escHtml(descX) + '</div>' +
-          '<div style="font-size:1.1rem;font-weight:700;margin:0.2rem 0">mean ' + round2(StatsEngine._helpers.mean(x)) + '</div>' +
-          '<div style="font-size:0.72rem;color:var(--text-2)">SD ' + round2(StatsEngine._helpers.sd(x, 1)) + ' &middot; n=' + x.length + '</div></div>' +
-        '<div style="flex:1;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
-          '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">' + escHtml(descY) + '</div>' +
-          '<div style="font-size:1.1rem;font-weight:700;margin:0.2rem 0">mean ' + round2(StatsEngine._helpers.mean(y)) + '</div>' +
-          '<div style="font-size:0.72rem;color:var(--text-2)">SD ' + round2(StatsEngine._helpers.sd(y, 1)) + ' &middot; n=' + y.length + '</div></div>' +
-      '</div></div>';
+    html += renderGroupCards([x, y], [descX, descY], 'Variable Summaries') + '</div>';
 
     // Scatter plot
-    html += '<div class="result-card"><div class="result-card-title">Scatter Plot</div>' +
-      '<canvas id="' + chartId + '" width="500" height="350" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Scatter Plot', 500, 350);
 
     // Statistical details (collapsed)
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
-      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
-        testStat('r', round4(r.r)) + testStat('R\u00b2', round4(r.rSquared)) +
-        testStat('p-value', round6(r.p), pc) + testStat('95% CI', '[' + round4(r.ci95.lower) + ', ' + round4(r.ci95.upper) + ']') +
-      '</div></div></details></div>';
+    html += renderCollapsed('Statistical Details',
+      renderMetrics([
+        { label: 'r', value: round4(r.r) },
+        { label: 'R\u00b2', value: round4(r.rSquared) },
+        { label: 'p-value', value: round6(r.p), cls: pc },
+        { label: '95% CI', value: '[' + round4(r.ci95.lower) + ', ' + round4(r.ci95.upper) + ']' }
+      ])
+    );
 
     // Plain English
     var plainText = 'There is a ' + strength + ' ' + direction + ' correlation between ' + descX + ' and ' + descY + ' (r = ' + round4(r.r) + '). ';
     plainText += r.p < 0.05 ? 'This relationship is statistically significant. ' : 'This relationship is not statistically significant. ';
     plainText += round4(r.rSquared * 100) + '% of the variation in one variable is explained by the other.';
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -4196,14 +4197,15 @@
     var html = '<div class="results-section">';
 
     // Big answer upfront: is the scale reliable?
-    html += '<div class="result-card"><div class="result-card-title">Is Your Scale Reliable?</div>' +
+    html += RC('Is Your Scale Reliable?',
       '<div style="text-align:center">' +
-        '<div style="font-size:2.5rem;font-weight:700;color:' + (isReliable ? 'var(--green)' : 'var(--rose)') + '">' + (isReliable ? 'Yes' : 'No') + '</div>' +
-        '<div style="font-size:0.9rem;color:var(--text-2);margin-top:0.3rem">Cronbach\u2019s Alpha = ' + round4(r.alpha) + ' (' + level + ')</div>' +
-        '<div style="font-size:0.82rem;color:var(--text-2);margin-top:0.5rem">' + r.k + ' items, ' + r.n + ' respondents. ' +
+        '<div style="font-size:2.8rem;font-weight:700;color:' + (isReliable ? 'var(--green)' : 'var(--rose)') + ';line-height:1">' + (isReliable ? 'Yes' : 'No') + '</div>' +
+        '<div style="font-size:0.88rem;color:var(--text-2);margin-top:0.4rem;line-height:1.5">' +
+          'Cronbach\u2019s Alpha = ' + round4(r.alpha) + ' (' + level + ')<br>' +
+          r.k + ' items, ' + r.n + ' respondents. ' +
           (isReliable ? 'These items reliably measure the same concept.' : 'These items may not consistently measure the same thing. Consider revising.') +
-        '</div>' +
-      '</div></div>';
+        '</div></div>'
+    );
 
     // Item analysis: which items to keep/drop
     var weakItems = [];
@@ -4219,20 +4221,17 @@
     }
 
     // Item-total correlations chart
-    html += '<div class="result-card"><div class="result-card-title">Item-Total Correlations</div>' +
-      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas>' +
-      '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Higher = item fits the scale better. Below 0.3 (amber) = consider removing.</div></div>';
+    html += renderChart(chartId, 'Item-Total Correlations', 500, Math.max(180, r.k * 55 + 30),
+      'Higher = item fits the scale better. Below 0.3 (amber) = consider removing.');
 
     // Detailed table (collapsed)
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Detailed Item Analysis</summary>' +
-      '<div style="margin-top:0.75rem">' + itemHtml + '</div></details></div>';
+    html += renderCollapsed('Detailed Item Analysis', itemHtml);
 
     // Plain English
     var plainText2 = 'Cronbach\u2019s Alpha = ' + round4(r.alpha) + ' (' + level + '). ' +
       (isReliable ? 'Your ' + r.k + ' items form a reliable scale.' : 'Your scale is below the 0.7 threshold. ') +
       (weakItems.length > 0 ? 'Consider reviewing: ' + weakItems.join(', ') + '.' : '');
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText2 + '</div>' + makeCopyBtn(plainText2) + '</div>';
+    html += renderPlainEnglish(plainText2);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -4268,9 +4267,12 @@
     var html = '<div class="results-section">';
 
     // Key metrics card
-    html += '<div class="result-card"><div class="result-card-title">Summary</div><div class="test-results-grid">' +
-      testStat('Respondents', r.n) + testStat('Mean', round2(r.mean)) + testStat('Median', round2(r.median)) + testStat('Std Dev', round2(r.sd)) +
-    '</div></div>';
+    html += RC('Summary', renderMetrics([
+      { label: 'Respondents', value: r.n },
+      { label: 'Mean', value: round2(r.mean) },
+      { label: 'Median', value: round2(r.median) },
+      { label: 'Std Dev', value: round2(r.sd) }
+    ]));
 
     // Top-box / Bottom-box for Likert
     if (isDiscrete && sortedKeys.length >= 5) {
@@ -4283,46 +4285,34 @@
         });
         var topPct = round2(topCount / r.n * 100);
         var botPct = round2(botCount / r.n * 100);
-        html += '<div class="result-card"><div class="result-card-title">Top-Box / Bottom-Box</div>' +
-          '<div style="display:flex;gap:1rem">' +
-            '<div style="flex:1;padding:0.6rem;border-radius:8px;text-align:center;background:rgba(58,154,92,0.12);border:1px solid rgba(58,154,92,0.25)">' +
-              '<div style="font-size:0.75rem;color:var(--text-2)">Top-2 Box (' + (maxV - 1) + '\u2013' + maxV + ')</div>' +
-              '<div style="font-size:1.3rem;font-weight:700;color:var(--green);margin-top:0.2rem">' + topPct + '%</div></div>' +
-            '<div style="flex:1;padding:0.6rem;border-radius:8px;text-align:center;background:rgba(212,88,122,0.12);border:1px solid rgba(212,88,122,0.25)">' +
-              '<div style="font-size:0.75rem;color:var(--text-2)">Bottom-2 Box (' + minV + '\u2013' + (minV + 1) + ')</div>' +
-              '<div style="font-size:1.3rem;font-weight:700;color:var(--rose);margin-top:0.2rem">' + botPct + '%</div></div>' +
-          '</div></div>';
+        html += renderTopBottomBox(topPct, botPct, (maxV - 1) + '\u2013' + maxV, minV + '\u2013' + (minV + 1));
       }
     }
 
     // % Distribution table (discrete data only)
     if (isDiscrete) {
-      html += '<div class="result-card"><div class="result-card-title">Response Distribution</div><table class="freq-table"><tr><th>Value</th><th>Count</th><th>%</th></tr>';
+      var distRows = [];
       sortedKeys.forEach(function(k) {
         var count = uniqueVals[k];
-        var pct = round2(count / r.n * 100);
-        html += '<tr><td>' + k + '</td><td>' + count + '</td>' +
-          '<td class="pct-bar-cell"><span class="pct-bar" style="width:' + Math.min(pct, 100) + '%"></span><span>' + pct + '%</span></td></tr>';
+        distRows.push({ value: k, count: count, pct: round2(count / r.n * 100) });
       });
-      html += '</table></div>';
+      html += renderDistTable(distRows, 'Response Distribution');
     }
 
     // Chart (histogram — now auto-detects discrete)
-    html += '<div class="result-card"><div class="result-card-title">Distribution</div>' +
-      '<canvas id="' + chartId + '" width="500" height="250" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Distribution', 500, 250);
 
     // Detailed stats (collapsed for clean look)
     var modeStr = r.mode.length === 0 ? 'none' : r.mode.map(function(v) { return round4(v); }).join(', ');
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Detailed Statistics</summary>' +
-      '<div style="margin-top:0.75rem">' +
+    html += renderCollapsed('Detailed Statistics',
       statRow('Mode', modeStr) + statRow('Variance', round4(r.variance)) +
       statRow('Std Error', round4(r.se)) + statRow('Min', round4(r.min)) + statRow('Max', round4(r.max)) +
       statRow('Range', round4(r.range)) + statRow('IQR', round4(r.iqr)) +
       statRow('Skewness', round4(r.skewness)) + statRow('Kurtosis (excess)', round4(r.kurtosis)) +
       statRow('95% CI of Mean', '[' + round4(r.ci95.lower) + ', ' + round4(r.ci95.upper) + ']') +
       statRow('5th percentile', round4(r.p5)) + statRow('25th (Q1)', round4(r.p25)) +
-      statRow('75th (Q3)', round4(r.p75)) + statRow('95th percentile', round4(r.p95)) +
-      '</div></details></div>';
+      statRow('75th (Q3)', round4(r.p75)) + statRow('95th percentile', round4(r.p95))
+    );
 
     // Plain English
     var plainText;
@@ -4333,8 +4323,7 @@
       plainText = r.n + ' values analyzed. Mean = ' + round2(r.mean) + ', Median = ' + round2(r.median) + ', SD = ' + round2(r.sd) + '. ' +
         'Range: ' + round4(r.min) + ' to ' + round4(r.max) + '.';
     }
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -4358,41 +4347,36 @@
     var html = '<div class="results-section">';
 
     // Key metrics
-    html += '<div class="result-card"><div class="result-card-title">Correlation Summary</div><div class="test-results-grid">' +
-      testStat('Correlation (rho)', round4(rho)) + testStat('Strength', strength) +
-      testStat('R\u00b2', round4(r.rSquared * 100) + '%') + testStat('n', r.n) +
-    '</div>' + sigBadge(r.p) + '</div>';
+    html += RC('Correlation Summary',
+      renderMetrics([
+        { label: 'Correlation (rho)', value: round4(rho) },
+        { label: 'Strength', value: strength },
+        { label: 'R\u00b2', value: round4(r.rSquared * 100) + '%' },
+        { label: 'n', value: r.n }
+      ]) + renderSigBadge(r.p)
+    );
 
     // Variable summaries
-    html += '<div class="result-card"><div class="result-card-title">Variable Summaries</div>' +
-      '<div style="display:flex;gap:0.5rem">' +
-        '<div style="flex:1;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
-          '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">' + escHtml(descX) + '</div>' +
-          '<div style="font-size:1.1rem;font-weight:700;margin:0.2rem 0">median ' + round2(StatsEngine._helpers.median(x)) + '</div>' +
-          '<div style="font-size:0.72rem;color:var(--text-2)">mean ' + round2(StatsEngine._helpers.mean(x)) + ' &middot; n=' + x.length + '</div></div>' +
-        '<div style="flex:1;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
-          '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">' + escHtml(descY) + '</div>' +
-          '<div style="font-size:1.1rem;font-weight:700;margin:0.2rem 0">median ' + round2(StatsEngine._helpers.median(y)) + '</div>' +
-          '<div style="font-size:0.72rem;color:var(--text-2)">mean ' + round2(StatsEngine._helpers.mean(y)) + ' &middot; n=' + y.length + '</div></div>' +
-      '</div></div>';
+    html += renderGroupCards([x, y], [descX, descY], 'Variable Summaries') + '</div>';
 
     // Scatter plot
-    html += '<div class="result-card"><div class="result-card-title">Scatter Plot</div>' +
-      '<canvas id="' + chartId + '" width="500" height="350" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Scatter Plot', 500, 350);
 
     // Statistical details (collapsed)
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
-      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
-        testStat('rho', round4(rho)) + testStat('R\u00b2', round4(r.rSquared)) +
-        testStat('p-value', round6(r.p), pc) + testStat('95% CI', '[' + round4(r.ci95.lower) + ', ' + round4(r.ci95.upper) + ']') +
-      '</div></div></details></div>';
+    html += renderCollapsed('Statistical Details',
+      renderMetrics([
+        { label: 'rho', value: round4(rho) },
+        { label: 'R\u00b2', value: round4(r.rSquared) },
+        { label: 'p-value', value: round6(r.p), cls: pc },
+        { label: '95% CI', value: '[' + round4(r.ci95.lower) + ', ' + round4(r.ci95.upper) + ']' }
+      ])
+    );
 
     // Plain English
     var plainText = 'There is a ' + strength + ' ' + direction + ' rank correlation between ' + descX + ' and ' + descY + ' (rho = ' + round4(rho) + '). ';
     plainText += r.p < 0.05 ? 'This relationship is statistically significant. ' : 'This relationship is not statistically significant. ';
     plainText += 'When one goes up, the other tends to go ' + (rho > 0 ? 'up' : 'down') + '.';
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -4523,38 +4507,35 @@
 
     var html = '<div class="results-section">';
 
-    html += '<div class="result-card"><div class="result-card-title">Correlation Summary</div><div class="test-results-grid">' +
-      testStat('Correlation (r)', round4(r.r)) + testStat('Strength', strength) +
-      testStat('n', r.n) +
-    '</div>' + sigBadge(r.p) + '</div>';
+    html += RC('Correlation Summary',
+      renderMetrics([
+        { label: 'Correlation (r)', value: round4(r.r) },
+        { label: 'Strength', value: strength },
+        { label: 'n', value: r.n }
+      ]) + renderSigBadge(r.p)
+    );
 
-    html += '<div class="result-card"><div class="result-card-title">Mean ' + escHtml(descCont) + ' by Group</div>' +
-      '<div style="display:flex;gap:0.5rem">' +
-        '<div style="flex:1;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
-          '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">' + escHtml(group0Label) + '</div>' +
-          '<div style="font-size:1.3rem;font-weight:700;margin:0.2rem 0">' + round2(r.mean0) + '</div>' +
-          '<div style="font-size:0.72rem;color:var(--text-2)">n=' + r.n0 + '</div></div>' +
-        '<div style="flex:1;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
-          '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">' + escHtml(group1Label) + '</div>' +
-          '<div style="font-size:1.3rem;font-weight:700;margin:0.2rem 0">' + round2(r.mean1) + '</div>' +
-          '<div style="font-size:0.72rem;color:var(--text-2)">n=' + r.n1 + '</div></div>' +
-      '</div></div>';
+    // Build fake arrays for renderGroupCards to show mean/median/n per group
+    var g0Vals = binary.reduce(function(acc, v, i) { if (v === 0) acc.push(continuous[i]); return acc; }, []);
+    var g1Vals = binary.reduce(function(acc, v, i) { if (v === 1) acc.push(continuous[i]); return acc; }, []);
+    html += renderGroupCards([g0Vals, g1Vals], [group0Label, group1Label], 'Mean ' + escHtml(descCont) + ' by Group') + '</div>';
 
-    html += '<div class="result-card"><div class="result-card-title">Mean Comparison</div>' +
-      '<canvas id="' + chartId + '" width="500" height="180" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Mean Comparison', 500, 180);
 
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
-      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
-        testStat('r', round4(r.r)) + testStat('t', round4(r.t)) + testStat('p', round6(r.p), pc) + testStat('df', r.df) +
-      '</div>' + (mappingText ? '<div style="font-size:0.82rem;color:var(--text-2);margin-top:0.5rem">' + mappingText + '</div>' : '') +
-      '</div></details></div>';
+    html += renderCollapsed('Statistical Details',
+      renderMetrics([
+        { label: 'r', value: round4(r.r) },
+        { label: 't', value: round4(r.t) },
+        { label: 'p', value: round6(r.p), cls: pc },
+        { label: 'df', value: r.df }
+      ]) + (mappingText ? '<div style="font-size:0.82rem;color:var(--text-2);margin-top:0.5rem">' + mappingText + '</div>' : '')
+    );
 
     var higher = r.mean1 > r.mean0 ? group1Label : group0Label;
     var plainText = higher + ' has a higher mean ' + descCont + ' (' + round2(Math.max(r.mean0, r.mean1)) + ' vs ' + round2(Math.min(r.mean0, r.mean1)) + '). ' +
       'The correlation is ' + strength + '. ' +
       (r.p < 0.05 ? 'This difference is statistically significant.' : 'This difference is not statistically significant.');
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -4797,29 +4778,35 @@
     var html = '<div class="results-section">';
 
     // Key metrics
-    html += '<div class="result-card"><div class="result-card-title">Model Summary</div><div class="test-results-grid">' +
-      testStat('R\u00b2', round4(r.R2 * 100) + '%') + testStat('Adj. R\u00b2', round4(r.adjR2 * 100) + '%') +
-      testStat('Predictors', r.coefficients.length - 1) + testStat('n', r.n) +
-    '</div>' + sigBadge(r.fP) +
-    '<div style="font-size:0.85rem;color:var(--text-2);text-align:center;margin-top:0.5rem">' +
-      'The model explains <strong>' + round4(r.R2 * 100) + '%</strong> of the variation in the outcome.' +
-      (r.R2 < 0.1 ? ' That\u2019s very little.' : r.R2 < 0.3 ? ' That\u2019s a modest amount.' : ' That\u2019s substantial.') +
-    '</div></div>';
+    html += RC('Model Summary',
+      renderMetrics([
+        { label: 'R\u00b2', value: round4(r.R2 * 100) + '%' },
+        { label: 'Adj. R\u00b2', value: round4(r.adjR2 * 100) + '%' },
+        { label: 'Predictors', value: r.coefficients.length - 1 },
+        { label: 'n', value: r.n }
+      ]) + renderSigBadge(r.fP) +
+      '<div style="font-size:0.85rem;color:var(--text-2);text-align:center;margin-top:0.5rem">' +
+        'The model explains <strong>' + round4(r.R2 * 100) + '%</strong> of the variation in the outcome.' +
+        (r.R2 < 0.1 ? ' That\u2019s very little.' : r.R2 < 0.3 ? ' That\u2019s a modest amount.' : ' That\u2019s substantial.') +
+      '</div>'
+    );
 
     // Which predictors matter most (chart first)
     if (bars.length > 0) {
-      html += '<div class="result-card"><div class="result-card-title">Which Predictors Matter Most</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, bars.length * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas>' +
-        '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Standardized coefficients: longer bar = stronger effect</div></div>';
+      html += renderChart(chartId, 'Which Predictors Matter Most', 500, Math.max(180, bars.length * 55 + 30),
+        'Standardized coefficients: longer bar = stronger effect');
     }
 
     // Coefficient table (collapsed)
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Coefficient Table &amp; Details</summary>' +
-      '<div style="margin-top:0.75rem">' + coeffHtml +
-      '<div class="test-results-grid" style="margin-top:0.75rem">' +
-        testStat('F', round4(r.F)) + testStat('p (model)', round6(r.fP), pc) +
-        testStat('RMSE', round4(r.RMSE)) + testStat('Durbin-Watson', round4(r.durbinWatson)) +
-      '</div></div></details></div>';
+    html += renderCollapsed('Coefficient Table &amp; Details',
+      coeffHtml +
+      renderMetrics([
+        { label: 'F', value: round4(r.F) },
+        { label: 'p (model)', value: round6(r.fP), cls: pc },
+        { label: 'RMSE', value: round4(r.RMSE) },
+        { label: 'Durbin-Watson', value: round4(r.durbinWatson) }
+      ])
+    );
 
     // Plain English
     var sigPredictors = [];
@@ -4830,8 +4817,7 @@
     plainText += sigPredictors.length > 0 ?
       'Significant predictors: ' + sigPredictors.join(', ') + '.' :
       'No individual predictor is statistically significant.';
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -4879,28 +4865,32 @@
     var html = '<div class="results-section">';
 
     // Key metrics
-    html += '<div class="result-card"><div class="result-card-title">Model Summary</div><div class="test-results-grid">' +
-      testStat('Pseudo R\u00b2', round4(r.pseudoR2 * 100) + '%') +
-      testStat('Accuracy', r.accuracy !== undefined ? round2(r.accuracy * 100) + '%' : '\u2014') +
-      testStat('Predictors', r.coefficients.length - 1) + testStat('n', r.n) +
-    '</div>' +
-    (!r.converged ? '<div style="text-align:center;margin-top:0.5rem;color:var(--amber);font-size:0.82rem">\u26A0 Model did not converge. Results may be unreliable.</div>' : '') +
-    '</div>';
+    html += RC('Model Summary',
+      renderMetrics([
+        { label: 'Pseudo R\u00b2', value: round4(r.pseudoR2 * 100) + '%' },
+        { label: 'Accuracy', value: r.accuracy !== undefined ? round2(r.accuracy * 100) + '%' : '\u2014' },
+        { label: 'Predictors', value: r.coefficients.length - 1 },
+        { label: 'n', value: r.n }
+      ]) +
+      (!r.converged ? '<div style="text-align:center;margin-top:0.5rem;color:var(--amber);font-size:0.82rem">\u26A0 Model did not converge. Results may be unreliable.</div>' : '')
+    );
 
     // Odds ratios chart (the key visual)
     if (bars.length > 0) {
-      html += '<div class="result-card"><div class="result-card-title">Odds Ratios \u2014 What Increases/Decreases the Odds</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, bars.length * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas>' +
-        '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Values > 1 increase odds, < 1 decrease odds. Further from 1 = stronger effect.</div></div>';
+      html += renderChart(chartId, 'Odds Ratios \u2014 What Increases/Decreases the Odds', 500, Math.max(180, bars.length * 55 + 30),
+        'Values > 1 increase odds, < 1 decrease odds. Further from 1 = stronger effect.');
     }
 
     // Coefficient table (collapsed)
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Coefficient Table &amp; Details</summary>' +
-      '<div style="margin-top:0.75rem">' + coeffHtml +
-      '<div class="test-results-grid" style="margin-top:0.75rem">' +
-        testStat('Pseudo R\u00b2', round4(r.pseudoR2)) + testStat('AIC', round2(r.AIC)) +
-        testStat('BIC', round2(r.BIC)) + testStat('Log-Likelihood', round2(r.logLikelihood)) +
-      '</div></div></details></div>';
+    html += renderCollapsed('Coefficient Table &amp; Details',
+      coeffHtml +
+      renderMetrics([
+        { label: 'Pseudo R\u00b2', value: round4(r.pseudoR2) },
+        { label: 'AIC', value: round2(r.AIC) },
+        { label: 'BIC', value: round2(r.BIC) },
+        { label: 'Log-Likelihood', value: round2(r.logLikelihood) }
+      ])
+    );
 
     // Plain English
     var sigPreds = [];
@@ -4913,8 +4903,7 @@
     var plainText2 = sigPreds.length > 0 ?
       'Significant predictors: ' + sigPreds.join('; ') + '.' :
       'No predictor significantly predicts the outcome.';
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText2 + '</div>' + makeCopyBtn(plainText2) + '</div>';
+    html += renderPlainEnglish(plainText2);
 
     html += '</div>';
 
@@ -5052,30 +5041,27 @@
     var html = '<div class="results-section">';
 
     // Segment overview: sizes and quality
-    html += '<div class="result-card"><div class="result-card-title">Segments Found: ' + r.k + '</div>';
-    html += '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">';
+    var segHtml = '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">';
     for (var c = 0; c < r.k; c++) {
       var pct = round2(r.clusterSizes[c] / r.n * 100);
-      html += '<div style="flex:1;min-width:90px;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
+      segHtml += '<div style="flex:1;min-width:90px;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
         '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">Segment ' + (c + 1) + '</div>' +
         '<div style="font-size:1.3rem;font-weight:700;margin:0.2rem 0;color:' + CHART_COLORS[c % CHART_COLORS.length] + '">' + r.clusterSizes[c] + '</div>' +
         '<div style="font-size:0.72rem;color:var(--text-2)">' + pct + '% of total</div></div>';
     }
-    html += '</div>';
-    html += '<div style="font-size:0.82rem;color:var(--text-2);text-align:center;margin-top:0.5rem">Separation quality: <strong>' + (ratio * 100).toFixed(1) + '%</strong> of variance explained by segments</div>';
-    html += '</div>';
+    segHtml += '</div>';
+    segHtml += '<div style="font-size:0.82rem;color:var(--text-2);text-align:center;margin-top:0.5rem">Separation quality: <strong>' + (ratio * 100).toFixed(1) + '%</strong> of variance explained by segments</div>';
+    html += RC('Segments Found: ' + r.k, segHtml);
 
     // What makes each segment different (centroid profile)
-    html += '<div class="result-card"><div class="result-card-title">Segment Profiles</div>' + centroidHtml +
-      '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Values show the average score per variable in each segment. Higher = that segment scores higher on that variable.</div></div>';
+    html += RC('Segment Profiles', centroidHtml +
+      '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Values show the average score per variable in each segment. Higher = that segment scores higher on that variable.</div>');
 
     // Chart
     if (data.length === 2) {
-      html += '<div class="result-card"><div class="result-card-title">Segment Scatter Plot</div>' +
-        '<canvas id="' + chartId + '" width="500" height="350" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+      html += renderChart(chartId, 'Segment Scatter Plot', 500, 350);
     } else {
-      html += '<div class="result-card"><div class="result-card-title">Segment Sizes</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+      html += renderChart(chartId, 'Segment Sizes', 500, Math.max(180, r.k * 55 + 30));
     }
 
     // Plain English describing each segment
@@ -5088,16 +5074,18 @@
       }
       plainText2 += 'Segment ' + (c + 1) + ' (' + r.clusterSizes[c] + ' people): highest on ' + highest.label + ', lowest on ' + lowest.label + '. ';
     }
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText2 + '</div>' + makeCopyBtn(plainText2) + '</div>';
+    html += renderPlainEnglish(plainText2);
 
     // Collapsed details
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Technical Details</summary>' +
-      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
-        testStat('K', r.k) + testStat('n', r.n) +
-        testStat('Between/Total SS', (ratio * 100).toFixed(1) + '%') + testStat('Within SS', round2(r.totalWithinSS)) +
-        testStat('Converged', r.converged ? 'Yes' : 'No') +
-      '</div></div></details></div>';
+    html += renderCollapsed('Technical Details',
+      renderMetrics([
+        { label: 'K', value: r.k },
+        { label: 'n', value: r.n },
+        { label: 'Between/Total SS', value: (ratio * 100).toFixed(1) + '%' },
+        { label: 'Within SS', value: round2(r.totalWithinSS) },
+        { label: 'Converged', value: r.converged ? 'Yes' : 'No' }
+      ])
+    );
 
     html += '</div>';
 
@@ -5193,12 +5181,11 @@
     var html = '<div class="results-section">';
 
     // Group comparison with significance
-    html += groupMeansCard(groups, labels, 'Group Comparison');
-    html += sigBadge(r.p) + '</div>';
+    html += renderGroupCards(groups, labels, 'Group Comparison');
+    html += renderSigBadge(r.p) + '</div>';
 
     // Median bar chart
-    html += '<div class="result-card"><div class="result-card-title">Median Comparison</div>' +
-      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Median Comparison', 500, Math.max(180, r.k * 55 + 30));
 
     // Per-group distribution
     html += groupDistTable(groups, labels);
@@ -5212,15 +5199,18 @@
           '<td>' + round4(ph.meanRankDiff) + '</td><td' + sig + '>' + round6(ph.pBonferroni) + '</td></tr>';
       });
       phHtml += '</table>';
-      html += '<div class="result-card"><div class="result-card-title">Which Groups Differ? (Post-Hoc)</div>' + phHtml + '</div>';
+      html += RC('Which Groups Differ? (Post-Hoc)', phHtml);
     }
 
     // Statistical details (collapsed)
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
-      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
-        testStat('H statistic', round4(r.H)) + testStat('p-value', round6(r.p), pc) +
-        testStat('df', r.df) + testStat('Eta-squared', round4(r.etaSquared)) +
-      '</div></div></details></div>';
+    html += renderCollapsed('Statistical Details',
+      renderMetrics([
+        { label: 'H statistic', value: round4(r.H) },
+        { label: 'p-value', value: round6(r.p), cls: pc },
+        { label: 'df', value: r.df },
+        { label: 'Eta-squared', value: round4(r.etaSquared) }
+      ])
+    );
 
     // Plain English
     var best = { med: -Infinity, label: '' }, worst = { med: Infinity, label: '' };
@@ -5231,8 +5221,7 @@
     var plainText = r.p < 0.05 ?
       'Significant difference across ' + r.k + ' groups. ' + best.label + ' scores highest (median ' + round2(best.med) + '), ' + worst.label + ' scores lowest (median ' + round2(worst.med) + ').' :
       'No significant difference across ' + r.k + ' groups (p = ' + round4(r.p) + ').';
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -5257,26 +5246,28 @@
     var chartId = 'wilcoxonChart_' + Date.now();
 
     var html = '<div class="results-section">';
-    html += groupMeansCard([a, b], [descA, descB], 'Paired Comparison');
-    html += sigBadge(r.p) + '</div>';
+    html += renderGroupCards([a, b], [descA, descB], 'Paired Comparison');
+    html += renderSigBadge(r.p) + '</div>';
 
-    html += '<div class="result-card"><div class="result-card-title">Median Comparison</div>' +
-      '<canvas id="' + chartId + '" width="500" height="180" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Median Comparison', 500, 180);
 
     html += groupDistTable([a, b], [descA, descB]);
 
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
-      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
-        testStat('W', round2(r.W)) + testStat('z', round4(r.z)) + testStat('p-value', round6(r.p), pc) +
-        testStat('Effect size r', round4(r.r)) +
-      '</div><div class="effect-interpretation">' + r.nNonZero + ' non-zero pairs out of ' + r.nPairs + ' total.</div></div></details></div>';
+    html += renderCollapsed('Statistical Details',
+      renderMetrics([
+        { label: 'W', value: round2(r.W) },
+        { label: 'z', value: round4(r.z) },
+        { label: 'p-value', value: round6(r.p), cls: pc },
+        { label: 'Effect size r', value: round4(r.r) }
+      ]) +
+      '<div class="effect-interpretation">' + r.nNonZero + ' non-zero pairs out of ' + r.nPairs + ' total.</div>'
+    );
 
     var higher = medA >= medB ? descA : descB;
     var plainText = r.p < 0.05 ?
       higher + ' scores significantly higher (median ' + Math.max(medA, medB) + ' vs ' + Math.min(medA, medB) + ').' :
       'No significant difference between ' + descA + ' (median ' + medA + ') and ' + descB + ' (median ' + medB + ').';
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -5721,20 +5712,21 @@
     var html = '<div class="results-section">';
 
     // Key finding upfront
-    html += '<div class="result-card"><div class="result-card-title">Components Found</div>' +
+    html += RC('Components Found',
       '<div style="text-align:center">' +
-        '<div style="font-size:2.5rem;font-weight:700;color:var(--rose)">' + nKeep + '</div>' +
-        '<div style="font-size:0.9rem;color:var(--text-2)">components with eigenvalue > 1, explaining <strong>' + (totalVar * 100).toFixed(1) + '%</strong> of total variance</div>' +
-      '</div></div>';
+        '<div style="font-size:2.8rem;font-weight:700;color:var(--rose);line-height:1">' + nKeep + '</div>' +
+        '<div style="font-size:0.88rem;color:var(--text-2);margin-top:0.4rem;line-height:1.5">components with eigenvalue > 1, explaining <strong>' + (totalVar * 100).toFixed(1) + '%</strong> of total variance</div>' +
+      '</div>'
+    );
 
     // Variance bar chart
-    html += '<div class="result-card"><div class="result-card-title">Variance Explained per Component</div>' +
-      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.eigenvalues.length * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Variance Explained per Component', 500, Math.max(180, r.eigenvalues.length * 55 + 30));
 
     // Loadings table (collapsed for clean look)
-    html += '<div class="result-card"><details open><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Component Loadings</summary>' +
-      '<div style="margin-top:0.75rem">' + loadHtml +
-      '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Bold values (\u2265 0.5) = strong loading on that component.</div></div></details></div>';
+    html += renderCollapsed('Component Loadings',
+      loadHtml +
+      '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Bold values (\u2265 0.5) = strong loading on that component.</div>'
+    );
 
     // Plain English
     var plainText2 = r.k + ' variables reduced to ' + nKeep + ' components explaining ' + (totalVar * 100).toFixed(1) + '% of variance. ';
@@ -5745,8 +5737,7 @@
       }
       if (topLoaders.length > 0) plainText2 += 'PC' + (c + 1) + ' is driven by: ' + topLoaders.join(', ') + '. ';
     }
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText2 + '</div>' + makeCopyBtn(plainText2) + '</div>';
+    html += renderPlainEnglish(plainText2);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -5880,28 +5871,27 @@
     var html = '<div class="results-section">';
 
     // Key finding: how many factors, what they represent
-    html += '<div class="result-card"><div class="result-card-title">Factors Discovered: ' + r.nFactors + '</div>';
-    html += '<div style="font-size:0.9rem;color:var(--text-2);margin-bottom:0.75rem">' + r.k + ' variables, ' + r.n + ' respondents</div>';
+    var factorContent = '<div style="font-size:0.9rem;color:var(--text-2);margin-bottom:0.75rem">' + r.k + ' variables, ' + r.n + ' respondents</div>';
     for (var f = 0; f < r.nFactors; f++) {
       var topItems = [];
       for (var i = 0; i < r.k; i++) {
         if (Math.abs(r.loadings[i][f]) >= 0.4) topItems.push(labels[i]);
       }
-      html += '<div style="padding:0.5rem 0;border-bottom:1px solid rgba(255,255,255,0.05)">' +
+      factorContent += '<div style="padding:0.5rem 0;border-bottom:1px solid rgba(255,255,255,0.05)">' +
         '<strong style="color:' + CHART_COLORS[f % CHART_COLORS.length] + '">Factor ' + (f + 1) + '</strong> (' + (r.explainedVariance[f] * 100).toFixed(1) + '% variance): ' +
         (topItems.length > 0 ? topItems.join(', ') : 'no strong loadings') + '</div>';
     }
-    html += '</div>';
+    html += RC('Factors Discovered: ' + r.nFactors, factorContent);
 
     // Communalities chart
-    html += '<div class="result-card"><div class="result-card-title">How Well Each Variable Is Explained</div>' +
-      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas>' +
-      '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Communality: proportion of each variable explained by the factors. Higher = better fit.</div></div>';
+    html += renderChart(chartId, 'How Well Each Variable Is Explained', 500, Math.max(180, r.k * 55 + 30),
+      'Communality: proportion of each variable explained by the factors. Higher = better fit.');
 
     // Loading table (collapsed)
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Full Loading Table (Varimax Rotation)</summary>' +
-      '<div style="margin-top:0.75rem">' + loadHtml +
-      '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Bold (\u2265 0.4) = meaningful loading.</div></div></details></div>';
+    html += renderCollapsed('Full Loading Table (Varimax Rotation)',
+      loadHtml +
+      '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Bold (\u2265 0.4) = meaningful loading.</div>'
+    );
 
     // Plain English
     var plainText2 = r.nFactors + ' factors found. ';
@@ -5910,8 +5900,7 @@
       for (var i = 0; i < r.k; i++) { if (Math.abs(r.loadings[i][f]) >= 0.4) items.push(labels[i]); }
       plainText2 += 'Factor ' + (f + 1) + (items.length > 0 ? ' groups: ' + items.join(', ') : ' has no strong loadings') + '. ';
     }
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText2 + '</div>' + makeCopyBtn(plainText2) + '</div>';
+    html += renderPlainEnglish(plainText2);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -6783,36 +6772,32 @@
 
     var html = '<div class="results-section">';
 
-    html += '<div class="result-card"><div class="result-card-title">Correlation Summary</div><div class="test-results-grid">' +
-      testStat('Kendall\u2019s tau', round4(tau)) + testStat('Strength', strength) +
-      testStat('Direction', dir) + testStat('n', n) +
-    '</div>' + sigBadge(p) + '</div>';
+    html += RC('Correlation Summary',
+      renderMetrics([
+        { label: 'Kendall\u2019s tau', value: round4(tau) },
+        { label: 'Strength', value: strength },
+        { label: 'Direction', value: dir },
+        { label: 'n', value: n }
+      ]) + renderSigBadge(p)
+    );
 
-    html += '<div class="result-card"><div class="result-card-title">Variable Summaries</div>' +
-      '<div style="display:flex;gap:0.5rem">' +
-        '<div style="flex:1;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
-          '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">' + escHtml(descX) + '</div>' +
-          '<div style="font-size:1.1rem;font-weight:700;margin:0.2rem 0">median ' + round2(StatsEngine._helpers.median(x)) + '</div>' +
-          '<div style="font-size:0.72rem;color:var(--text-2)">n=' + x.length + '</div></div>' +
-        '<div style="flex:1;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
-          '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">' + escHtml(descY) + '</div>' +
-          '<div style="font-size:1.1rem;font-weight:700;margin:0.2rem 0">median ' + round2(StatsEngine._helpers.median(y)) + '</div>' +
-          '<div style="font-size:0.72rem;color:var(--text-2)">n=' + y.length + '</div></div>' +
-      '</div></div>';
+    html += renderGroupCards([x, y], [descX, descY], 'Variable Summaries') + '</div>';
 
-    html += '<div class="result-card"><div class="result-card-title">Scatter Plot</div>' +
-      '<canvas id="' + chartId + '" width="500" height="350" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Scatter Plot', 500, 350);
 
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
-      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
-        testStat('tau-b', round4(tau)) + testStat('z', round4(z)) + testStat('p', round6(p), pc) +
-        testStat('Concordant', concordant) + testStat('Discordant', discordant) +
-      '</div></div></details></div>';
+    html += renderCollapsed('Statistical Details',
+      renderMetrics([
+        { label: 'tau-b', value: round4(tau) },
+        { label: 'z', value: round4(z) },
+        { label: 'p', value: round6(p), cls: pc },
+        { label: 'Concordant', value: concordant },
+        { label: 'Discordant', value: discordant }
+      ])
+    );
 
     var plainText = 'There is a ' + strength + ' ' + dir + ' ordinal association between ' + descX + ' and ' + descY + ' (tau = ' + round4(tau) + '). ' +
       (p < 0.05 ? 'This is statistically significant.' : 'This is not statistically significant.');
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -6871,43 +6856,50 @@
     var html = '<div class="results-section">';
 
     // Key metrics
-    html += '<div class="result-card"><div class="result-card-title">Model Summary</div><div class="test-results-grid">' +
-      testStat('R\u00b2', round4(r2 * 100) + '%') +
-      testStat('Slope', round4(slope)) +
-      testStat('Direction', slope > 0 ? 'Positive \u2191' : slope < 0 ? 'Negative \u2193' : 'None') +
-      testStat('n', n) +
-    '</div>' + sigBadge(pSlope) +
-    '<div style="text-align:center;margin-top:0.5rem;font-size:0.9rem;color:var(--text-0)"><strong>' + equation + '</strong></div></div>';
+    html += RC('Model Summary',
+      renderMetrics([
+        { label: 'R\u00b2', value: round4(r2 * 100) + '%' },
+        { label: 'Slope', value: round4(slope) },
+        { label: 'Direction', value: slope > 0 ? 'Positive \u2191' : slope < 0 ? 'Negative \u2193' : 'None' },
+        { label: 'n', value: n }
+      ]) + renderSigBadge(pSlope) +
+      '<div style="text-align:center;margin-top:0.5rem;font-size:0.9rem;color:var(--text-0)"><strong>' + equation + '</strong></div>'
+    );
 
     // What this means
     var changeDir = slope > 0 ? 'increases' : 'decreases';
     var perUnit = 'For every 1-unit increase in ' + descX + ', ' + descY + ' ' + changeDir + ' by ' + round4(Math.abs(slope)) + ' on average.';
 
-    html += '<div class="result-card"><div class="result-card-title">What This Means</div>' +
+    html += RC('What This Means',
       '<div style="font-size:0.9rem;line-height:1.5;color:var(--text-0)">' + perUnit + '<br>' +
       descX + ' explains <strong>' + round4(r2 * 100) + '%</strong> of the variation in ' + descY + '.' +
       (r2 < 0.1 ? ' That\u2019s very little \u2014 other factors matter more.' : r2 < 0.3 ? ' That\u2019s a modest amount.' : ' That\u2019s substantial.') +
-      '</div></div>';
+      '</div>'
+    );
 
     // Scatter plot
-    html += '<div class="result-card"><div class="result-card-title">Scatter Plot with Trend Line</div>' +
-      '<canvas id="' + chartId + '" width="500" height="350" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Scatter Plot with Trend Line', 500, 350);
 
     // Statistical details (collapsed)
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
-      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
-        testStat('Slope', round4(slope)) + testStat('SE (slope)', round4(seSlope)) +
-        testStat('Intercept', round4(intercept)) + testStat('SE (intercept)', round4(seIntercept)) +
-        testStat('R\u00b2', round4(r2)) + testStat('r', round4(r)) +
-        testStat('t (slope)', round4(tSlope)) + testStat('p (slope)', round6(pSlope), pc) +
-        testStat('F', round4(F)) + testStat('p (F)', round6(pF)) +
-      '</div></div></details></div>';
+    html += renderCollapsed('Statistical Details',
+      renderMetrics([
+        { label: 'Slope', value: round4(slope) },
+        { label: 'SE (slope)', value: round4(seSlope) },
+        { label: 'Intercept', value: round4(intercept) },
+        { label: 'SE (intercept)', value: round4(seIntercept) },
+        { label: 'R\u00b2', value: round4(r2) },
+        { label: 'r', value: round4(r) },
+        { label: 't (slope)', value: round4(tSlope) },
+        { label: 'p (slope)', value: round6(pSlope), cls: pc },
+        { label: 'F', value: round4(F) },
+        { label: 'p (F)', value: round6(pF) }
+      ])
+    );
 
     // Plain English
     var plainText = descX + (pSlope < 0.05 ? ' significantly predicts ' : ' does not significantly predict ') + descY + '. ' + perUnit + ' ' +
       round4(r2 * 100) + '% of the variation is explained.';
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -7363,19 +7355,21 @@
     var chartId = 'welchChart_' + Date.now();
 
     var html = '<div class="results-section">';
-    html += groupMeansCard(groups, labels, 'Group Comparison');
-    html += sigBadge(p) + '</div>';
+    html += renderGroupCards(groups, labels, 'Group Comparison');
+    html += renderSigBadge(p) + '</div>';
 
-    html += '<div class="result-card"><div class="result-card-title">Mean Comparison</div>' +
-      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Mean Comparison', 500, Math.max(180, k * 55 + 30));
 
     html += groupDistTable(groups, labels);
 
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
-      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
-        testStat('Welch\u2019s F', round4(F)) + testStat('p-value', round6(p), pc) +
-        testStat('df1', df1) + testStat('df2', round2(df2)) +
-      '</div></div></details></div>';
+    html += renderCollapsed('Statistical Details',
+      renderMetrics([
+        { label: 'Welch\u2019s F', value: round4(F) },
+        { label: 'p-value', value: round6(p), cls: pc },
+        { label: 'df1', value: df1 },
+        { label: 'df2', value: round2(df2) }
+      ])
+    );
 
     var best = { mean: -Infinity, label: '' }, worst = { mean: Infinity, label: '' };
     for (var i = 0; i < k; i++) {
@@ -7385,8 +7379,7 @@
     var plainText = p < 0.05 ?
       'Significant difference across ' + k + ' groups. ' + best.label + ' scores highest (mean ' + round2(best.mean) + '), ' + worst.label + ' lowest (mean ' + round2(worst.mean) + ').' :
       'No significant difference across ' + k + ' groups (p = ' + round4(p) + ').';
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -7406,27 +7399,29 @@
     var chartId = 'friedmanChart_' + Date.now();
 
     var html = '<div class="results-section">';
-    html += groupMeansCard(groups, labels, 'Condition Comparison');
-    html += sigBadge(r.p) + '</div>';
+    html += renderGroupCards(groups, labels, 'Condition Comparison');
+    html += renderSigBadge(r.p) + '</div>';
 
-    html += '<div class="result-card"><div class="result-card-title">Median Comparison</div>' +
-      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Median Comparison', 500, Math.max(180, r.k * 55 + 30));
 
     html += groupDistTable(groups, labels);
 
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
-      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
-        testStat('Chi-Square', round4(r.chi2)) + testStat('p-value', round6(r.p), pc) +
-        testStat('df', r.df) + testStat('k', r.k) + testStat('n', r.n) +
-      '</div></div></details></div>';
+    html += renderCollapsed('Statistical Details',
+      renderMetrics([
+        { label: 'Chi-Square', value: round4(r.chi2) },
+        { label: 'p-value', value: round6(r.p), cls: pc },
+        { label: 'df', value: r.df },
+        { label: 'k', value: r.k },
+        { label: 'n', value: r.n }
+      ])
+    );
 
     var best = r.groupStats.reduce(function(a, b, i) { return b.median > a.med ? { med: b.median, label: labels[i] } : a; }, { med: -Infinity, label: '' });
     var worst = r.groupStats.reduce(function(a, b, i) { return b.median < a.med ? { med: b.median, label: labels[i] } : a; }, { med: Infinity, label: '' });
     var plainText = r.p < 0.05 ?
       'Significant difference across ' + r.k + ' conditions. ' + best.label + ' scores highest (median ' + round2(best.med) + '), ' + worst.label + ' lowest (median ' + round2(worst.med) + ').' :
       'No significant difference across ' + r.k + ' conditions (p = ' + round4(r.p) + ').';
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -7446,20 +7441,22 @@
     var chartId = 'rmAnovaChart_' + Date.now();
 
     var html = '<div class="results-section">';
-    html += groupMeansCard(groups, labels, 'Condition Comparison');
-    html += sigBadge(r.correctedP) + '</div>';
+    html += renderGroupCards(groups, labels, 'Condition Comparison');
+    html += renderSigBadge(r.correctedP) + '</div>';
 
-    html += '<div class="result-card"><div class="result-card-title">Mean Comparison</div>' +
-      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Mean Comparison', 500, Math.max(180, r.k * 55 + 30));
 
     html += groupDistTable(groups, labels);
 
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
-      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
-        testStat('F', round4(r.F)) + testStat('p (corrected)', round6(r.correctedP), pc) +
-        testStat('df (corrected)', round2(r.correctedDf1) + ', ' + round2(r.correctedDf2)) +
-        testStat('Eta\u00b2', round4(r.etaSquared)) + testStat('GG Epsilon', round4(r.epsilon)) +
-      '</div></div></details></div>';
+    html += renderCollapsed('Statistical Details',
+      renderMetrics([
+        { label: 'F', value: round4(r.F) },
+        { label: 'p (corrected)', value: round6(r.correctedP), cls: pc },
+        { label: 'df (corrected)', value: round2(r.correctedDf1) + ', ' + round2(r.correctedDf2) },
+        { label: 'Eta\u00b2', value: round4(r.etaSquared) },
+        { label: 'GG Epsilon', value: round4(r.epsilon) }
+      ])
+    );
 
     var best = { mean: -Infinity, label: '' }, worst = { mean: Infinity, label: '' };
     for (var i = 0; i < r.k; i++) {
@@ -7469,8 +7466,7 @@
     var plainText = r.correctedP < 0.05 ?
       'Significant difference across ' + r.k + ' conditions. ' + best.label + ' scores highest (mean ' + round2(best.mean) + '), ' + worst.label + ' lowest (mean ' + round2(worst.mean) + ').' :
       'No significant difference across ' + r.k + ' conditions (p = ' + round4(r.correctedP) + ').';
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -7528,8 +7524,7 @@
     var html = '<div class="results-section">';
 
     // Three significance badges: Factor A, Factor B, Interaction
-    html += '<div class="result-card"><div class="result-card-title">Effects Summary</div>' +
-      '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">' +
+    var effectsHtml = '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">' +
         '<div style="flex:1;min-width:120px;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
           '<div style="font-size:0.72rem;color:var(--text-2)">Factor A</div>' +
           '<div style="font-size:1.1rem;font-weight:700;color:' + (sigA ? 'var(--green)' : 'var(--text-2)') + '">' + (sigA ? 'Significant' : 'Not sig.') + '</div>' +
@@ -7542,30 +7537,36 @@
           '<div style="font-size:0.72rem;color:var(--text-2)">Interaction (A\u00d7B)</div>' +
           '<div style="font-size:1.1rem;font-weight:700;color:' + (sigAB ? 'var(--amber)' : 'var(--text-2)') + '">' + (sigAB ? 'Significant' : 'Not sig.') + '</div>' +
           '<div style="font-size:0.72rem;color:var(--text-2)">p = ' + round4(r.interaction.p) + '</div></div>' +
-      '</div></div>';
+      '</div>';
+    html += RC('Effects Summary', effectsHtml);
 
     // Cell means chart
-    html += '<div class="result-card"><div class="result-card-title">Mean Scores by Combination</div>' +
-      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, bars.length * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Mean Scores by Combination', 500, Math.max(180, bars.length * 55 + 30));
 
     // Cell means table
-    html += '<div class="result-card"><div class="result-card-title">Cell Means Table</div>' + cellHtml + '</div>';
+    html += RC('Cell Means Table', cellHtml);
 
     // Statistical details (collapsed)
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">ANOVA Table Details</summary>' +
-      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
-        testStat('F (A)', round4(r.mainA.F)) + testStat('p (A)', round6(r.mainA.p), pcA) + testStat('\u03b7\u00b2 (A)', round4(r.mainA.etaSquared)) +
-        testStat('F (B)', round4(r.mainB.F)) + testStat('p (B)', round6(r.mainB.p), pcB) + testStat('\u03b7\u00b2 (B)', round4(r.mainB.etaSquared)) +
-        testStat('F (A\u00d7B)', round4(r.interaction.F)) + testStat('p (A\u00d7B)', round6(r.interaction.p), pcAB) + testStat('\u03b7\u00b2 (A\u00d7B)', round4(r.interaction.etaSquared)) +
-      '</div></div></details></div>';
+    html += renderCollapsed('ANOVA Table Details',
+      renderMetrics([
+        { label: 'F (A)', value: round4(r.mainA.F) },
+        { label: 'p (A)', value: round6(r.mainA.p), cls: pcA },
+        { label: '\u03b7\u00b2 (A)', value: round4(r.mainA.etaSquared) },
+        { label: 'F (B)', value: round4(r.mainB.F) },
+        { label: 'p (B)', value: round6(r.mainB.p), cls: pcB },
+        { label: '\u03b7\u00b2 (B)', value: round4(r.mainB.etaSquared) },
+        { label: 'F (A\u00d7B)', value: round4(r.interaction.F) },
+        { label: 'p (A\u00d7B)', value: round6(r.interaction.p), cls: pcAB },
+        { label: '\u03b7\u00b2 (A\u00d7B)', value: round4(r.interaction.etaSquared) }
+      ])
+    );
 
     // Plain English
     var plainText2 = 'Two-way ANOVA (n=' + r.N + '): ';
     plainText2 += 'Factor A ' + (sigA ? 'has a significant effect' : 'no significant effect') + '. ';
     plainText2 += 'Factor B ' + (sigB ? 'has a significant effect' : 'no significant effect') + '. ';
     plainText2 += sigAB ? 'The combination of A and B matters \u2014 the effect of one factor depends on the level of the other.' : 'No significant interaction \u2014 the effects of A and B are independent.';
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText2 + '</div>' + makeCopyBtn(plainText2) + '</div>';
+    html += renderPlainEnglish(plainText2);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -8312,20 +8313,19 @@
     var html = '<div class="results-section">';
 
     // Segment overview
-    html += '<div class="result-card"><div class="result-card-title">Segments Found: ' + k + '</div>';
-    html += '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">';
+    var segHtml = '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">';
     for (var c = 0; c < k; c++) {
-      html += '<div style="flex:1;min-width:90px;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
+      segHtml += '<div style="flex:1;min-width:90px;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
         '<div style="font-size:0.72rem;color:var(--text-2)">Segment ' + (c + 1) + '</div>' +
         '<div style="font-size:1.3rem;font-weight:700;color:' + CHART_COLORS[c % CHART_COLORS.length] + '">' + clusterSizes[c] + '</div>' +
         '<div style="font-size:0.72rem;color:var(--text-2)">' + round2(clusterSizes[c] / nObs * 100) + '%</div></div>';
     }
-    html += '</div></div>';
+    segHtml += '</div>';
+    html += RC('Segments Found: ' + k, segHtml);
 
-    html += '<div class="result-card"><div class="result-card-title">Segment Profiles</div>' + centroidHtml + '</div>';
+    html += RC('Segment Profiles', centroidHtml);
 
-    html += '<div class="result-card"><div class="result-card-title">Segment Sizes</div>' +
-      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'Segment Sizes', 500, Math.max(180, k * 55 + 30));
 
     // Plain English
     var plainText = k + ' segments found from ' + nObs + ' respondents using ' + linkage + ' linkage. ';
@@ -8336,8 +8336,7 @@
       }
       plainText += 'Segment ' + (c + 1) + ' (' + clusterSizes[c] + '): highest on ' + high.label + '. ';
     }
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
@@ -9135,21 +9134,24 @@
     var html = '<div class="results-section">';
 
     // Key metrics
-    html += '<div class="result-card"><div class="result-card-title">Model Summary</div><div class="test-results-grid">' +
-      testStat('Scale Levels', K + ' (' + levels.join(', ') + ')') +
-      testStat('Pseudo R\u00b2', pseudoR2) + testStat('n', n) +
-    '</div></div>';
+    html += RC('Model Summary',
+      renderMetrics([
+        { label: 'Scale Levels', value: K + ' (' + levels.join(', ') + ')' },
+        { label: 'Pseudo R\u00b2', value: pseudoR2 },
+        { label: 'n', value: n }
+      ])
+    );
 
     // Odds ratios chart
     if (bars.length > 0) {
-      html += '<div class="result-card"><div class="result-card-title">What Moves Respondents Up the Scale</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + Math.max(120, bars.length * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas>' +
-        '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Odds ratio > 1 = pushes toward higher category. < 1 = pushes toward lower.</div></div>';
+      html += renderChart(chartId, 'What Moves Respondents Up the Scale', 500, Math.max(120, bars.length * 55 + 30),
+        'Odds ratio > 1 = pushes toward higher category. < 1 = pushes toward lower.');
     }
 
     // Tables (collapsed)
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Coefficient &amp; Threshold Tables</summary>' +
-      '<div style="margin-top:0.75rem">' + coeffHtml + '<div style="margin-top:1rem"><strong>Thresholds</strong></div>' + threshHtml + '</div></details></div>';
+    html += renderCollapsed('Coefficient &amp; Threshold Tables',
+      coeffHtml + '<div style="margin-top:1rem"><strong>Thresholds</strong></div>' + threshHtml
+    );
 
     // Plain English
     var plainText2 = 'Ordinal regression predicting a ' + K + '-point scale. ';
@@ -9158,8 +9160,7 @@
       var predName = labels[j + 1] || 'Predictor ' + (j + 1);
       plainText2 += predName + ': odds ratio = ' + orVal + (orVal > 1 ? ' (increases odds of higher rating)' : ' (decreases odds)') + '. ';
     }
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText2 + '</div>' + makeCopyBtn(plainText2) + '</div>';
+    html += renderPlainEnglish(plainText2);
 
     html += '</div>';
 
@@ -10960,38 +10961,37 @@
     var html = '<div class="results-section">';
 
     // Class overview upfront
-    html += '<div class="result-card"><div class="result-card-title">Classes Found: ' + nClasses + '</div>';
-    html += '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">';
+    var classHtml = '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">';
     for (var c = 0; c < nClasses; c++) {
       var highItems = [];
       for (var j = 0; j < nItems; j++) { if (theta[c][j] > 0.6) highItems.push(labels[j]); }
-      html += '<div style="flex:1;min-width:120px;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem">' +
+      classHtml += '<div style="flex:1;min-width:120px;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem">' +
         '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">Class ' + (c + 1) + '</div>' +
         '<div style="font-size:1.3rem;font-weight:700;color:' + CHART_COLORS[c % CHART_COLORS.length] + '">' + classCounts[c] + ' <span style="font-size:0.7rem;color:var(--text-2)">(' + round2(pi[c] * 100) + '%)</span></div>' +
         '<div style="font-size:0.78rem;color:var(--text-2);margin-top:0.3rem">' + (highItems.length > 0 ? 'High on: ' + highItems.join(', ') : 'Low across items') + '</div></div>';
     }
-    html += '</div>';
-    html += '<div style="font-size:0.82rem;color:var(--text-2);text-align:center;margin-top:0.5rem">Class separation: entropy = ' + round4(relativeEntropy) + (relativeEntropy > 0.8 ? ' (good)' : relativeEntropy > 0.6 ? ' (moderate)' : ' (weak)') + '</div>';
-    html += '</div>';
+    classHtml += '</div>';
+    classHtml += '<div style="font-size:0.82rem;color:var(--text-2);text-align:center;margin-top:0.5rem">Class separation: entropy = ' + round4(relativeEntropy) + (relativeEntropy > 0.8 ? ' (good)' : relativeEntropy > 0.6 ? ' (moderate)' : ' (weak)') + '</div>';
+    html += RC('Classes Found: ' + nClasses, classHtml);
 
     // Item probabilities chart
-    html += '<div class="result-card"><div class="result-card-title">What Defines Each Class</div>' +
-      '<canvas id="' + chartId + '" width="500" height="' + chartHeight + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+    html += renderChart(chartId, 'What Defines Each Class', 500, chartHeight);
 
     // Probability table (collapsed)
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Item Probability Table</summary>' +
-      '<div style="margin-top:0.75rem">' + tableHtml + '</div></details></div>';
+    html += renderCollapsed('Item Probability Table', tableHtml);
 
     // Technical details (collapsed)
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Model Fit Details</summary>' +
-      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
-        testStat('BIC', round2(BIC)) + testStat('Entropy', round4(relativeEntropy)) +
-        testStat('Log-Likelihood', round2(prevLL)) + testStat('Parameters', nParams) +
-      '</div></div></details></div>';
+    html += renderCollapsed('Model Fit Details',
+      renderMetrics([
+        { label: 'BIC', value: round2(BIC) },
+        { label: 'Entropy', value: round4(relativeEntropy) },
+        { label: 'Log-Likelihood', value: round2(prevLL) },
+        { label: 'Parameters', value: nParams }
+      ])
+    );
 
     // Plain English
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
 
@@ -11422,33 +11422,34 @@
     var html = '<div class="results-section">';
 
     // Big answer upfront: does the model fit?
-    html += '<div class="result-card"><div class="result-card-title">Does Your Model Fit the Data?</div>' +
+    html += RC('Does Your Model Fit the Data?',
       '<div style="text-align:center">' +
-        '<div style="font-size:2.5rem;font-weight:700;color:' + (goodFit ? 'var(--green)' : 'var(--rose)') + '">' + (goodFit ? 'Yes' : 'Needs Work') + '</div>' +
-        '<div style="font-size:0.9rem;color:var(--text-2);margin-top:0.3rem">' + nFactors + '-factor model, ' + nItems + ' items, n=' + n + '</div>' +
-      '</div></div>';
+        '<div style="font-size:2.8rem;font-weight:700;color:' + (goodFit ? 'var(--green)' : 'var(--rose)') + ';line-height:1">' + (goodFit ? 'Yes' : 'Needs Work') + '</div>' +
+        '<div style="font-size:0.88rem;color:var(--text-2);margin-top:0.4rem;line-height:1.5">' + nFactors + '-factor model, ' + nItems + ' items, n=' + n + '</div>' +
+      '</div>'
+    );
 
     // Fit indices with color coding
-    html += '<div class="result-card"><div class="result-card-title">Fit Indices</div><div class="test-results-grid">' +
-      testStat('CFI', round4(cfi) + ' (' + fitVerdict('cfi', cfi) + ')', fitColor('cfi', cfi)) +
-      testStat('RMSEA', round4(rmsea) + ' (' + fitVerdict('rmsea', rmsea) + ')', fitColor('rmsea', rmsea)) +
-      testStat('SRMR', round4(srmr) + ' (' + fitVerdict('srmr', srmr) + ')', fitColor('srmr', srmr)) +
-    '</div></div>';
+    html += RC('Fit Indices',
+      renderMetrics([
+        { label: 'CFI', value: round4(cfi) + ' (' + fitVerdict('cfi', cfi) + ')', cls: fitColor('cfi', cfi) },
+        { label: 'RMSEA', value: round4(rmsea) + ' (' + fitVerdict('rmsea', rmsea) + ')', cls: fitColor('rmsea', rmsea) },
+        { label: 'SRMR', value: round4(srmr) + ' (' + fitVerdict('srmr', srmr) + ')', cls: fitColor('srmr', srmr) }
+      ])
+    );
 
     // Loading chart
-    html += '<div class="result-card"><div class="result-card-title">Factor Loadings</div>' +
-      '<canvas id="' + chartId + '" width="500" height="' + chartHeight + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas>' +
-      '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Bar color = factor assignment. \u2265 0.4 = good loading.</div></div>';
+    html += renderChart(chartId, 'Factor Loadings', 500, chartHeight,
+      'Bar color = factor assignment. \u2265 0.4 = good loading.');
 
     // Detailed tables (collapsed)
-    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Loading Table &amp; Details</summary>' +
-      '<div style="margin-top:0.75rem">' + loadHtml +
-      (corrHtml ? '<div style="margin-top:1rem"><strong>Factor Correlations</strong></div>' + corrHtml : '') +
-      '</div></details></div>';
+    html += renderCollapsed('Loading Table &amp; Details',
+      loadHtml +
+      (corrHtml ? '<div style="margin-top:1rem"><strong>Factor Correlations</strong></div>' + corrHtml : '')
+    );
 
     // Plain English
-    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
-      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+    html += renderPlainEnglish(plainText);
 
     html += '</div>';
 
