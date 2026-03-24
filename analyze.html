@@ -3398,6 +3398,58 @@
     return '<div class="test-stat' + (extraClass ? ' ' + extraClass : '') + '"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>';
   }
 
+  // === Shared enrichment helpers for survey-style output ===
+  function sigBadge(p) {
+    var isSig = p < 0.05;
+    return '<div style="text-align:center;margin-top:0.6rem">' +
+      '<span style="display:inline-block;padding:0.25rem 0.7rem;border-radius:4px;font-size:0.82rem;font-weight:600;' +
+      (isSig ? 'background:rgba(58,154,92,0.15);color:var(--green)' : 'background:rgba(153,153,153,0.15);color:var(--text-2)') + '">' +
+      (isSig ? 'Statistically significant (p = ' + round4(p) + ')' : 'Not statistically significant (p = ' + round4(p) + ')') +
+      '</span></div>';
+  }
+
+  function groupMeansCard(groups, labels, title) {
+    var html = '<div class="result-card"><div class="result-card-title">' + (title || 'Group Comparison') + '</div>';
+    html += '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">';
+    for (var i = 0; i < groups.length; i++) {
+      var vals = groups[i];
+      var m = round2(StatsEngine._helpers.mean(vals));
+      var med = round2(StatsEngine._helpers.median(vals));
+      html += '<div style="flex:1;min-width:90px;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
+        '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">' + escHtml(labels[i]) + '</div>' +
+        '<div style="font-size:1.3rem;font-weight:700;margin:0.2rem 0">' + m + '</div>' +
+        '<div style="font-size:0.72rem;color:var(--text-2)">median ' + med + ' &middot; n=' + vals.length + '</div>' +
+      '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function groupDistTable(groups, labels) {
+    // Build % distribution table per group for discrete/Likert data
+    var allVals = {};
+    groups.forEach(function(g) { g.forEach(function(v) { allVals[v] = true; }); });
+    var keys = Object.keys(allVals).map(Number).sort(function(a, b) { return a - b; });
+    var allInteger = keys.every(function(k) { return k === Math.floor(k); });
+    if (!allInteger || keys.length > 15 || keys.length < 2) return ''; // not discrete data
+
+    var html = '<div class="result-card"><div class="result-card-title">Distribution by Group (%)</div><div style="overflow-x:auto"><table class="freq-table"><tr><th></th>';
+    keys.forEach(function(k) { html += '<th>' + k + '</th>'; });
+    html += '<th>n</th></tr>';
+    for (var i = 0; i < groups.length; i++) {
+      var counts = {};
+      keys.forEach(function(k) { counts[k] = 0; });
+      groups[i].forEach(function(v) { if (counts[v] !== undefined) counts[v]++; });
+      html += '<tr><td><strong>' + escHtml(labels[i]) + '</strong></td>';
+      keys.forEach(function(k) {
+        html += '<td>' + (groups[i].length > 0 ? round2(counts[k] / groups[i].length * 100) : 0) + '%</td>';
+      });
+      html += '<td>' + groups[i].length + '</td></tr>';
+    }
+    html += '</table></div></div>';
+    return html;
+  }
+
   function initCanvas(canvasId, w, h) {
     var canvas = document.getElementById(canvasId);
     if (!canvas) return null;
@@ -3689,41 +3741,59 @@
       df: round2(r.df), d: round4(r.cohensD),
       ci_low: round4(r.ci95.lower), ci_high: round4(r.ci95.upper)
     };
-    showTTestResults(result, descA, descB);
+    showTTestResults(result, descA, descB, a, b);
   }
 
-  function showTTestResults(r, descA, descB) {
+  function showTTestResults(r, descA, descB, rawA, rawB) {
     var absD = Math.abs(r.d);
     var eff = effectLabel(absD);
-    var practicalLabel = absD < 0.2 ? 'negligible' : absD < 0.5 ? 'modest' : 'practically meaningful';
     var pc = pClass(r.p);
-
-    var plainText;
-    if (r.p < 0.05) {
-      plainText = 'There is a statistically significant difference between ' + descA + ' (M = ' + r.ma + ', SD = ' + r.sa + ') and ' + descB + ' (M = ' + r.mb + ', SD = ' + r.sb + '), t(' + r.df + ') = ' + r.t + ', p = ' + r.p + '. The effect size is ' + eff + ' (Cohen\u2019s d = ' + r.d + '), meaning the difference is ' + practicalLabel + '.';
-    } else {
-      plainText = 'There is no statistically significant difference between ' + descA + ' (M = ' + r.ma + ', SD = ' + r.sa + ') and ' + descB + ' (M = ' + r.mb + ', SD = ' + r.sb + '), t(' + r.df + ') = ' + r.t + ', p = ' + r.p + '. Based on this data, we cannot conclude that the groups differ.';
-    }
+    var higher = r.ma > r.mb ? descA : descB;
+    var lower = r.ma > r.mb ? descB : descA;
 
     var chartId = 'meansChart_' + Date.now();
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Descriptive Summary</div><div class="summary-grid">' +
-        '<div class="summary-col"><h4>' + escHtml(descA) + '</h4>' +
-          statRow('n', r.na) + statRow('Mean', r.ma) + statRow('Std Dev', r.sa) + statRow('Median', r.meda) + '</div>' +
-        '<div class="summary-col"><h4>' + escHtml(descB) + '</h4>' +
-          statRow('n', r.nb) + statRow('Mean', r.mb) + statRow('Std Dev', r.sb) + statRow('Median', r.medb) + '</div>' +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Test Results</div><div class="test-results-grid">' +
-        testStat('t-statistic', r.t) + testStat('p-value', r.p, pc) + testStat('Degrees of freedom', r.df) +
-        testStat("Cohen's d", r.d) + testStat('95% CI of diff', '[' + r.ci_low + ', ' + r.ci_high + ']') +
-      '</div><div class="effect-interpretation">Effect size: <strong>' + eff + '</strong> (|d| < 0.2 = negligible, 0.2\u20130.5 = small, 0.5\u20130.8 = medium, > 0.8 = large)</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Group Means Comparison</div>' +
-        '<canvas id="' + chartId + '" width="500" height="180" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    var html = '<div class="results-section">';
 
+    // Group means comparison card with significance badge
+    html += groupMeansCard(rawA && rawB ? [rawA, rawB] : [[r.ma], [r.mb]], [descA, descB], 'Group Comparison');
+    html += sigBadge(r.p);
+    html += '</div>';
+
+    // Means bar chart (%)
+    html += '<div class="result-card"><div class="result-card-title">Mean Comparison</div>' +
+      '<canvas id="' + chartId + '" width="500" height="180" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+
+    // Per-group distribution table (for discrete/Likert data)
+    if (rawA && rawB) {
+      html += groupDistTable([rawA, rawB], [descA, descB]);
+    }
+
+    // Test details (collapsed)
+    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
+      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
+        testStat('t-statistic', r.t) + testStat('p-value', r.p, pc) + testStat('df', r.df) +
+        testStat("Cohen's d", r.d) + testStat('95% CI of diff', '[' + r.ci_low + ', ' + r.ci_high + ']') +
+      '</div><div class="effect-interpretation">Effect size: <strong>' + eff + '</strong> (|d| < 0.2 = negligible, 0.2\u20130.5 = small, 0.5\u20130.8 = medium, > 0.8 = large)</div>' +
+      '<div class="summary-grid" style="margin-top:0.75rem">' +
+        '<div class="summary-col"><h4>' + escHtml(descA) + '</h4>' +
+          statRow('n', r.na) + statRow('Mean', r.ma) + statRow('SD', r.sa) + statRow('Median', r.meda) + '</div>' +
+        '<div class="summary-col"><h4>' + escHtml(descB) + '</h4>' +
+          statRow('n', r.nb) + statRow('Mean', r.mb) + statRow('SD', r.sb) + statRow('Median', r.medb) + '</div>' +
+      '</div></div></details></div>';
+
+    // Plain English
+    var plainText;
+    if (r.p < 0.05) {
+      plainText = higher + ' scores significantly higher than ' + lower + ' (mean ' + (r.ma > r.mb ? r.ma : r.mb) + ' vs ' + (r.ma > r.mb ? r.mb : r.ma) + '). ' +
+        'The difference is ' + eff + ' in practical terms (Cohen\u2019s d = ' + r.d + ').';
+    } else {
+      plainText = 'No significant difference between ' + descA + ' (mean ' + r.ma + ') and ' + descB + ' (mean ' + r.mb + '). ' +
+        'Based on this data, we cannot conclude that the groups differ.';
+    }
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+
+    html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     drawBarChart(chartId, [
@@ -3787,49 +3857,60 @@
      ================================================================== */
   function runAnova(groups, labels) {
     var r = StatsEngine.anova(groups);
-    var interp = StatsEngine.interpret.anova(r);
     var pc = pClass(r.p);
-
-    var plainText = interp.summary + ' ' + interp.details;
     var chartId = 'anovaChart_' + Date.now();
 
-    // Descriptive rows
-    var descHtml = '';
-    for (var i = 0; i < r.k; i++) {
-      descHtml += statRow(escHtml(labels[i]) + ' (n=' + r.groupNs[i] + ')', 'M = ' + round4(r.groupMeans[i]));
-    }
+    var html = '<div class="results-section">';
 
-    // Posthoc table
-    var phHtml = '<table class="posthoc-table"><tr><th>Comparison</th><th>Mean Diff</th><th>t</th><th>p (Bonf.)</th><th>Cohen\'s d</th></tr>';
-    r.posthoc.forEach(function(ph) {
-      var sig = ph.pBonferroni < 0.05 ? ' style="font-weight:700;color:var(--green)"' : '';
-      phHtml += '<tr><td>' + escHtml(labels[ph.groupA]) + ' vs ' + escHtml(labels[ph.groupB]) + '</td>' +
-        '<td>' + round4(ph.meanDiff) + '</td><td>' + round4(ph.t) + '</td>' +
-        '<td' + sig + '>' + round6(ph.pBonferroni) + '</td><td>' + round4(ph.cohensD) + '</td></tr>';
-    });
-    phHtml += '</table>';
+    // Group comparison card with significance
+    html += groupMeansCard(groups, labels, 'Group Comparison');
+    html += sigBadge(r.p) + '</div>';
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Group Means</div>' + descHtml +
-        statRow('Grand Mean', round4(r.grandMean)) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Test Results</div><div class="test-results-grid">' +
-        testStat('F-statistic', round4(r.F)) + testStat('p-value', round6(r.p), pc) +
-        testStat('df (between)', r.dfBetween) + testStat('df (within)', r.dfWithin) +
-        testStat('Eta-squared', round4(r.etaSquared)) +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Post-Hoc Pairwise Comparisons (Bonferroni)</div>' + phHtml + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Group Means Comparison</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
-
-    container.insertAdjacentHTML('beforeend', html);
-    scrollToBottom();
-
+    // Means bar chart
     var sds = [];
     for (var i = 0; i < r.k; i++) sds.push(StatsEngine._helpers.sd(groups[i], 1));
+    html += '<div class="result-card"><div class="result-card-title">Mean Comparison</div>' +
+      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+
+    // Per-group distribution
+    html += groupDistTable(groups, labels);
+
+    // Post-hoc (only if significant)
+    if (r.p < 0.05 && r.posthoc && r.posthoc.length > 0) {
+      var phHtml = '<table class="posthoc-table"><tr><th>Comparison</th><th>Mean Diff</th><th>p (Bonf.)</th><th>Cohen\'s d</th></tr>';
+      r.posthoc.forEach(function(ph) {
+        var sig = ph.pBonferroni < 0.05 ? ' style="font-weight:700;color:var(--green)"' : '';
+        phHtml += '<tr><td>' + escHtml(labels[ph.groupA]) + ' vs ' + escHtml(labels[ph.groupB]) + '</td>' +
+          '<td>' + round4(ph.meanDiff) + '</td>' +
+          '<td' + sig + '>' + round6(ph.pBonferroni) + '</td><td>' + round4(ph.cohensD) + '</td></tr>';
+      });
+      phHtml += '</table>';
+      html += '<div class="result-card"><div class="result-card-title">Which Groups Differ? (Post-Hoc)</div>' + phHtml + '</div>';
+    }
+
+    // Statistical details (collapsed)
+    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
+      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
+        testStat('F-statistic', round4(r.F)) + testStat('p-value', round6(r.p), pc) +
+        testStat('df (between)', r.dfBetween) + testStat('df (within)', r.dfWithin) +
+        testStat('Eta-squared', round4(r.etaSquared)) + testStat('Grand Mean', round4(r.grandMean)) +
+      '</div></div></details></div>';
+
+    // Plain English
+    var best = { mean: -Infinity, label: '' }, worst = { mean: Infinity, label: '' };
+    for (var i = 0; i < r.k; i++) {
+      if (r.groupMeans[i] > best.mean) { best = { mean: r.groupMeans[i], label: labels[i] }; }
+      if (r.groupMeans[i] < worst.mean) { worst = { mean: r.groupMeans[i], label: labels[i] }; }
+    }
+    var plainText = r.p < 0.05 ?
+      'There is a significant difference across ' + r.k + ' groups. ' + best.label + ' scores highest (mean ' + round2(best.mean) + ') and ' + worst.label + ' scores lowest (mean ' + round2(worst.mean) + ').' :
+      'No significant difference found across ' + r.k + ' groups (p = ' + round4(r.p) + '). The groups perform similarly.';
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+
+    html += '</div>';
+    container.insertAdjacentHTML('beforeend', html);
+    scrollToBottom();
 
     var bars = [];
     for (var i = 0; i < r.k; i++) {
@@ -3844,34 +3925,41 @@
      ================================================================== */
   function runMannWhitney(a, b, descA, descB) {
     var r = StatsEngine.mannWhitney(a, b);
-    var interp = StatsEngine.interpret.mannWhitney(r);
     var pc = pClass(r.p);
-
     var medA = round4(StatsEngine._helpers.median(a));
     var medB = round4(StatsEngine._helpers.median(b));
-
-    var plainText = interp.summary + ' ' + interp.details +
-      ' Median ' + descA + ' = ' + medA + ', Median ' + descB + ' = ' + medB + '.';
     var chartId = 'mwChart_' + Date.now();
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Descriptive Summary</div><div class="summary-grid">' +
-        '<div class="summary-col"><h4>' + escHtml(descA) + '</h4>' +
-          statRow('n', r.nA) + statRow('Median', medA) + statRow('Rank Sum', round2(r.rankSumA)) + '</div>' +
-        '<div class="summary-col"><h4>' + escHtml(descB) + '</h4>' +
-          statRow('n', r.nB) + statRow('Median', medB) + statRow('Rank Sum', round2(r.rankSumB)) + '</div>' +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Test Results</div><div class="test-results-grid">' +
+    var html = '<div class="results-section">';
+
+    // Group comparison card with significance
+    html += groupMeansCard([a, b], [descA, descB], 'Group Comparison');
+    html += sigBadge(r.p) + '</div>';
+
+    // Median bar chart
+    html += '<div class="result-card"><div class="result-card-title">Median Comparison</div>' +
+      '<canvas id="' + chartId + '" width="500" height="180" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+
+    // Per-group distribution
+    html += groupDistTable([a, b], [descA, descB]);
+
+    // Statistical details (collapsed)
+    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
+      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
         testStat('U statistic', round2(r.U)) + testStat('z', round4(r.z)) + testStat('p-value', round6(r.p), pc) +
         testStat('Effect size r', round4(r.r)) +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Median Comparison</div>' +
-        '<canvas id="' + chartId + '" width="500" height="180" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+      '</div></div></details></div>';
 
+    // Plain English
+    var higher = medA >= medB ? descA : descB;
+    var lower = medA >= medB ? descB : descA;
+    var plainText = r.p < 0.05 ?
+      higher + ' scores significantly higher than ' + lower + ' (median ' + Math.max(medA, medB) + ' vs ' + Math.min(medA, medB) + ').' :
+      'No significant difference between ' + descA + ' (median ' + medA + ') and ' + descB + ' (median ' + medB + ').';
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+
+    html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     drawBarChart(chartId, [
@@ -3940,31 +4028,53 @@
      Pearson Correlation
      ================================================================== */
   function runPearson(x, y, descX, descY) {
-    if (x.length !== y.length) {
-      var minLen = Math.min(x.length, y.length);
-      x = x.slice(0, minLen);
-      y = y.slice(0, minLen);
-    }
+    if (x.length !== y.length) { var ml = Math.min(x.length, y.length); x = x.slice(0, ml); y = y.slice(0, ml); }
     var r = StatsEngine.pearson(x, y);
-    var interp = StatsEngine.interpret.pearson(r);
     var pc = pClass(r.p);
-
-    var plainText = interp.summary + ' ' + interp.details;
     var chartId = 'scatterPlot_' + Date.now();
+    var strength = Math.abs(r.r) < 0.1 ? 'negligible' : Math.abs(r.r) < 0.3 ? 'weak' : Math.abs(r.r) < 0.5 ? 'moderate' : Math.abs(r.r) < 0.7 ? 'strong' : 'very strong';
+    var direction = r.r > 0 ? 'positive' : r.r < 0 ? 'negative' : 'no';
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Test Results</div><div class="test-results-grid">' +
-        testStat('r', round4(r.r)) + testStat('R-squared', round4(r.rSquared)) +
-        testStat('p-value', round6(r.p), pc) + testStat('n', r.n) +
-        testStat('95% CI', '[' + round4(r.ci95.lower) + ', ' + round4(r.ci95.upper) + ']') +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Scatter Plot</div>' +
-        '<canvas id="' + chartId + '" width="500" height="350" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    var html = '<div class="results-section">';
 
+    // Key metrics
+    html += '<div class="result-card"><div class="result-card-title">Correlation Summary</div><div class="test-results-grid">' +
+      testStat('Correlation (r)', round4(r.r)) + testStat('Strength', strength) +
+      testStat('R\u00b2', (round4(r.rSquared * 100)) + '%') + testStat('n', r.n) +
+    '</div>' + sigBadge(r.p) + '</div>';
+
+    // Variable summaries
+    html += '<div class="result-card"><div class="result-card-title">Variable Summaries</div>' +
+      '<div style="display:flex;gap:0.5rem">' +
+        '<div style="flex:1;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
+          '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">' + escHtml(descX) + '</div>' +
+          '<div style="font-size:1.1rem;font-weight:700;margin:0.2rem 0">mean ' + round2(StatsEngine._helpers.mean(x)) + '</div>' +
+          '<div style="font-size:0.72rem;color:var(--text-2)">SD ' + round2(StatsEngine._helpers.sd(x, 1)) + ' &middot; n=' + x.length + '</div></div>' +
+        '<div style="flex:1;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
+          '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">' + escHtml(descY) + '</div>' +
+          '<div style="font-size:1.1rem;font-weight:700;margin:0.2rem 0">mean ' + round2(StatsEngine._helpers.mean(y)) + '</div>' +
+          '<div style="font-size:0.72rem;color:var(--text-2)">SD ' + round2(StatsEngine._helpers.sd(y, 1)) + ' &middot; n=' + y.length + '</div></div>' +
+      '</div></div>';
+
+    // Scatter plot
+    html += '<div class="result-card"><div class="result-card-title">Scatter Plot</div>' +
+      '<canvas id="' + chartId + '" width="500" height="350" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+
+    // Statistical details (collapsed)
+    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
+      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
+        testStat('r', round4(r.r)) + testStat('R\u00b2', round4(r.rSquared)) +
+        testStat('p-value', round6(r.p), pc) + testStat('95% CI', '[' + round4(r.ci95.lower) + ', ' + round4(r.ci95.upper) + ']') +
+      '</div></div></details></div>';
+
+    // Plain English
+    var plainText = 'There is a ' + strength + ' ' + direction + ' correlation between ' + descX + ' and ' + descY + ' (r = ' + round4(r.r) + '). ';
+    plainText += r.p < 0.05 ? 'This relationship is statistically significant. ' : 'This relationship is not statistically significant. ';
+    plainText += round4(r.rSquared * 100) + '% of the variation in one variable is explained by the other.';
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+
+    html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     drawScatterPlot(chartId, x, y, descX, descY);
@@ -4027,39 +4137,86 @@
     var r = StatsEngine.describe(vals);
     var chartId = 'histChart_' + Date.now();
 
-    var skewInterp = Math.abs(r.skewness) < 0.5 ? 'approximately symmetric' :
-      r.skewness > 0 ? 'positively skewed (right tail)' : 'negatively skewed (left tail)';
-    var kurtInterp = Math.abs(r.kurtosis) < 1 ? 'mesokurtic (normal-like tails)' :
-      r.kurtosis > 0 ? 'leptokurtic (heavy tails)' : 'platykurtic (light tails)';
+    // Detect discrete/Likert data
+    var uniqueVals = {};
+    var allInt = true;
+    vals.forEach(function(v) { uniqueVals[v] = (uniqueVals[v] || 0) + 1; if (v !== Math.floor(v)) allInt = false; });
+    var uniqueKeys = Object.keys(uniqueVals);
+    var isDiscrete = allInt && uniqueKeys.length >= 2 && uniqueKeys.length <= 15;
+    var sortedKeys = isDiscrete ? uniqueKeys.map(Number).sort(function(a, b) { return a - b; }) : [];
 
-    var plainText = desc + ': n = ' + r.n + ', M = ' + round4(r.mean) + ', Mdn = ' + round4(r.median) +
-      ', SD = ' + round4(r.sd) + '. The distribution is ' + skewInterp + ' (skewness = ' + round4(r.skewness) + ') and ' +
-      kurtInterp + ' (excess kurtosis = ' + round4(r.kurtosis) + '). 95% CI for the mean: [' +
-      round4(r.ci95.lower) + ', ' + round4(r.ci95.upper) + '].';
+    var html = '<div class="results-section">';
 
+    // Key metrics card
+    html += '<div class="result-card"><div class="result-card-title">Summary</div><div class="test-results-grid">' +
+      testStat('Respondents', r.n) + testStat('Mean', round2(r.mean)) + testStat('Median', round2(r.median)) + testStat('Std Dev', round2(r.sd)) +
+    '</div></div>';
+
+    // Top-box / Bottom-box for Likert
+    if (isDiscrete && sortedKeys.length >= 5) {
+      var minV = sortedKeys[0], maxV = sortedKeys[sortedKeys.length - 1];
+      if (maxV - minV >= 4) {
+        var topCount = 0, botCount = 0;
+        sortedKeys.forEach(function(k) {
+          if (k >= maxV - 1) topCount += uniqueVals[k];
+          if (k <= minV + 1) botCount += uniqueVals[k];
+        });
+        var topPct = round2(topCount / r.n * 100);
+        var botPct = round2(botCount / r.n * 100);
+        html += '<div class="result-card"><div class="result-card-title">Top-Box / Bottom-Box</div>' +
+          '<div style="display:flex;gap:1rem">' +
+            '<div style="flex:1;padding:0.6rem;border-radius:8px;text-align:center;background:rgba(58,154,92,0.12);border:1px solid rgba(58,154,92,0.25)">' +
+              '<div style="font-size:0.75rem;color:var(--text-2)">Top-2 Box (' + (maxV - 1) + '\u2013' + maxV + ')</div>' +
+              '<div style="font-size:1.3rem;font-weight:700;color:var(--green);margin-top:0.2rem">' + topPct + '%</div></div>' +
+            '<div style="flex:1;padding:0.6rem;border-radius:8px;text-align:center;background:rgba(212,88,122,0.12);border:1px solid rgba(212,88,122,0.25)">' +
+              '<div style="font-size:0.75rem;color:var(--text-2)">Bottom-2 Box (' + minV + '\u2013' + (minV + 1) + ')</div>' +
+              '<div style="font-size:1.3rem;font-weight:700;color:var(--rose);margin-top:0.2rem">' + botPct + '%</div></div>' +
+          '</div></div>';
+      }
+    }
+
+    // % Distribution table (discrete data only)
+    if (isDiscrete) {
+      html += '<div class="result-card"><div class="result-card-title">Response Distribution</div><table class="freq-table"><tr><th>Value</th><th>Count</th><th>%</th></tr>';
+      sortedKeys.forEach(function(k) {
+        var count = uniqueVals[k];
+        var pct = round2(count / r.n * 100);
+        html += '<tr><td>' + k + '</td><td>' + count + '</td>' +
+          '<td class="pct-bar-cell"><span class="pct-bar" style="width:' + Math.min(pct, 100) + '%"></span><span>' + pct + '%</span></td></tr>';
+      });
+      html += '</table></div>';
+    }
+
+    // Chart (histogram — now auto-detects discrete)
+    html += '<div class="result-card"><div class="result-card-title">Distribution</div>' +
+      '<canvas id="' + chartId + '" width="500" height="250" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+
+    // Detailed stats (collapsed for clean look)
     var modeStr = r.mode.length === 0 ? 'none' : r.mode.map(function(v) { return round4(v); }).join(', ');
+    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Detailed Statistics</summary>' +
+      '<div style="margin-top:0.75rem">' +
+      statRow('Mode', modeStr) + statRow('Variance', round4(r.variance)) +
+      statRow('Std Error', round4(r.se)) + statRow('Min', round4(r.min)) + statRow('Max', round4(r.max)) +
+      statRow('Range', round4(r.range)) + statRow('IQR', round4(r.iqr)) +
+      statRow('Skewness', round4(r.skewness)) + statRow('Kurtosis (excess)', round4(r.kurtosis)) +
+      statRow('95% CI of Mean', '[' + round4(r.ci95.lower) + ', ' + round4(r.ci95.upper) + ']') +
+      statRow('5th percentile', round4(r.p5)) + statRow('25th (Q1)', round4(r.p25)) +
+      statRow('75th (Q3)', round4(r.p75)) + statRow('95th percentile', round4(r.p95)) +
+      '</div></details></div>';
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Descriptive Statistics &mdash; ' + escHtml(desc) + '</div>' +
-        statRow('n', r.n) + statRow('Mean', round4(r.mean)) + statRow('Median', round4(r.median)) +
-        statRow('Mode', modeStr) + statRow('Std Dev', round4(r.sd)) + statRow('Variance', round4(r.variance)) +
-        statRow('Std Error', round4(r.se)) + statRow('Min', round4(r.min)) + statRow('Max', round4(r.max)) +
-        statRow('Range', round4(r.range)) + statRow('IQR', round4(r.iqr)) +
-        statRow('Skewness', round4(r.skewness)) + statRow('Kurtosis (excess)', round4(r.kurtosis)) +
-        statRow('95% CI', '[' + round4(r.ci95.lower) + ', ' + round4(r.ci95.upper) + ']') +
-      '</div>' +
-      '<div class="result-card"><div class="result-card-title">Percentiles</div>' +
-        statRow('5th', round4(r.p5)) + statRow('25th (Q1)', round4(r.p25)) +
-        statRow('50th (Median)', round4(r.p50)) + statRow('75th (Q3)', round4(r.p75)) +
-        statRow('95th', round4(r.p95)) +
-      '</div>' +
-      '<div class="result-card"><div class="result-card-title">Distribution</div>' +
-        '<canvas id="' + chartId + '" width="500" height="250" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    // Plain English
+    var plainText;
+    if (isDiscrete) {
+      plainText = r.n + ' respondents. Average: ' + round2(r.mean) + ' (median: ' + round2(r.median) + ', SD: ' + round2(r.sd) + '). ' +
+        'Most common response: ' + modeStr + '.';
+    } else {
+      plainText = r.n + ' values analyzed. Mean = ' + round2(r.mean) + ', Median = ' + round2(r.median) + ', SD = ' + round2(r.sd) + '. ' +
+        'Range: ' + round4(r.min) + ' to ' + round4(r.max) + '.';
+    }
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
 
+    html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     drawHistogram(chartId, vals);
@@ -4070,31 +4227,54 @@
      Spearman Correlation
      ================================================================== */
   function runSpearman(x, y, descX, descY) {
-    if (x.length !== y.length) {
-      var minLen = Math.min(x.length, y.length);
-      x = x.slice(0, minLen);
-      y = y.slice(0, minLen);
-    }
+    if (x.length !== y.length) { var ml = Math.min(x.length, y.length); x = x.slice(0, ml); y = y.slice(0, ml); }
     var r = StatsEngine.spearman(x, y);
-    var interp = StatsEngine.interpret.spearman(r);
     var pc = pClass(r.p);
-
-    var plainText = interp.summary + ' ' + interp.details;
     var chartId = 'spearmanPlot_' + Date.now();
+    var rho = r.rho;
+    var strength = Math.abs(rho) < 0.1 ? 'negligible' : Math.abs(rho) < 0.3 ? 'weak' : Math.abs(rho) < 0.5 ? 'moderate' : Math.abs(rho) < 0.7 ? 'strong' : 'very strong';
+    var direction = rho > 0 ? 'positive' : rho < 0 ? 'negative' : 'no';
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Test Results</div><div class="test-results-grid">' +
-        testStat('rho', round4(r.rho)) + testStat('R-squared', round4(r.rSquared)) +
-        testStat('p-value', round6(r.p), pc) + testStat('n', r.n) +
-        testStat('95% CI', '[' + round4(r.ci95.lower) + ', ' + round4(r.ci95.upper) + ']') +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Scatter Plot (Spearman)</div>' +
-        '<canvas id="' + chartId + '" width="500" height="350" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    var html = '<div class="results-section">';
 
+    // Key metrics
+    html += '<div class="result-card"><div class="result-card-title">Correlation Summary</div><div class="test-results-grid">' +
+      testStat('Correlation (rho)', round4(rho)) + testStat('Strength', strength) +
+      testStat('R\u00b2', round4(r.rSquared * 100) + '%') + testStat('n', r.n) +
+    '</div>' + sigBadge(r.p) + '</div>';
+
+    // Variable summaries
+    html += '<div class="result-card"><div class="result-card-title">Variable Summaries</div>' +
+      '<div style="display:flex;gap:0.5rem">' +
+        '<div style="flex:1;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
+          '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">' + escHtml(descX) + '</div>' +
+          '<div style="font-size:1.1rem;font-weight:700;margin:0.2rem 0">median ' + round2(StatsEngine._helpers.median(x)) + '</div>' +
+          '<div style="font-size:0.72rem;color:var(--text-2)">mean ' + round2(StatsEngine._helpers.mean(x)) + ' &middot; n=' + x.length + '</div></div>' +
+        '<div style="flex:1;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
+          '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">' + escHtml(descY) + '</div>' +
+          '<div style="font-size:1.1rem;font-weight:700;margin:0.2rem 0">median ' + round2(StatsEngine._helpers.median(y)) + '</div>' +
+          '<div style="font-size:0.72rem;color:var(--text-2)">mean ' + round2(StatsEngine._helpers.mean(y)) + ' &middot; n=' + y.length + '</div></div>' +
+      '</div></div>';
+
+    // Scatter plot
+    html += '<div class="result-card"><div class="result-card-title">Scatter Plot</div>' +
+      '<canvas id="' + chartId + '" width="500" height="350" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+
+    // Statistical details (collapsed)
+    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
+      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
+        testStat('rho', round4(rho)) + testStat('R\u00b2', round4(r.rSquared)) +
+        testStat('p-value', round6(r.p), pc) + testStat('95% CI', '[' + round4(r.ci95.lower) + ', ' + round4(r.ci95.upper) + ']') +
+      '</div></div></details></div>';
+
+    // Plain English
+    var plainText = 'There is a ' + strength + ' ' + direction + ' rank correlation between ' + descX + ' and ' + descY + ' (rho = ' + round4(rho) + '). ';
+    plainText += r.p < 0.05 ? 'This relationship is statistically significant. ' : 'This relationship is not statistically significant. ';
+    plainText += 'When one goes up, the other tends to go ' + (rho > 0 ? 'up' : 'down') + '.';
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+
+    html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     drawScatterPlot(chartId, x, y, descX, descY);
@@ -4798,52 +4978,60 @@
      ================================================================== */
   function runKruskalWallis(groups, labels) {
     var r = StatsEngine.kruskalWallis(groups);
-    var interp = StatsEngine.interpret.kruskalWallis(r);
     var pc = pClass(r.p);
-
-    var plainText = interp.summary + ' ' + interp.details;
     var chartId = 'kwChart_' + Date.now();
-
-    // Group medians
     var medians = [];
     for (var i = 0; i < r.k; i++) medians.push(StatsEngine._helpers.median(groups[i]));
 
-    var descHtml = '';
-    for (var i = 0; i < r.k; i++) {
-      descHtml += statRow(escHtml(labels[i]) + ' (n=' + r.ns[i] + ')', 'Median = ' + round4(medians[i]) + ', Mean Rank = ' + round2(r.meanRanks[i]));
+    var html = '<div class="results-section">';
+
+    // Group comparison with significance
+    html += groupMeansCard(groups, labels, 'Group Comparison');
+    html += sigBadge(r.p) + '</div>';
+
+    // Median bar chart
+    html += '<div class="result-card"><div class="result-card-title">Median Comparison</div>' +
+      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+
+    // Per-group distribution
+    html += groupDistTable(groups, labels);
+
+    // Post-hoc (only if significant)
+    if (r.p < 0.05 && r.posthoc && r.posthoc.length > 0) {
+      var phHtml = '<table class="posthoc-table"><tr><th>Comparison</th><th>Rank Diff</th><th>p (Bonf.)</th></tr>';
+      r.posthoc.forEach(function(ph) {
+        var sig = ph.pBonferroni < 0.05 ? ' style="font-weight:700;color:var(--green)"' : '';
+        phHtml += '<tr><td>' + escHtml(labels[ph.groupA]) + ' vs ' + escHtml(labels[ph.groupB]) + '</td>' +
+          '<td>' + round4(ph.meanRankDiff) + '</td><td' + sig + '>' + round6(ph.pBonferroni) + '</td></tr>';
+      });
+      phHtml += '</table>';
+      html += '<div class="result-card"><div class="result-card-title">Which Groups Differ? (Post-Hoc)</div>' + phHtml + '</div>';
     }
 
-    // Posthoc table
-    var phHtml = '<table class="posthoc-table"><tr><th>Comparison</th><th>Mean Rank Diff</th><th>z</th><th>p (Bonf.)</th></tr>';
-    r.posthoc.forEach(function(ph) {
-      var sig = ph.pBonferroni < 0.05 ? ' style="font-weight:700;color:var(--green)"' : '';
-      phHtml += '<tr><td>' + escHtml(labels[ph.groupA]) + ' vs ' + escHtml(labels[ph.groupB]) + '</td>' +
-        '<td>' + round4(ph.meanRankDiff) + '</td><td>' + round4(ph.z) + '</td>' +
-        '<td' + sig + '>' + round6(ph.pBonferroni) + '</td></tr>';
-    });
-    phHtml += '</table>';
-
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Group Summary</div>' + descHtml + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Test Results</div><div class="test-results-grid">' +
+    // Statistical details (collapsed)
+    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
+      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
         testStat('H statistic', round4(r.H)) + testStat('p-value', round6(r.p), pc) +
         testStat('df', r.df) + testStat('Eta-squared', round4(r.etaSquared)) +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Post-Hoc Pairwise Comparisons (Dunn\'s + Bonferroni)</div>' + phHtml + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Group Medians</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, r.k * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+      '</div></div></details></div>';
 
+    // Plain English
+    var best = { med: -Infinity, label: '' }, worst = { med: Infinity, label: '' };
+    for (var i = 0; i < r.k; i++) {
+      if (medians[i] > best.med) { best = { med: medians[i], label: labels[i] }; }
+      if (medians[i] < worst.med) { worst = { med: medians[i], label: labels[i] }; }
+    }
+    var plainText = r.p < 0.05 ?
+      'Significant difference across ' + r.k + ' groups. ' + best.label + ' scores highest (median ' + round2(best.med) + '), ' + worst.label + ' scores lowest (median ' + round2(worst.med) + ').' :
+      'No significant difference across ' + r.k + ' groups (p = ' + round4(r.p) + ').';
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+
+    html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
-
     var bars = [];
-    for (var i = 0; i < r.k; i++) {
-      bars.push({ label: labels[i], value: medians[i], color: CHART_COLORS[i % CHART_COLORS.length] });
-    }
+    for (var i = 0; i < r.k; i++) bars.push({ label: labels[i], value: medians[i], color: CHART_COLORS[i % CHART_COLORS.length] });
     drawBarChart(chartId, bars);
     showNextSteps('group_comparison', r);
   }
@@ -6450,31 +6638,52 @@
     var F = ssReg / msRes;
     var pF = 1 - jStat.centralF.cdf(F, 1, n - 2);
 
-    var equation = 'Y = ' + round4(slope) + ' * X + ' + round4(intercept);
+    var equation = 'Y = ' + round4(slope) + ' \u00d7 X + ' + round4(intercept);
     var pc = pClass(pSlope);
-
-    var plainText = 'Simple linear regression: ' + equation + '. ' +
-      'R-squared = ' + round4(r2) + ', meaning ' + (r2 * 100).toFixed(1) + '% of the variance in ' + descY + ' is explained by ' + descX + '. ' +
-      'The slope is ' + round4(slope) + ' (SE = ' + round4(seSlope) + '), ' +
-      (pSlope < 0.05 ? 'which is statistically significant (t = ' + round4(tSlope) + ', p = ' + round6(pSlope) + ').' :
-        'which is not statistically significant (t = ' + round4(tSlope) + ', p = ' + round6(pSlope) + ').');
-
     var chartId = 'simpleRegPlot_' + Date.now();
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Model Results</div><div class="test-results-grid">' +
-        testStat('Slope', round4(slope)) + testStat('Intercept', round4(intercept)) +
-        testStat('R-squared', round4(r2)) + testStat('r', round4(r)) +
-        testStat('t (slope)', round4(tSlope)) + testStat('p-value (slope)', round6(pSlope), pc) +
-        testStat('F-statistic', round4(F)) + testStat('n', n) +
-      '</div><div class="effect-interpretation">Equation: <strong>' + equation + '</strong></div></div>' +
-      '<div class="result-card"><div class="result-card-title">Scatter Plot with Trend Line</div>' +
-        '<canvas id="' + chartId + '" width="500" height="350" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    var html = '<div class="results-section">';
 
+    // Key metrics
+    html += '<div class="result-card"><div class="result-card-title">Model Summary</div><div class="test-results-grid">' +
+      testStat('R\u00b2', round4(r2 * 100) + '%') +
+      testStat('Slope', round4(slope)) +
+      testStat('Direction', slope > 0 ? 'Positive \u2191' : slope < 0 ? 'Negative \u2193' : 'None') +
+      testStat('n', n) +
+    '</div>' + sigBadge(pSlope) +
+    '<div style="text-align:center;margin-top:0.5rem;font-size:0.9rem;color:var(--text-0)"><strong>' + equation + '</strong></div></div>';
+
+    // What this means
+    var changeDir = slope > 0 ? 'increases' : 'decreases';
+    var perUnit = 'For every 1-unit increase in ' + descX + ', ' + descY + ' ' + changeDir + ' by ' + round4(Math.abs(slope)) + ' on average.';
+
+    html += '<div class="result-card"><div class="result-card-title">What This Means</div>' +
+      '<div style="font-size:0.9rem;line-height:1.5;color:var(--text-0)">' + perUnit + '<br>' +
+      descX + ' explains <strong>' + round4(r2 * 100) + '%</strong> of the variation in ' + descY + '.' +
+      (r2 < 0.1 ? ' That\u2019s very little \u2014 other factors matter more.' : r2 < 0.3 ? ' That\u2019s a modest amount.' : ' That\u2019s substantial.') +
+      '</div></div>';
+
+    // Scatter plot
+    html += '<div class="result-card"><div class="result-card-title">Scatter Plot with Trend Line</div>' +
+      '<canvas id="' + chartId + '" width="500" height="350" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>';
+
+    // Statistical details (collapsed)
+    html += '<div class="result-card"><details><summary style="cursor:pointer;font-size:0.85rem;color:var(--rose)">Statistical Details</summary>' +
+      '<div style="margin-top:0.75rem"><div class="test-results-grid">' +
+        testStat('Slope', round4(slope)) + testStat('SE (slope)', round4(seSlope)) +
+        testStat('Intercept', round4(intercept)) + testStat('SE (intercept)', round4(seIntercept)) +
+        testStat('R\u00b2', round4(r2)) + testStat('r', round4(r)) +
+        testStat('t (slope)', round4(tSlope)) + testStat('p (slope)', round6(pSlope), pc) +
+        testStat('F', round4(F)) + testStat('p (F)', round6(pF)) +
+      '</div></div></details></div>';
+
+    // Plain English
+    var plainText = descX + (pSlope < 0.05 ? ' significantly predicts ' : ' does not significantly predict ') + descY + '. ' + perUnit + ' ' +
+      round4(r2 * 100) + '% of the variation is explained.';
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+
+    html += '</div>';
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     drawScatterPlot(chartId, x, y, descX, descY);
