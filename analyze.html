@@ -2597,16 +2597,30 @@
   /* ==================================================================
      Shared Helpers
      ================================================================== */
+  var EXCEL_ERRORS = {'#N/A':1, '#REF!':1, '#VALUE!':1, '#DIV/0!':1, '#NULL!':1, '#NAME?':1, '#NUM!':1, '#N/A!':1, '#REF':1};
+  function isExcelError(v) { return EXCEL_ERRORS.hasOwnProperty(v.trim().toUpperCase()); }
+
   function parseValues(text) {
+    // Detect multi-column paste (tabs on multiple lines = spreadsheet block)
+    var rawLines = text.split(/\n/).filter(function(l) { return l.trim() !== ''; });
+    var tabLines = rawLines.filter(function(l) { return l.indexOf('\t') > -1; });
+    var hasMultipleColumns = tabLines.length > 2;
+
     var lines = text.split(/[\n,\t]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
     var nums = [];
     var bad = 0;
-    lines.forEach(function(l) {
-      var n = parseFloat(l);
-      if (!isNaN(n) && isFinite(n)) nums.push(n);
-      else bad++;
-    });
-    return { nums: nums, bad: bad, total: lines.length };
+    var excelErrors = 0;
+    var percentStripped = 0;
+    if (!hasMultipleColumns) {
+      lines.forEach(function(l) {
+        if (isExcelError(l)) { excelErrors++; return; }
+        if (/^-?\d+(\.\d+)?%$/.test(l)) { percentStripped++; l = l.replace('%', ''); }
+        var n = parseFloat(l);
+        if (!isNaN(n) && isFinite(n)) nums.push(n);
+        else bad++;
+      });
+    }
+    return { nums: nums, bad: bad, excelErrors: excelErrors, percentStripped: percentStripped, total: lines.length, hasMultipleColumns: hasMultipleColumns };
   }
 
   function round2(v) { return Math.round(v * 100) / 100; }
@@ -2614,17 +2628,53 @@
   function round6(v) { return Math.round(v * 1000000) / 1000000; }
 
   function updateCount(textarea, countEl) {
+    // Detect multi-column paste in single-column input
+    var rawText = textarea.value;
+    var linesWithTabs = rawText.split(/\n/).filter(function(l) { return l.indexOf('\t') > -1; });
+    if (linesWithTabs.length > 2) {
+      countEl.textContent = 'It looks like you pasted multiple columns. This analysis works with one column at a time \u2014 select just the column you need in your spreadsheet.';
+      countEl.className = 'value-count warning';
+      return { nums: [], bad: 0, excelErrors: 0, percentStripped: 0, total: 0, hasMultipleColumns: true };
+    }
     var parsed = parseValues(textarea.value);
     if (parsed.total === 0) {
       countEl.textContent = 'No values detected';
       countEl.className = 'value-count';
-    } else if (parsed.bad > 0) {
-      countEl.textContent = parsed.nums.length + ' valid number' + (parsed.nums.length !== 1 ? 's' : '') + ' detected, ' + parsed.bad + ' non-numeric value' + (parsed.bad !== 1 ? 's' : '') + ' skipped';
-      countEl.className = 'value-count warning';
+    } else if (parsed.bad > 0 || parsed.excelErrors > 0 || parsed.percentStripped > 0) {
+      var parts = [parsed.nums.length + ' valid number' + (parsed.nums.length !== 1 ? 's' : '') + ' detected'];
+      if (parsed.bad > 0) parts.push(parsed.bad + ' non-numeric value' + (parsed.bad !== 1 ? 's' : '') + ' skipped');
+      if (parsed.excelErrors > 0) parts.push(parsed.excelErrors + ' spreadsheet error' + (parsed.excelErrors !== 1 ? 's' : '') + ' (#N/A, #REF!) removed');
+      if (parsed.percentStripped > 0) parts.push('% symbols removed from ' + parsed.percentStripped + ' value' + (parsed.percentStripped !== 1 ? 's' : '') + ' (49% \u2192 49)');
+      countEl.textContent = parts.join(', ');
+      countEl.className = (parsed.bad > 0 || parsed.excelErrors > 0) ? 'value-count warning' : 'value-count valid';
     } else {
       countEl.textContent = parsed.nums.length + ' value' + (parsed.nums.length !== 1 ? 's' : '') + ' detected';
       countEl.className = 'value-count valid';
     }
+
+    // Type disambiguation hint for low-cardinality numeric data
+    var hintEl = countEl.parentNode.querySelector('.type-hint');
+    if (hintEl) hintEl.remove();
+    if (parsed.nums.length >= 3) {
+      var uniqueVals = [];
+      var seen = {};
+      parsed.nums.forEach(function(n) { if (!seen[n]) { seen[n] = true; uniqueVals.push(n); }});
+      uniqueVals.sort(function(a, b) { return a - b; });
+      var hasNegatives = uniqueVals.some(function(n) { return n < 0; });
+      if (uniqueVals.length <= 7) {
+        var hint = document.createElement('div');
+        hint.className = 'type-hint';
+        hint.style.cssText = 'font-size:0.82rem;color:var(--text-2);margin-top:4px;line-height:1.4;';
+        var valList = uniqueVals.join(', ');
+        if (hasNegatives) {
+          hint.textContent = 'These values include negatives (' + valList + '). If these represent categories (e.g., segments), consider using Frequencies or Chi-Square instead. If this is a numeric scale, the current analysis is appropriate.';
+        } else {
+          hint.textContent = 'Only ' + uniqueVals.length + ' unique values detected (' + valList + '). If these represent categories (e.g., seniority levels, segments), consider using Frequencies or Chi-Square. If this is a rating scale, the current analysis is appropriate.';
+        }
+        countEl.parentNode.insertBefore(hint, countEl.nextSibling);
+      }
+    }
+
     return parsed;
   }
 
@@ -5278,7 +5328,7 @@
      Shared: Categorical Parser
      ================================================================== */
   function parseCategorical(text) {
-    return text.split(/\n/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
+    return text.split(/\n/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== '' && !isExcelError(s); });
   }
 
   /* ==================================================================
@@ -5401,22 +5451,67 @@
     // Parse multi-response textarea: each line → array of non-empty values
     function parseMultiCols(text) {
       var lines = text.split(/\n/).filter(function(s) { return s.trim() !== ''; });
-      var result = [];
-      var allItems = {};
+      var cleanLines = [];
+      var excelErrors = 0;
       for (var i = 0; i < lines.length; i++) {
         var cells = lines[i].split('\t');
+        var rowHasOnlyErrors = cells.every(function(c) { var t = c.trim(); return t === '' || isExcelError(t); });
+        if (rowHasOnlyErrors && cells.some(function(c) { return isExcelError(c.trim()); })) { excelErrors++; continue; }
+        cleanLines.push(lines[i]);
+      }
+
+      // Detect header row: first row all non-numeric text, rest has numeric/empty
+      var headerRow = null;
+      var columnLabels = null;
+      var questionStem = null;
+      if (cleanLines.length > 1) {
+        var firstCells = cleanLines[0].split('\t').map(function(c) { return c.trim(); });
+        var firstRowAllText = firstCells.every(function(c) {
+          return c !== '' && (isNaN(parseFloat(c)) || !isFinite(parseFloat(c)));
+        });
+        if (firstRowAllText) {
+          var sampleCells = cleanLines[1].split('\t').map(function(c) { return c.trim(); });
+          var hasNumericOrEmpty = sampleCells.some(function(c) {
+            return c === '' || (!isNaN(parseFloat(c)) && isFinite(parseFloat(c)));
+          });
+          if (hasNumericOrEmpty) {
+            headerRow = firstCells;
+            cleanLines = cleanLines.slice(1);
+            // Alchemer colon parsing
+            var allHaveColon = firstCells.every(function(h) { return h.indexOf(':') > 0; });
+            if (allHaveColon) {
+              columnLabels = firstCells.map(function(h) { return h.substring(0, h.indexOf(':')).trim(); });
+              questionStem = firstCells[0].substring(firstCells[0].indexOf(':') + 1).trim();
+            } else {
+              columnLabels = firstCells.map(function(h) { return h.length > 50 ? h.substring(0, 47) + '...' : h; });
+            }
+          }
+        }
+      }
+
+      var result = [];
+      var allItems = {};
+      for (var i = 0; i < cleanLines.length; i++) {
+        var cells = cleanLines[i].split('\t');
         var selected = [];
         for (var j = 0; j < cells.length; j++) {
           var v = cells[j].trim();
+          if (isExcelError(v)) { continue; }
           var vLower = v.toLowerCase();
           if (v !== '' && v !== '0' && vLower !== 'no' && vLower !== 'false' && vLower !== 'n/a' && vLower !== 'na') {
-            selected.push(v);
-            allItems[v] = true;
+            // If we have column labels from headers, use them instead of raw values for binary data
+            if (columnLabels && columnLabels[j] && (v === '1' || vLower === 'yes' || vLower === 'true' || vLower === 'selected')) {
+              selected.push(columnLabels[j]);
+              allItems[columnLabels[j]] = true;
+            } else {
+              selected.push(v);
+              allItems[v] = true;
+            }
           }
         }
         result.push(selected);
       }
-      return { rows: result, uniqueItems: Object.keys(allItems) };
+      return { rows: result, uniqueItems: Object.keys(allItems), excelErrors: excelErrors, headerRow: headerRow, columnLabels: columnLabels, questionStem: questionStem };
     }
 
     valEl.addEventListener('input', function() {
@@ -5432,11 +5527,16 @@
         var allBinary = parsed.uniqueItems.length > 0 && parsed.uniqueItems.every(function(item) {
           return binaryVals.has(item.toLowerCase());
         });
-        if (allBinary && parsed.uniqueItems.length <= 2) {
+        if (parsed.headerRow) {
+          statusText += '. First row detected as column headers \u2014 using as option labels';
+        } else if (allBinary && parsed.uniqueItems.length <= 2) {
           statusText += ' \u2014 \u26A0 This looks like binary (0/1) checkbox data. Column headers will be used as option labels.';
         }
+        if (parsed.excelErrors > 0) {
+          statusText += ' \u2014 ' + parsed.excelErrors + ' row' + (parsed.excelErrors !== 1 ? 's' : '') + ' with spreadsheet errors (#N/A, #REF!) removed';
+        }
         valCountEl.textContent = statusText;
-        valCountEl.className = 'value-count valid';
+        valCountEl.className = parsed.excelErrors > 0 ? 'value-count warning' : 'value-count valid';
       }
       runBtn.disabled = parsed.rows.length < 3;
     });
@@ -11285,26 +11385,74 @@
     }
 
     if (!hasTabs) {
-      // Single column
-      var vals = lines.map(function(l) { return l.trim(); }).filter(function(s) { return s !== ''; });
-      return { isMultiResponse: false, values: vals };
+      // Single column — filter Excel errors
+      var vals = lines.map(function(l) { return l.trim(); }).filter(function(s) { return s !== '' && !isExcelError(s); });
+      var excelErrors = lines.filter(function(l) { return isExcelError(l.trim()); }).length;
+      return { isMultiResponse: false, values: vals, excelErrors: excelErrors };
     }
 
-    // Multi-column: split by tabs
-    var matrix = [];
+    // Multi-column: split by tabs, skip rows that are entirely Excel errors/empty
+    var allRows = [];
     var maxCols = 0;
+    var excelErrors = 0;
     lines.forEach(function(line) {
       var cells = line.split('\t').map(function(c) { return c.trim(); });
+      var rowAllErrorsOrEmpty = cells.every(function(c) { return c === '' || isExcelError(c); });
+      if (rowAllErrorsOrEmpty && cells.some(function(c) { return isExcelError(c); })) { excelErrors++; return; }
       if (cells.length > maxCols) maxCols = cells.length;
-      matrix.push(cells);
+      allRows.push(cells);
     });
+
+    // Detect header row: first row all non-numeric/non-empty, subsequent rows mostly numeric/empty
+    var headerRow = null;
+    if (allRows.length > 1) {
+      var firstRow = allRows[0];
+      var firstRowAllText = firstRow.every(function(c) {
+        return c !== '' && (isNaN(parseFloat(c)) || !isFinite(parseFloat(c)));
+      });
+      if (firstRowAllText) {
+        // Check that at least some data rows have numeric/empty values
+        var sampleRow = allRows[Math.min(1, allRows.length - 1)];
+        var dataRowHasNumericOrEmpty = sampleRow.some(function(c) {
+          return c === '' || (!isNaN(parseFloat(c)) && isFinite(parseFloat(c)));
+        });
+        if (dataRowHasNumericOrEmpty) {
+          headerRow = firstRow;
+          allRows = allRows.slice(1);
+        }
+      }
+    }
+
+    // Parse Alchemer colon headers: if ALL headers contain ':', split into option label + question stem
+    var colonHeaders = null;
+    var questionStem = null;
+    if (headerRow) {
+      var allHaveColon = headerRow.every(function(h) { return h.indexOf(':') > 0; });
+      if (allHaveColon) {
+        colonHeaders = headerRow.map(function(h) {
+          var idx = h.indexOf(':');
+          return h.substring(0, idx).trim();
+        });
+        // Use the first header's right side as the shared question stem
+        var firstIdx = headerRow[0].indexOf(':');
+        questionStem = headerRow[0].substring(firstIdx + 1).trim();
+      } else {
+        // Use full headers, truncated for display
+        colonHeaders = headerRow.map(function(h) {
+          return h.length > 50 ? h.substring(0, 47) + '...' : h;
+        });
+      }
+    }
+
+    var matrix = allRows;
 
     // Build columns
     var columns = [];
     for (var c = 0; c < maxCols; c++) {
       var col = [];
       for (var r = 0; r < matrix.length; r++) {
-        col.push(matrix[r][c] !== undefined ? matrix[r][c] : '');
+        var v = matrix[r][c] !== undefined ? matrix[r][c] : '';
+        col.push(isExcelError(v) ? '' : v);
       }
       columns.push(col);
     }
@@ -11313,7 +11461,11 @@
       isMultiResponse: true,
       columns: columns,
       nColumns: maxCols,
-      nRows: matrix.length
+      nRows: matrix.length,
+      excelErrors: excelErrors,
+      headerRow: headerRow,
+      columnLabels: colonHeaders,
+      questionStem: questionStem
     };
   }
 
@@ -11344,20 +11496,36 @@
     dataEl.addEventListener('input', function() {
       var parsed = parseMultiResponse(dataEl.value);
       if (parsed.isMultiResponse) {
-        countEl.textContent = 'Multi-response detected: ' + parsed.nRows + ' responses \u00d7 ' + parsed.nColumns + ' options';
-        countEl.className = 'value-count valid';
+        var mrStatus = 'Multi-response detected: ' + parsed.nRows + ' responses \u00d7 ' + parsed.nColumns + ' options';
+        if (parsed.excelErrors > 0) mrStatus += ' \u2014 ' + parsed.excelErrors + ' row' + (parsed.excelErrors !== 1 ? 's' : '') + ' with spreadsheet errors (#N/A, #REF!) removed';
+        countEl.textContent = mrStatus;
+        countEl.className = parsed.excelErrors > 0 ? 'value-count warning' : 'value-count valid';
         runBtn.disabled = parsed.nRows < 2 || parsed.nColumns < 2;
-        // Show column name inputs
+        // Show column name inputs (auto-populate from detected headers)
         if (parsed.nColumns !== detectedCols) {
           detectedCols = parsed.nColumns;
           colNamesDiv.style.display = 'flex';
           colNamesDiv.innerHTML = '';
+          if (parsed.headerRow) {
+            mrStatus += '. First row detected as column headers \u2014 using as option labels';
+            countEl.textContent = mrStatus;
+          }
           for (var i = 0; i < parsed.nColumns; i++) {
             var inp = document.createElement('input');
             inp.type = 'text';
-            inp.placeholder = 'Option ' + (i + 1);
             inp.className = 'mr-col-name';
+            if (parsed.columnLabels && parsed.columnLabels[i]) {
+              inp.value = parsed.columnLabels[i];
+              inp.title = parsed.headerRow ? parsed.headerRow[i] : '';
+            } else {
+              inp.placeholder = 'Option ' + (i + 1);
+            }
             colNamesDiv.appendChild(inp);
+          }
+          // Auto-populate question label from Alchemer colon pattern
+          var labelEl = section.querySelector('#mrLabel');
+          if (parsed.questionStem && labelEl && !labelEl.value) {
+            labelEl.value = parsed.questionStem;
           }
         }
       } else if (parsed.values.length > 0) {
@@ -11538,6 +11706,40 @@
       return { label: f.name, value: f.pct, color: CHART_COLORS[i % CHART_COLORS.length] };
     });
     drawBarChart(chartId, bars);
+
+    // Detect open-text responses: columns where selected values are varied text (not just 1/yes/true)
+    var binaryVals = { '1': 1, 'yes': 1, 'true': 1, 'selected': 1 };
+    var openTexts = [];
+    for (var c = 0; c < nCols; c++) {
+      var textResponses = [];
+      for (var r = 0; r < nRows; r++) {
+        var raw = (columns[c][r] || '').trim();
+        if (raw !== '' && !falsySet[raw.toLowerCase()] && !binaryVals[raw.toLowerCase()]) {
+          textResponses.push(raw);
+        }
+      }
+      // If this column has varied text (more than 3 unique values), it's an open-text column
+      var uniqueTexts = {};
+      textResponses.forEach(function(t) { uniqueTexts[t] = true; });
+      if (Object.keys(uniqueTexts).length > 3 && textResponses.length > 0) {
+        openTexts.push({ name: columnNames[c], responses: textResponses, count: textResponses.length });
+      }
+    }
+    if (openTexts.length > 0) {
+      var otHtml = '<div class="result-card"><div class="result-card-title">Open-Ended Responses</div>';
+      openTexts.forEach(function(ot) {
+        otHtml += '<div style="margin-bottom:0.75rem">' +
+          '<strong>' + escHtml(ot.name) + '</strong>: ' + ot.count + ' respondent' + (ot.count !== 1 ? 's' : '') + ' (' + round2(ot.count / nRows * 100) + '%) wrote a response.' +
+          '<details style="margin-top:0.5rem"><summary style="cursor:pointer;color:var(--rose)">View responses</summary>' +
+          '<ul style="max-height:200px;overflow-y:auto;font-size:0.85rem;margin-top:0.5rem">';
+        ot.responses.forEach(function(r) {
+          otHtml += '<li>' + escHtml(r) + '</li>';
+        });
+        otHtml += '</ul></details></div>';
+      });
+      otHtml += '</div>';
+      container.insertAdjacentHTML('beforeend', otHtml);
+    }
 
     showNextSteps('descriptive', { n: nRows });
   }
