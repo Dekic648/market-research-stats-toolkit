@@ -3558,57 +3558,121 @@
 
   // Histogram
   function drawHistogram(canvasId, values, numBins) {
-    if (!numBins) numBins = Math.min(15, Math.max(5, Math.ceil(Math.sqrt(values.length))));
     var c = initCanvas(canvasId, 500, 250);
     if (!c) return;
     var ctx = c.ctx, w = c.w, h = c.h;
     var colors = getColors();
-    var pad = { left: 50, right: 20, top: 15, bottom: 40 };
+    var pad = { left: 55, right: 20, top: 20, bottom: 40 };
     var cw = w - pad.left - pad.right;
     var ch = h - pad.top - pad.bottom;
 
-    var mn = Math.min.apply(null, values), mx = Math.max.apply(null, values);
-    var range = mx - mn || 1;
-    var binWidth = range / numBins;
-    var bins = new Array(numBins);
-    for (var i = 0; i < numBins; i++) bins[i] = 0;
+    // Detect discrete data: all integers with <= 15 unique values
+    var uniqueVals = {};
+    var allInteger = true;
     values.forEach(function(v) {
-      var idx = Math.min(numBins - 1, Math.floor((v - mn) / binWidth));
-      bins[idx]++;
+      uniqueVals[v] = (uniqueVals[v] || 0) + 1;
+      if (v !== Math.floor(v)) allInteger = false;
     });
-    var maxCount = Math.max.apply(null, bins);
+    var uniqueKeys = Object.keys(uniqueVals);
+    var isDiscrete = allInteger && uniqueKeys.length <= 15;
+    var totalN = values.length;
 
-    // Bars
-    var bw = cw / numBins;
-    ctx.fillStyle = colors.rose;
-    ctx.globalAlpha = 0.7;
-    for (var i = 0; i < numBins; i++) {
-      var bh = maxCount > 0 ? (bins[i] / maxCount) * ch : 0;
-      ctx.fillRect(pad.left + i * bw + 1, pad.top + ch - bh, bw - 2, bh);
+    if (isDiscrete) {
+      // Discrete mode: one bar per unique value, sorted numerically, show %
+      var sorted = uniqueKeys.map(function(k) {
+        return { label: k, count: uniqueVals[k], pct: uniqueVals[k] / totalN * 100 };
+      }).sort(function(a, b) { return parseFloat(a.label) - parseFloat(b.label); });
+
+      var maxPct = Math.max.apply(null, sorted.map(function(d) { return d.pct; }));
+      var bw = cw / sorted.length;
+
+      // Bars
+      ctx.fillStyle = colors.rose;
+      ctx.globalAlpha = 0.75;
+      for (var i = 0; i < sorted.length; i++) {
+        var bh = maxPct > 0 ? (sorted[i].pct / maxPct) * ch : 0;
+        ctx.fillRect(pad.left + i * bw + 2, pad.top + ch - bh, bw - 4, bh);
+      }
+      ctx.globalAlpha = 1;
+
+      // Value labels on bars
+      ctx.fillStyle = colors.text;
+      ctx.font = '600 10px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.textAlign = 'center';
+      for (var i = 0; i < sorted.length; i++) {
+        var bh = maxPct > 0 ? (sorted[i].pct / maxPct) * ch : 0;
+        if (sorted[i].pct > 0) {
+          ctx.fillText(sorted[i].pct.toFixed(1) + '%', pad.left + i * bw + bw / 2, pad.top + ch - bh - 4);
+        }
+      }
+
+      // Axes
+      ctx.strokeStyle = colors.border;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, pad.top);
+      ctx.lineTo(pad.left, pad.top + ch);
+      ctx.lineTo(pad.left + cw, pad.top + ch);
+      ctx.stroke();
+
+      // X labels
+      ctx.fillStyle = colors.subtext;
+      ctx.font = '400 11px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.textAlign = 'center';
+      for (var i = 0; i < sorted.length; i++) {
+        ctx.fillText(sorted[i].label, pad.left + i * bw + bw / 2, pad.top + ch + 16);
+      }
+
+      // Y labels (%)
+      ctx.textAlign = 'right';
+      ctx.fillText(maxPct.toFixed(0) + '%', pad.left - 6, pad.top + 5);
+      ctx.fillText('0%', pad.left - 6, pad.top + ch + 4);
+    } else {
+      // Continuous mode: classic histogram with bins
+      if (!numBins) numBins = Math.min(15, Math.max(5, Math.ceil(Math.sqrt(values.length))));
+      var mn = Math.min.apply(null, values), mx = Math.max.apply(null, values);
+      var range = mx - mn || 1;
+      var binWidth = range / numBins;
+      var bins = new Array(numBins);
+      for (var i = 0; i < numBins; i++) bins[i] = 0;
+      values.forEach(function(v) {
+        var idx = Math.min(numBins - 1, Math.floor((v - mn) / binWidth));
+        bins[idx]++;
+      });
+      var maxCount = Math.max.apply(null, bins);
+
+      // Bars
+      var bw = cw / numBins;
+      ctx.fillStyle = colors.rose;
+      ctx.globalAlpha = 0.7;
+      for (var i = 0; i < numBins; i++) {
+        var bh = maxCount > 0 ? (bins[i] / maxCount) * ch : 0;
+        ctx.fillRect(pad.left + i * bw + 1, pad.top + ch - bh, bw - 2, bh);
+      }
+      ctx.globalAlpha = 1;
+
+      // Axes
+      ctx.strokeStyle = colors.border;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, pad.top);
+      ctx.lineTo(pad.left, pad.top + ch);
+      ctx.lineTo(pad.left + cw, pad.top + ch);
+      ctx.stroke();
+
+      // X labels
+      ctx.fillStyle = colors.subtext;
+      ctx.font = '400 10px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.textAlign = 'center';
+      for (var i = 0; i <= numBins; i += Math.max(1, Math.floor(numBins / 5))) {
+        var v = mn + i * binWidth;
+        ctx.fillText(v.toFixed(1), pad.left + i * bw, pad.top + ch + 15);
+      }
+      // Y label
+      ctx.textAlign = 'right';
+      ctx.fillText(maxCount, pad.left - 8, pad.top + 5);
+      ctx.fillText('0', pad.left - 8, pad.top + ch + 4);
     }
-    ctx.globalAlpha = 1;
-
-    // Axes
-    ctx.strokeStyle = colors.border;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(pad.left, pad.top);
-    ctx.lineTo(pad.left, pad.top + ch);
-    ctx.lineTo(pad.left + cw, pad.top + ch);
-    ctx.stroke();
-
-    // X labels
-    ctx.fillStyle = colors.subtext;
-    ctx.font = '400 10px -apple-system, BlinkMacSystemFont, sans-serif';
-    ctx.textAlign = 'center';
-    for (var i = 0; i <= numBins; i += Math.max(1, Math.floor(numBins / 5))) {
-      var v = mn + i * binWidth;
-      ctx.fillText(v.toFixed(1), pad.left + i * bw, pad.top + ch + 15);
-    }
-    // Y label
-    ctx.textAlign = 'right';
-    ctx.fillText(maxCount, pad.left - 8, pad.top + 5);
-    ctx.fillText('0', pad.left - 8, pad.top + ch + 4);
   }
 
   /* ==================================================================
