@@ -5825,7 +5825,7 @@
     sorted.forEach(function(r) { totalMentions += r.count; });
     var isMulti = totalMentions > nRespondents;
 
-    // Detect if all values are numeric (Likert/scale data) → sort numerically, use distribution language
+    // Detect Likert/scale data
     var allNumeric = sorted.every(function(r) { var n = parseFloat(r.value); return !isNaN(n) && isFinite(n); });
     var isLikert = allNumeric && sorted.length >= 2 && sorted.length <= 11 && !isMulti;
 
@@ -5839,12 +5839,68 @@
     var modeEntry = sorted.find(function(r) { return r.value === mode; });
     var chartId = 'freqChart_' + Date.now();
 
-    // Adaptive labels based on data type
-    var valueLabel = isLikert ? 'Response' : 'Value';
-    var pctLabel = isLikert ? '% of Responses' : '% of Respondents';
-    var titleLabel = isLikert ? 'Response Distribution' : 'Frequency Table';
-    var chartTitle = isLikert ? 'Response Distribution' : 'Top Categories';
+    // === COMPUTE STATS FOR LIKERT ===
+    var mean = null, median = null, sd = null;
+    var topPct = null, botPct = null, topLabel = '', botLabel = '';
+    if (isLikert) {
+      // Flatten all values to numbers for stats
+      var allNums = [];
+      parsed.rows.forEach(function(sel) { sel.forEach(function(v) { var n = parseFloat(v); if (!isNaN(n)) allNums.push(n); }); });
+      if (allNums.length > 0) {
+        mean = round2(allNums.reduce(function(a, b) { return a + b; }, 0) / allNums.length);
+        var sortedNums = allNums.slice().sort(function(a, b) { return a - b; });
+        var mid = Math.floor(sortedNums.length / 2);
+        median = sortedNums.length % 2 === 0 ? round2((sortedNums[mid - 1] + sortedNums[mid]) / 2) : sortedNums[mid];
+        var sqDiffs = allNums.map(function(v) { return (v - mean) * (v - mean); });
+        sd = round2(Math.sqrt(sqDiffs.reduce(function(a, b) { return a + b; }, 0) / (allNums.length - 1)));
+      }
+      // Top-box / Bottom-box
+      var vals = sorted.map(function(r) { return parseFloat(r.value); });
+      var minVal = Math.min.apply(null, vals), maxVal = Math.max.apply(null, vals);
+      if (maxVal - minVal >= 4) {
+        var topTwo = sorted.filter(function(r) { return parseFloat(r.value) >= maxVal - 1; });
+        var botTwo = sorted.filter(function(r) { return parseFloat(r.value) <= minVal + 1; });
+        topPct = round2(topTwo.reduce(function(s, r) { return s + r.pct; }, 0));
+        botPct = round2(botTwo.reduce(function(s, r) { return s + r.pct; }, 0));
+        topLabel = (maxVal - 1) + '\u2013' + maxVal;
+        botLabel = minVal + '\u2013' + (minVal + 1);
+      }
+    }
 
+    // === BUILD HTML ===
+    var html = '<div class="results-section">';
+
+    // Summary card: Respondents, Mean, Median, SD (for Likert) or Respondents, Options, Mode (for categorical)
+    html += '<div class="result-card"><div class="result-card-title">Summary</div><div class="test-results-grid">';
+    html += testStat('Respondents', nRespondents);
+    if (isLikert && mean !== null) {
+      html += testStat('Mean', mean);
+      html += testStat('Median', median);
+      html += testStat('Std Dev', sd);
+    } else {
+      html += testStat('Unique Options', sorted.length);
+      html += testStat(isMulti ? 'Total Mentions' : 'Most Common', isMulti ? totalMentions : mode);
+    }
+    html += '</div></div>';
+
+    // Top-box / Bottom-box (Likert only)
+    if (isLikert && topPct !== null) {
+      html += '<div class="result-card"><div class="result-card-title">Top-Box / Bottom-Box</div>' +
+        '<div style="display:flex;gap:1rem">' +
+          '<div style="flex:1;padding:0.6rem;border-radius:8px;text-align:center;background:rgba(58,154,92,0.12);border:1px solid rgba(58,154,92,0.25)">' +
+            '<div style="font-size:0.75rem;color:var(--text-2)">Top-2 Box (' + topLabel + ')</div>' +
+            '<div style="font-size:1.3rem;font-weight:700;color:var(--green);margin-top:0.2rem">' + topPct + '%</div>' +
+          '</div>' +
+          '<div style="flex:1;padding:0.6rem;border-radius:8px;text-align:center;background:rgba(212,88,122,0.12);border:1px solid rgba(212,88,122,0.25)">' +
+            '<div style="font-size:0.75rem;color:var(--text-2)">Bottom-2 Box (' + botLabel + ')</div>' +
+            '<div style="font-size:1.3rem;font-weight:700;color:var(--rose);margin-top:0.2rem">' + botPct + '%</div>' +
+          '</div>' +
+        '</div></div>';
+    }
+
+    // Frequency table
+    var valueLabel = isLikert ? 'Response' : 'Value';
+    var pctLabel = isLikert ? '% of Respondents' : '% of Respondents';
     var tableHtml = '<table class="freq-table"><tr><th>' + valueLabel + '</th><th>Count</th><th>' + pctLabel + '</th></tr>';
     sorted.forEach(function(row) {
       var barW = Math.min(row.pct, 100);
@@ -5852,42 +5908,32 @@
         '<td class="pct-bar-cell"><span class="pct-bar" style="width:' + barW.toFixed(1) + '%"></span><span>' + row.pct.toFixed(1) + '%</span></td></tr>';
     });
     tableHtml += '</table>';
+    html += '<div class="result-card"><div class="result-card-title">' + (isLikert ? 'Response Distribution' : 'Frequency Table') + '</div>' + tableHtml + '</div>';
 
+    // Bar chart (% values)
+    var chartData = sorted.slice(0, 15);
+    html += '<div class="result-card"><div class="result-card-title">' + (isLikert ? 'Distribution Chart' : 'Top Categories') + '</div>' +
+      '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, chartData.length * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas>' +
+      '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Bars show % of respondents</div></div>';
+
+    // Plain English
     var plainText;
     if (isLikert) {
-      plainText = 'Response distribution for ' + nRespondents + ' respondents on a ' + sorted[0].value + '\u2013' + sorted[sorted.length - 1].value + ' scale. ' +
-        'The most common response is "' + mode + '" (' + modeEntry.count + ' respondents, ' + modeEntry.pct.toFixed(1) + '%).';
-      // Add top/bottom box for Likert
-      var vals = sorted.map(function(r) { return parseFloat(r.value); });
-      var minVal = Math.min.apply(null, vals), maxVal = Math.max.apply(null, vals);
-      if (maxVal - minVal >= 4) {
-        var topTwo = sorted.filter(function(r) { return parseFloat(r.value) >= maxVal - 1; });
-        var botTwo = sorted.filter(function(r) { return parseFloat(r.value) <= minVal + 1; });
-        var topPct = topTwo.reduce(function(s, r) { return s + r.pct; }, 0);
-        var botPct = botTwo.reduce(function(s, r) { return s + r.pct; }, 0);
-        plainText += ' Top-2 box (' + (maxVal - 1) + '\u2013' + maxVal + '): ' + topPct.toFixed(1) + '%. Bottom-2 box (' + minVal + '\u2013' + (minVal + 1) + '): ' + botPct.toFixed(1) + '%.';
+      plainText = nRespondents + ' respondents rated on a ' + sorted[0].value + '\u2013' + sorted[sorted.length - 1].value + ' scale. ' +
+        'Average: ' + mean + ' (median: ' + median + '). ' +
+        'Most common response: "' + mode + '" (' + modeEntry.pct.toFixed(1) + '%).';
+      if (topPct !== null) {
+        plainText += ' Top-2 box (' + topLabel + '): ' + topPct + '%. Bottom-2 box (' + botLabel + '): ' + botPct + '%.';
       }
     } else {
       plainText = 'Frequency analysis of ' + nRespondents + ' respondents across ' + sorted.length + ' options. ' +
-        'The most selected is "' + mode + '" (' + modeEntry.count + ', ' + modeEntry.pct.toFixed(1) + '%).' +
-        (isMulti ? ' Multi-response: percentages based on respondents, may exceed 100%.' : '');
+        'Most selected: "' + mode + '" (' + modeEntry.count + ', ' + modeEntry.pct.toFixed(1) + '%).';
+      if (isMulti) plainText += ' Multi-response: percentages based on respondents, may exceed 100%.';
     }
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
 
-    var chartData = sorted.slice(0, 15);
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Summary</div><div class="test-results-grid">' +
-        testStat('Respondents', nRespondents) +
-        testStat(isLikert ? 'Scale Points' : 'Unique Options', sorted.length) +
-        testStat(isLikert ? 'Most Common Response' : 'Most Selected', mode) +
-        (isMulti ? testStat('Total Mentions', totalMentions) : '') +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">' + titleLabel + '</div>' + tableHtml + '</div>' +
-      '<div class="result-card"><div class="result-card-title">' + chartTitle + '</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, chartData.length * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    html += '</div>';
 
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
@@ -5956,16 +6002,98 @@
       optionTotals.push(ct);
     }
 
-    // Plain English
-    var maxPct = 0, maxGroup = '', maxOpt = '';
-    for (var g = 0; g < groupLabels.length; g++) {
-      for (var c = 0; c < optionLabels.length; c++) {
-        if (pctData[g][c] > maxPct) { maxPct = pctData[g][c]; maxGroup = groupLabels[g]; maxOpt = optionLabels[c]; }
+    // === COMPUTE GROUP MEANS + SIGNIFICANCE (for numeric/Likert data) ===
+    var isLikertCross = allNumericOpts && optionLabels.length >= 2 && optionLabels.length <= 11;
+    var groupMeans = [];
+    var groupArrays = []; // raw numeric arrays per group, for significance test
+    if (isLikertCross) {
+      for (var g = 0; g < groupLabels.length; g++) {
+        var gName = groupLabels[g];
+        var nums = [];
+        for (var i = 0; i < n; i++) {
+          if (groupLines[i] === gName) {
+            parsed.rows[i].forEach(function(v) { var num = parseFloat(v); if (!isNaN(num)) nums.push(num); });
+          }
+        }
+        var gMean = nums.length > 0 ? round2(nums.reduce(function(a, b) { return a + b; }, 0) / nums.length) : 0;
+        groupMeans.push({ name: gName, mean: gMean, n: groupN[gName] });
+        groupArrays.push(nums);
       }
     }
-    var plainText = 'Cross-tabulation of ' + n + ' respondents across ' + groupLabels.length + ' groups and ' + optionLabels.length + ' options. ' +
-      'The highest percentage is ' + maxPct.toFixed(1) + '% for "' + maxOpt + '" in the "' + maxGroup + '" group. ' +
-      'Row percentages are based on respondents per group and may exceed 100% (multi-response).';
+
+    // Significance test (Kruskal-Wallis for 3+ groups, Mann-Whitney for 2)
+    var sigResult = null;
+    if (isLikertCross && groupArrays.length >= 2 && groupArrays.every(function(a) { return a.length >= 2; })) {
+      try {
+        if (groupArrays.length === 2) {
+          sigResult = StatsEngine.mannWhitney(groupArrays[0], groupArrays[1]);
+        } else {
+          sigResult = StatsEngine.kruskalWallis(groupArrays);
+        }
+      } catch(e) { /* ignore */ }
+    }
+
+    // Top-box / Bottom-box per group (Likert only)
+    var topBotByGroup = null;
+    if (isLikertCross) {
+      var optNums = optionLabels.map(function(v) { return parseFloat(v); });
+      var minOpt = Math.min.apply(null, optNums), maxOpt = Math.max.apply(null, optNums);
+      if (maxOpt - minOpt >= 4) {
+        topBotByGroup = [];
+        for (var g = 0; g < groupLabels.length; g++) {
+          var topPct = 0, botPct = 0;
+          for (var c = 0; c < optionLabels.length; c++) {
+            var ov = parseFloat(optionLabels[c]);
+            if (ov >= maxOpt - 1) topPct += pctData[g][c];
+            if (ov <= minOpt + 1) botPct += pctData[g][c];
+          }
+          topBotByGroup.push({ name: groupLabels[g], top: round2(topPct), bot: round2(botPct), mean: groupMeans[g].mean, n: groupN[groupLabels[g]] });
+        }
+      }
+    }
+
+    // === BUILD HTML ===
+    var html = '<div class="results-section">';
+
+    // Summary by Group card (Likert: mean per group + significance)
+    if (isLikertCross && groupMeans.length > 0) {
+      html += '<div class="result-card"><div class="result-card-title">Summary by Group</div>';
+      html += '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">';
+      groupMeans.forEach(function(gm) {
+        html += '<div style="flex:1;min-width:90px;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
+          '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">' + escHtml(gm.name) + '</div>' +
+          '<div style="font-size:1.3rem;font-weight:700;margin:0.2rem 0">' + gm.mean + '</div>' +
+          '<div style="font-size:0.72rem;color:var(--text-2)">n=' + gm.n + '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+      if (sigResult) {
+        var sigP = sigResult.p;
+        var isSig = sigP < 0.05;
+        html += '<div style="text-align:center;margin-top:0.6rem">' +
+          '<span style="display:inline-block;padding:0.25rem 0.7rem;border-radius:4px;font-size:0.82rem;font-weight:600;' +
+          (isSig ? 'background:rgba(58,154,92,0.15);color:var(--green)' : 'background:rgba(153,153,153,0.15);color:var(--text-2)') + '">' +
+          (isSig ? 'Statistically significant difference (p = ' + round4(sigP) + ')' : 'No significant difference (p = ' + round4(sigP) + ')') +
+          '</span></div>';
+      }
+      html += '</div>';
+    } else {
+      html += '<div class="result-card"><div class="result-card-title">Summary</div><div class="test-results-grid">' +
+        testStat('Total N', n) + testStat('Groups', groupLabels.length) + testStat('Options', optionLabels.length) +
+      '</div></div>';
+    }
+
+    // Top-box / Bottom-box per group table (Likert only)
+    if (topBotByGroup) {
+      var topLabel = (maxOpt - 1) + '\u2013' + maxOpt;
+      var botLabel = minOpt + '\u2013' + (minOpt + 1);
+      html += '<div class="result-card"><div class="result-card-title">Top-Box / Bottom-Box by Group</div>' +
+        '<div style="overflow-x:auto"><table class="freq-table"><tr><th>Group</th><th style="color:var(--green)">Top-2 (' + topLabel + ')</th><th style="color:var(--rose)">Bottom-2 (' + botLabel + ')</th><th>Mean</th><th>n</th></tr>';
+      topBotByGroup.forEach(function(row) {
+        html += '<tr><td><strong>' + escHtml(row.name) + '</strong></td><td style="color:var(--green)">' + row.top + '%</td><td style="color:var(--rose)">' + row.bot + '%</td><td>' + row.mean + '</td><td>' + row.n + '</td></tr>';
+      });
+      html += '</table></div></div>';
+    }
 
     // Crosstab HTML table
     var ctHtml = '<div style="overflow-x:auto"><table class="freq-table">';
@@ -5984,23 +6112,44 @@
     ctHtml += '<td>' + n + '</td></tr>';
     ctHtml += '</table></div>';
     ctHtml += '<div style="margin-top:6px;font-size:0.82em;color:var(--text-2)">Total N = ' + n + ' &middot; Metric: Row %</div>';
+    html += '<div class="result-card"><div class="result-card-title">Distribution by Group (Row %)</div>' + ctHtml + '</div>';
 
+    // Grouped bar chart
     var chartId = 'crosstabChart_' + Date.now();
-    // Chart dimensions — scale with data
     var chartW = Math.max(600, groupLabels.length * optionLabels.length * 22 + 120);
     var chartH = 400;
+    html += '<div class="result-card"><div class="result-card-title">Grouped Bar Chart (%)</div>' +
+      '<canvas id="' + chartId + '" width="' + chartW + '" height="' + chartH + '" style="width:100%;max-width:' + chartW + 'px;display:block;margin:0 auto;"></canvas>' +
+      '<div style="font-size:0.78rem;color:var(--text-2);margin-top:6px">Bars show % within each group</div></div>';
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Summary</div><div class="test-results-grid">' +
-        testStat('Total N', n) + testStat('Groups', groupLabels.length) + testStat('Options', optionLabels.length) +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Distribution by Group (Row %)</div>' +
-        '<canvas id="' + chartId + '" width="' + chartW + '" height="' + chartH + '" style="width:100%;max-width:' + chartW + 'px;display:block;margin:0 auto;"></canvas></div>' +
-      '<div class="result-card"><div class="result-card-title">Crosstab Table (Row %)</div>' + ctHtml + '</div>' +
-      '</div>';
+    // Plain English
+    var plainText;
+    if (isLikertCross && groupMeans.length > 0) {
+      var best = groupMeans.reduce(function(a, b) { return a.mean >= b.mean ? a : b; });
+      var worst = groupMeans.reduce(function(a, b) { return a.mean <= b.mean ? a : b; });
+      plainText = n + ' respondents across ' + groupLabels.length + ' groups. ' +
+        '"' + best.name + '" rates highest (mean ' + best.mean + '), "' + worst.name + '" rates lowest (mean ' + worst.mean + ').';
+      if (sigResult) {
+        plainText += sigResult.p < 0.05 ? ' The difference between groups is statistically significant (p = ' + round4(sigResult.p) + ').' : ' The difference is not statistically significant (p = ' + round4(sigResult.p) + ').';
+      }
+      if (topBotByGroup) {
+        var bestTop = topBotByGroup.reduce(function(a, b) { return a.top >= b.top ? a : b; });
+        plainText += ' Highest top-2 box: "' + bestTop.name + '" at ' + bestTop.top + '%.';
+      }
+    } else {
+      var maxPct = 0, maxGroup = '', maxOpt = '';
+      for (var g = 0; g < groupLabels.length; g++) {
+        for (var c = 0; c < optionLabels.length; c++) {
+          if (pctData[g][c] > maxPct) { maxPct = pctData[g][c]; maxGroup = groupLabels[g]; maxOpt = optionLabels[c]; }
+        }
+      }
+      plainText = 'Cross-tabulation of ' + n + ' respondents across ' + groupLabels.length + ' groups and ' + optionLabels.length + ' options. ' +
+        'Highest: ' + maxPct.toFixed(1) + '% for "' + maxOpt + '" in "' + maxGroup + '".';
+    }
+    html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
+
+    html += '</div>';
 
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
