@@ -2118,10 +2118,23 @@
      ================================================================== */
   const TREE = {
     id: 'start',
-    question: "What would you like to find out from your survey data?",
+    question: "What would you like to do with your survey data?",
     options: [
       {
-        text: "Are groups different from each other? (e.g., do older vs younger customers differ?)",
+        text: "Summarize my data (% breakdowns, averages, distributions)",
+        next: {
+          id: 'summarize',
+          question: "What kind of summary do you need?",
+          options: [
+            { text: "Show % breakdown of responses (e.g., how many said 1, 2, 3... on a rating scale)", next: { id: 'frequencies_node', method: 'frequencies' } },
+            { text: "Show % breakdown split by groups (e.g., satisfaction by segment \u2014 grouped bar chart)", next: { id: 'frequencies_node', method: 'frequencies' } },
+            { text: "Calculate averages, medians, standard deviations", next: { id: 'summary', method: 'summary' } },
+            { text: "Analyze a checkbox / multi-response question (select all that apply)", next: { id: 'multi_response_node', method: 'multi_response' } }
+          ]
+        }
+      },
+      {
+        text: "Compare groups (e.g., do older vs younger customers differ?)",
         next: {
           id: 'groups_diff',
           question: "How many groups are you comparing?",
@@ -2240,7 +2253,7 @@
         }
       },
       {
-        text: "What factors drive an outcome? (e.g., what predicts customer satisfaction?)",
+        text: "Find what drives an outcome (e.g., what predicts satisfaction?)",
         next: {
           id: 'drivers',
           question: "What type of outcome are you trying to predict?",
@@ -2263,7 +2276,7 @@
         }
       },
       {
-        text: "Are two variables related? (e.g., does spending correlate with loyalty?)",
+        text: "Check if two things are related (e.g., does spending correlate with loyalty?)",
         next: {
           id: 'related',
           question: "What types of variables are you looking at?",
@@ -2293,7 +2306,7 @@
         }
       },
       {
-        text: "Are there natural segments in my data? (e.g., are there distinct customer types?)",
+        text: "Find segments or clusters (e.g., are there distinct customer types?)",
         next: {
           id: 'segments',
           question: "What kind of data do you mostly have?",
@@ -2307,7 +2320,7 @@
         }
       },
       {
-        text: "Is my measurement scale reliable? (e.g., do my 5 survey items measure one thing?)",
+        text: "Check if my survey scale is reliable (e.g., do my 5 questions measure one thing?)",
         next: {
           id: 'reliability',
           question: "What would you like to check?",
@@ -2321,20 +2334,7 @@
         }
       },
       {
-        text: "I just need to summarize my data (e.g., averages, distributions, confidence intervals)",
-        next: {
-          id: 'summarize',
-          question: "What kind of summary do you need?",
-          options: [
-            { text: "Show % breakdown of responses (e.g., how many said 1, 2, 3... on a rating scale)", next: { id: 'frequencies_node', method: 'frequencies' } },
-            { text: "Show % breakdown split by groups (e.g., satisfaction by segment \u2014 grouped bar chart)", next: { id: 'frequencies_node', method: 'frequencies' } },
-            { text: "Calculate averages, medians, standard deviations for a numeric column", next: { id: 'summary', method: 'summary' } },
-            { text: "Checkbox / multi-response question (select all that apply)", next: { id: 'multi_response_node', method: 'multi_response' } }
-          ]
-        }
-      },
-      {
-        text: "Analyze open-ended text responses (word frequency, themes)",
+        text: "Analyze open-ended text responses (word clouds, sentiment)",
         next: {
           id: 'text_analysis',
           question: "What kind of text analysis would you like?",
@@ -2345,7 +2345,7 @@
         }
       },
       {
-        text: "Check my data's assumptions (e.g., normality, equal variances)",
+        text: "Check my data quality (normality, distribution shape, outliers)",
         next: {
           id: 'assumptions',
           question: "What assumption do you want to check?",
@@ -2357,9 +2357,9 @@
           ]
         }
       },
-      { text: "Adjust my sample to match population demographics (weighting)", next: { id: 'post_strat_node', method: 'post_strat' } },
+      { text: "Adjust my sample to match population demographics (advanced)", next: { id: 'post_strat_node', method: 'post_strat' } },
       {
-        text: "Understand preferences & trade-offs (conjoint, MaxDiff, choice modeling)",
+        text: "Understand preferences & trade-offs (advanced: conjoint, MaxDiff)",
         next: {
           id: 'preference_choice',
           question: "What kind of preference analysis do you need?",
