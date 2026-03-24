@@ -2702,7 +2702,7 @@
      ================================================================== */
   function launchMethod(methodId) {
     var intros = {
-      ttest: "An <strong>Independent Samples t-test</strong> will tell you whether two groups are significantly different on a numeric measure. Paste two columns of numbers &mdash; one for each group.",
+      ttest: "An <strong>Independent Samples t-test</strong> will tell you whether two groups are significantly different on a numeric measure. Paste two columns of numbers &mdash; one for each group.<br><small style='color:var(--text-2)'>Tip: If your groups are in one column with a grouping variable (e.g., satisfaction scores + segment codes), try <strong>Frequencies &amp; Crosstabs</strong> or <strong>ANOVA</strong> instead &mdash; they can split the data for you.</small>",
       paired_ttest: "A <strong>Paired Samples t-test</strong> compares two related measurements (e.g., before vs after) on the same subjects. Paste two columns of equal length.",
       anova: "A <strong>One-way ANOVA</strong> compares means across three or more groups. You can add as many groups as you need.",
       mann_whitney: "The <strong>Mann-Whitney U test</strong> is a non-parametric alternative to the t-test. It compares two groups using ranks rather than means &mdash; ideal for ordinal data or when normality is in doubt.",
@@ -2715,14 +2715,14 @@
       pearson: "A <strong>Pearson Correlation</strong> measures the linear relationship between two numeric variables. Paste two columns of paired values.",
       spearman: "A <strong>Spearman Rank Correlation</strong> measures the monotonic relationship between two variables. Unlike Pearson, it doesn't assume a linear relationship &mdash; it uses ranks. Paste two columns of paired values.",
       point_biserial: "A <strong>Point-Biserial Correlation</strong> measures the relationship between a binary variable (e.g., Yes/No, Male/Female) and a continuous numeric variable. Paste two columns: one binary, one numeric.",
-      corr_matrix: "<strong>Correlation Matrix</strong> &mdash; explore relationships between multiple variables at once. Paste 3 or more columns of numeric data.",
+      corr_matrix: "<strong>Correlation Matrix</strong> &mdash; explore relationships between multiple variables at once. Paste 3 or more columns of numeric data, one variable per box.",
       linear_regression: "<strong>Multiple Linear Regression</strong> predicts a numeric outcome from one or more predictors. The first column is your outcome (Y), and the remaining columns are predictors (X1, X2, ...). You need at least 2 columns.",
-      logistic_regression: "<strong>Logistic Regression</strong> predicts a binary yes/no outcome (coded as 0 or 1) from one or more predictors. The first column is your outcome (must be 0 or 1), and the remaining columns are numeric predictors.",
-      kmeans: "<strong>K-Means Clustering</strong> finds natural groupings in your data. Paste 2 or more columns of numeric variables, and choose how many clusters (K) you want to find.",
-      cronbach: "<strong>Cronbach's Alpha</strong> measures internal consistency of a multi-item scale. Paste 3 or more columns representing scale items.",
+      logistic_regression: "<strong>Logistic Regression</strong> predicts a binary yes/no outcome from one or more predictors. The first column is your outcome (0/1, Yes/No, or any two values &mdash; they&rsquo;ll be auto-recoded to 0/1), and the remaining columns are numeric predictors.",
+      kmeans: "<strong>K-Means Clustering</strong> finds natural groupings (segments) in your data. Paste 2 or more columns of numeric variables, and choose how many segments (K) you want to find.<br><small style='color:var(--text-2)'>Note: All columns should be on the same scale (e.g., all 1&ndash;5 or all 1&ndash;7). Mixing different scales (e.g., 1&ndash;5 with 0&ndash;100) will distort which variables dominate the clustering.</small>",
+      cronbach: "<strong>Cronbach's Alpha</strong> checks if a group of survey questions reliably measure the same concept (e.g., all your &lsquo;satisfaction&rsquo; questions). Paste 3 or more columns of numeric responses. Higher alpha (0.7+) = reliable scale.<br><small style='color:var(--text-2)'>Note: All columns should use the same scale (e.g., all 1&ndash;5 or all 1&ndash;7). Mixing different scales may give misleading results.</small>",
       shapiro_wilk: "The <strong>Shapiro-Wilk test</strong> checks if your data follows a normal distribution &mdash; helpful to decide which statistical tests to use.",
       levene: "<strong>Levene's Test</strong> checks if groups have equal variances &mdash; an assumption for many tests like ANOVA and t-tests. Paste 2 or more columns.",
-      pca: "<strong>PCA (Principal Component Analysis)</strong> reduces many variables into fewer dimensions &mdash; useful for understanding what your variables have in common. Paste 3 or more columns.",
+      pca: "<strong>PCA (Principal Component Analysis)</strong> finds underlying patterns across multiple numeric variables &mdash; e.g., your &lsquo;confidence&rsquo; and &lsquo;preparation&rsquo; questions might both reflect a &lsquo;fan engagement&rsquo; factor. Paste 3 or more columns.<br><small style='color:var(--text-2)'>Note: All columns should be on the same scale (e.g., all 1&ndash;5 or all 1&ndash;7). Mixing different scales will distort the results.</small>",
       factor_analysis: "<strong>Factor Analysis</strong> discovers the hidden constructs behind your survey items &mdash; which questions measure the same thing? Paste 3 or more columns.",
       distribution: "<strong>Distribution Checker</strong> &mdash; check how your data is distributed. Is it normal? Skewed? Has outliers?",
       summary: "<strong>Summary Statistics</strong> will give you a full descriptive profile of your data: means, medians, standard deviations, confidence intervals, and more.",
@@ -2732,7 +2732,7 @@
       simple_regression: "<strong>Simple Linear Regression</strong> predicts a numeric outcome from a single predictor. Paste two columns: X (predictor) and Y (outcome).",
       irr: "<strong>Cohen's Kappa</strong> measures agreement between two raters beyond what's expected by chance. Paste two columns of categorical judgments &mdash; one per rater.",
       ab_test: "<strong>A/B Test Analysis</strong> compares a control group against a variant. You can analyze either numeric measurements or binary outcomes (0/1).",
-      word_freq: "<strong>Word Frequency Analysis</strong> &mdash; paste your open-ended text responses (one per line) to find the most common words and phrases.",
+      word_freq: "<strong>Word Frequency Analysis</strong> &mdash; paste your open-ended text responses (one per line) to find the most common words and phrases.<br><small style='color:var(--text-2)'>Note: Works best with English text. Multilingual responses will be analyzed together, which may produce mixed-language word clouds.</small>",
       welch_anova: "<strong>Welch's ANOVA</strong> compares means across three or more groups when variances are unequal. It does not assume homogeneity of variance.",
       friedman: "The <strong>Friedman test</strong> is a non-parametric alternative to repeated measures ANOVA &mdash; use it when you have the same subjects measured under 3+ conditions and data isn't normal.",
       repeated_anova: "<strong>Repeated Measures ANOVA</strong> compares means across 3+ conditions when the same people are measured each time. Includes Greenhouse-Geisser correction for sphericity.",
@@ -2744,22 +2744,22 @@
       poisson_regression: "<strong>Poisson Regression</strong> predicts count outcomes &mdash; how many times something happened (e.g., number of complaints, purchases, visits). The first column is your count outcome (0, 1, 2, ...), and the remaining columns are predictors.",
       mediation: "<strong>Mediation Analysis</strong> tests whether X affects Y indirectly through M &mdash; e.g., does training improve performance through increased confidence? Paste three columns: X, M, and Y.",
       hierarchical_clustering: "<strong>Hierarchical Clustering</strong> builds a tree of nested segments &mdash; you can cut it at any level to get 2, 3, 4... groups. Paste 2 or more numeric columns.",
-      sentiment: "<strong>Sentiment Analysis</strong> scores each text response as positive, negative, or neutral &mdash; see the overall mood of your respondents. Paste one response per line.",
+      sentiment: "<strong>Sentiment Analysis</strong> scores each text response as positive, negative, or neutral &mdash; see the overall mood of your respondents. Paste one response per line.<br><small style='color:var(--text-2)'>Note: This uses an English-language lexicon. Responses in other languages will not be scored accurately.</small>",
       post_strat: "<strong>Post-Stratification Weighting</strong> adjusts your sample to match population demographics &mdash; e.g., if your sample is 60% female but the population is 50%, this corrects for that. Paste your stratum labels (one per row).",
       propensity: "<strong>Propensity Score Matching</strong> creates fair comparisons by matching treated and control units on observed characteristics &mdash; like a simulated randomized experiment.",
-      multinomial_logistic: "<strong>Multinomial Logistic Regression</strong> predicts which of 3 or more unordered categories an observation falls into. The first column is your outcome (category labels), and the remaining columns are numeric predictors.",
+      multinomial_logistic: "<strong>Multinomial Logistic Regression</strong> predicts which of 3 or more unordered categories an observation falls into. The first column is your outcome (category labels or numeric codes like 1/2/3/4 &mdash; they&rsquo;ll be treated as categories, not numbers), and the remaining columns are numeric predictors.",
       ordinal_regression: "<strong>Ordinal Regression</strong> predicts an ordered outcome like a rating scale (1&ndash;5, 1&ndash;7). The first column is your ordinal outcome (integers), and the remaining columns are numeric predictors.",
       decision_trees: "<strong>Decision Tree</strong> builds interpretable if/then rules to classify or predict an outcome. The first column is your outcome, and the remaining columns are predictors.",
-      discriminant: "<strong>Discriminant Analysis</strong> predicts group membership from numeric variables. The first column is your group label, and the remaining columns are numeric measurements.",
+      discriminant: "<strong>Discriminant Analysis</strong> predicts group membership from numeric variables. The first column is your group label (category names or numeric codes like 1/2/3 &mdash; treated as categories), and the remaining columns are numeric measurements.",
       survival: "<strong>Survival Analysis</strong> (Kaplan-Meier) models time until an event occurs. Paste a time column, an event indicator (1 = event, 0 = censored), and optionally a group column.",
       multiple_imputation: "<strong>Multiple Imputation</strong> handles missing data by estimating plausible values. Paste your columns and leave cells blank or type NA for missing values.",
       bayesian: "<strong>Bayesian Hypothesis Testing</strong> quantifies evidence for or against a difference between two groups using Bayes Factors instead of p-values. Paste two columns of numbers.",
-      conjoint: "<strong>Conjoint Analysis</strong> reveals how people trade off different features &mdash; which attributes matter most and how much each level is worth. Paste a ratings column and one or more attribute columns (categorical values per profile).",
-      maxdiff: "<strong>MaxDiff (Best-Worst Scaling)</strong> reveals which items are most and least important &mdash; more discriminating than simple rating scales. Enter your item names and their best/worst counts.",
-      discrete_choice: "<strong>Discrete Choice Modeling</strong> predicts which option people will choose based on its attributes &mdash; the foundation of market simulation. Enter choice sets with attributes and chosen alternatives.",
+      conjoint: "<strong>Conjoint Analysis</strong> reveals how people trade off different features &mdash; which attributes matter most and how much each level is worth. Paste a ratings column and one or more attribute columns (categorical values per profile).<br><small style='color:var(--text-2)'>\u26A0 This requires conjoint study data (respondents rating product profiles with varied attributes). Standard survey responses won&rsquo;t work here. Example: 8 profiles rated 1&ndash;7, with attributes like Price ($10/$20/$30) and Color (Red/Blue).</small>",
+      maxdiff: "<strong>MaxDiff (Best-Worst Scaling)</strong> reveals which items are most and least important &mdash; more discriminating than simple rating scales. Enter your item names and their best/worst counts.<br><small style='color:var(--text-2)'>\u26A0 This requires MaxDiff/Best-Worst study data where respondents chose the best and worst item from sets. Standard survey responses won&rsquo;t work here.</small>",
+      discrete_choice: "<strong>Discrete Choice Modeling</strong> predicts which option people will choose based on its attributes &mdash; the foundation of market simulation. Enter choice sets with attributes and chosen alternatives.<br><small style='color:var(--text-2)'>\u26A0 This requires discrete choice experiment data (choice sets with alternatives and attributes). Standard survey responses won&rsquo;t work here. Each row = one alternative within a choice set.</small>",
       lca: "<strong>Latent Class Analysis</strong> finds hidden subgroups in your data based on patterns of yes/no responses &mdash; people in the same class answer similarly. Paste 3 or more columns of binary (0/1) data.",
       cfa: "<strong>Confirmatory Factor Analysis</strong> tests whether your hypothesized factor structure fits the data &mdash; e.g., do items 1&ndash;3 really measure &lsquo;satisfaction&rsquo; and items 4&ndash;6 measure &lsquo;loyalty&rsquo;? (Simplified version)",
-      irt: "<strong>IRT Rasch Model</strong> estimates how difficult each item is and how able each respondent is &mdash; on the same scale. Useful for test development and item calibration. (1PL Rasch model)",
+      irt: "<strong>IRT Rasch Model</strong> estimates how difficult each item is and how able each respondent is &mdash; on the same scale. Useful for test development and item calibration. (1PL Rasch model)<br><strong style='color:var(--amber)'>\u26A0 Requires binary (0/1) data</strong> &mdash; e.g., correct/incorrect or selected/not-selected. Rating scales (1&ndash;5, 1&ndash;7) will be silently converted to binary and produce misleading results. Use <strong>Cronbach&rsquo;s Alpha</strong> or <strong>Factor Analysis</strong> for rating scales instead.",
       mixed_effects: "<strong>Mixed-Effects Model</strong> handles nested data &mdash; respondents within teams, stores within regions. This random-intercept model accounts for group-level variation. (Simplified: random intercept only)",
       multi_response: "<strong>Multi-Response / Checkbox Analysis</strong> summarizes &lsquo;select all that apply&rsquo; questions. Paste tab-separated columns (one column per option, 1 = selected, 0 = not selected) or a single column will be detected automatically."
     };
@@ -2772,19 +2772,19 @@
       pearson: showTwoColumnInput.bind(null, 'Variable X', 'Variable Y', 3, function(a, b, dA, dB) { runPearson(a, b, dA, dB); }),
       spearman: showTwoColumnInput.bind(null, 'Variable X', 'Variable Y', 3, function(a, b, dA, dB) { runSpearman(a, b, dA, dB); }),
       point_biserial: showPointBiserialInput,
-      corr_matrix: function() { showMultiColumnInput(3, 20, 3, function(cols, labels) { runCorrMatrix(cols, labels); }); },
+      corr_matrix: function() { showMultiColumnInput(3, 20, 3, function(cols, labels) { runCorrMatrix(cols, labels); }, false, 'Variable'); },
       linear_regression: showRegressionInput.bind(null, 'linear'),
       logistic_regression: showRegressionInput.bind(null, 'logistic'),
       kmeans: showKMeansInput,
       anova: function() { showMultiColumnInput(3, 20, 3, function(groups, labels) { runAnova(groups, labels); }); },
-      cronbach: function() { showMultiColumnInput(3, 20, 3, function(items, labels) { runCronbach(items, labels); }); },
+      cronbach: function() { showMultiColumnInput(3, 20, 3, function(items, labels) { runCronbach(items, labels); }, false, 'Item'); },
       chi_square: showContingencyTableInput,
       fisher_exact: showFisherExactInput,
       mcnemar: showMcNemarInput,
       two_proportion_z: showTwoProportionInput,
       shapiro_wilk: showSingleColumnInput.bind(null, 'Your Data', 'Paste values, one per line...', 3, function(vals, desc) { runShapiroWilk(vals, desc); }),
       levene: function() { showMultiColumnInput(2, 20, 3, function(groups, labels) { runLevene(groups, labels); }); },
-      pca: function() { showMultiColumnInput(3, 20, 3, function(cols, labels) { runPCA(cols, labels); }); },
+      pca: function() { showMultiColumnInput(3, 20, 3, function(cols, labels) { runPCA(cols, labels); }, false, 'Variable'); },
       factor_analysis: showFactorAnalysisInput,
       distribution: showSingleColumnInput.bind(null, 'Your Data', 'Paste values, one per line...', 3, function(vals, desc) { runDistribution(vals, desc); }),
       summary: showSingleColumnInput.bind(null, 'Your Data', 'Paste values, one per line...', 3, function(vals, desc) { runSummary(vals, desc); }),
@@ -2812,7 +2812,7 @@
           { label: "Covariate (numeric)", type: "numeric", placeholder: "e.g., prior ability scores" }
         ], function(cols) { runAncova(cols[0], cols[1], cols[2]); });
       },
-      partial_corr: function() { showMultiColumnInput(3, 10, 3, function(cols, labels) { runPartialCorr(cols, labels); }); },
+      partial_corr: function() { showMultiColumnInput(3, 10, 3, function(cols, labels) { runPartialCorr(cols, labels); }, false, 'Variable'); },
       moderation: function() {
         showLabeledColumnInput([
           { label: "Predictor (X)", type: "numeric", placeholder: "e.g., advertising spend" },
@@ -2949,7 +2949,8 @@
   }
 
   // --- Multi Column (3+) ---
-  function showMultiColumnInput(startCols, maxCols, minVals, callback, allowMissing) {
+  function showMultiColumnInput(startCols, maxCols, minVals, callback, allowMissing, itemLabel) {
+    var label = itemLabel || 'Group';
     var section = document.createElement('div');
     section.className = 'data-input-section';
     var colCount = startCols;
@@ -2959,17 +2960,17 @@
       for (var i = 0; i < colCount; i++) {
         gridHtml +=
           '<div class="group-card" data-col="' + i + '">' +
-            '<div class="group-card-label">Group ' + (i + 1) + '</div>' +
+            '<div class="group-card-label">' + label + ' ' + (i + 1) + '</div>' +
             '<textarea class="multi-data" data-idx="' + i + '" placeholder="Paste values, one per line..."></textarea>' +
             '<div class="desc-label">Label</div>' +
-            '<input type="text" class="multi-desc" data-idx="' + i + '" placeholder="e.g., Group ' + (i + 1) + '">' +
+            '<input type="text" class="multi-desc" data-idx="' + i + '" placeholder="e.g., ' + label + ' ' + (i + 1) + '">' +
             '<div class="value-count multi-count" data-idx="' + i + '">No values detected</div>' +
           '</div>';
       }
       gridHtml += '</div>';
       gridHtml += '<div style="display:flex;gap:8px;justify-content:center">';
-      if (colCount < maxCols) gridHtml += '<button class="add-col-btn" id="addColBtn">+ Add another group</button>';
-      if (colCount > startCols) gridHtml += '<button class="remove-col-btn" id="removeColBtn">- Remove last group</button>';
+      if (colCount < maxCols) gridHtml += '<button class="add-col-btn" id="addColBtn">+ Add another ' + label.toLowerCase() + '</button>';
+      if (colCount > startCols) gridHtml += '<button class="remove-col-btn" id="removeColBtn">- Remove last ' + label.toLowerCase() + '</button>';
       gridHtml += '</div>';
       gridHtml += '<button class="run-btn" id="runBtn" disabled>Run Analysis</button>';
       section.innerHTML = gridHtml;
@@ -3077,15 +3078,32 @@
 
     function checkReady() {
       var allGood = true;
+      var lengths = [];
       textareas.forEach(function(ta) {
-        var idx = parseInt(ta.getAttribute('data-idx'));
         var type = ta.getAttribute('data-type');
+        var len;
         if (type === 'numeric') {
-          if (parseValues(ta.value).nums.length < 3) allGood = false;
+          len = parseValues(ta.value).nums.length;
         } else {
-          if (parseCategorical(ta.value).length < 3) allGood = false;
+          len = parseCategorical(ta.value).length;
         }
+        if (len < 3) allGood = false;
+        lengths.push(len);
       });
+      // Warn if column lengths differ
+      var lenWarning = section.querySelector('.len-warning');
+      if (lenWarning) lenWarning.remove();
+      if (lengths.length > 1 && lengths.some(function(l) { return l > 0; })) {
+        var nonZero = lengths.filter(function(l) { return l > 0; });
+        var allSame = nonZero.every(function(l) { return l === nonZero[0]; });
+        if (!allSame && nonZero.length > 1) {
+          var warn = document.createElement('div');
+          warn.className = 'len-warning';
+          warn.style.cssText = 'color:var(--amber);font-size:0.82rem;text-align:center;margin:0.5rem 0';
+          warn.textContent = 'Column lengths differ (' + lengths.join(' vs ') + '). All columns should have the same number of rows \u2014 data will be trimmed to the shortest.';
+          runBtn.parentNode.insertBefore(warn, runBtn);
+        }
+      }
       runBtn.disabled = !allGood;
     }
 
@@ -3195,16 +3213,35 @@
     var section = document.createElement('div');
     section.className = 'data-input-section';
     var nRows = 2, nCols = 2;
+    var mode = 'raw'; // 'raw' or 'table'
 
-    function buildTable() {
-      var html =
-        '<div class="group-card">' +
-          '<div class="group-card-label">Contingency Table</div>' +
-          '<div class="contingency-controls">' +
-            '<label>Rows: <input type="number" id="ctRows" min="2" max="10" value="' + nRows + '"></label>' +
-            '<label>Columns: <input type="number" id="ctCols" min="2" max="10" value="' + nCols + '"></label>' +
+    function buildRawInput() {
+      return '<div class="group-card">' +
+        '<div class="group-card-label">Paste Raw Data (recommended)</div>' +
+        '<p style="font-size:0.85rem;color:var(--text-2);margin:0 0 0.5rem">Paste two columns side by side — Variable A and Variable B. The tool will count the combinations automatically.</p>' +
+        '<div class="input-grid">' +
+          '<div class="group-card" style="box-shadow:none">' +
+            '<div class="group-card-label">Variable A</div>' +
+            '<textarea id="ctRawA" placeholder="Paste values, one per line...\ne.g., Yes, No, Yes, Yes..."></textarea>' +
+            '<div class="value-count" id="ctRawACount">No values detected</div>' +
           '</div>' +
-          '<table class="contingency-table" id="ctTable">';
+          '<div class="group-card" style="box-shadow:none">' +
+            '<div class="group-card-label">Variable B</div>' +
+            '<textarea id="ctRawB" placeholder="Paste values, one per line...\ne.g., Male, Female, Male..."></textarea>' +
+            '<div class="value-count" id="ctRawBCount">No values detected</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    function buildTableInput() {
+      var html = '<div class="group-card">' +
+        '<div class="group-card-label">Enter Counts Manually</div>' +
+        '<div class="contingency-controls">' +
+          '<label>Rows: <input type="number" id="ctRows" min="2" max="10" value="' + nRows + '"></label>' +
+          '<label>Columns: <input type="number" id="ctCols" min="2" max="10" value="' + nCols + '"></label>' +
+        '</div>' +
+        '<table class="contingency-table" id="ctTable">';
       html += '<tr><th></th>';
       for (var c = 0; c < nCols; c++) html += '<th>Col ' + (c + 1) + '</th>';
       html += '</tr>';
@@ -3216,40 +3253,107 @@
         html += '</tr>';
       }
       html += '</table></div>';
-      html += '<button class="run-btn" id="runBtn">Run Analysis</button>';
+      return html;
+    }
+
+    function build() {
+      var html = '<div style="display:flex;gap:8px;margin-bottom:0.75rem">' +
+        '<button class="ct-mode-btn' + (mode === 'raw' ? ' active' : '') + '" data-mode="raw">Paste raw data</button>' +
+        '<button class="ct-mode-btn' + (mode === 'table' ? ' active' : '') + '" data-mode="table">Enter counts manually</button>' +
+      '</div>';
+      html += mode === 'raw' ? buildRawInput() : buildTableInput();
+      html += '<button class="run-btn" id="runBtn" ' + (mode === 'raw' ? 'disabled' : '') + '>Run Analysis</button>';
       section.innerHTML = html;
     }
 
-    buildTable();
+    build();
     container.appendChild(section);
     scrollToBottom();
 
     function bindEvents() {
-      section.querySelector('#ctRows').addEventListener('change', function() {
-        nRows = Math.max(2, Math.min(10, parseInt(this.value) || 2));
-        buildTable();
-        bindEvents();
+      section.querySelectorAll('.ct-mode-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          mode = this.getAttribute('data-mode');
+          build();
+          bindEvents();
+        });
       });
-      section.querySelector('#ctCols').addEventListener('change', function() {
-        nCols = Math.max(2, Math.min(10, parseInt(this.value) || 2));
-        buildTable();
-        bindEvents();
-      });
-      section.querySelector('#runBtn').addEventListener('click', function() {
-        var observed = [];
-        for (var r = 0; r < nRows; r++) {
-          var row = [];
-          for (var c = 0; c < nCols; c++) {
-            var cell = section.querySelector('.ct-cell[data-r="' + r + '"][data-c="' + c + '"]');
-            row.push(Math.max(0, parseInt(cell.value) || 0));
+
+      if (mode === 'raw') {
+        var rawA = section.querySelector('#ctRawA');
+        var rawB = section.querySelector('#ctRawB');
+        var countA = section.querySelector('#ctRawACount');
+        var countB = section.querySelector('#ctRawBCount');
+        var runBtn = section.querySelector('#runBtn');
+
+        function updateRawCounts() {
+          var a = parseCategorical(rawA.value);
+          var b = parseCategorical(rawB.value);
+          countA.textContent = a.length > 0 ? a.length + ' values, ' + new Set(a).size + ' categories' : 'No values detected';
+          countA.className = a.length > 0 ? 'value-count valid' : 'value-count';
+          countB.textContent = b.length > 0 ? b.length + ' values, ' + new Set(b).size + ' categories' : 'No values detected';
+          countB.className = b.length > 0 ? 'value-count valid' : 'value-count';
+          runBtn.disabled = !(a.length >= 3 && b.length >= 3 && a.length === b.length);
+          if (a.length > 0 && b.length > 0 && a.length !== b.length) {
+            countB.textContent += ' \u2014 columns must have equal length (' + a.length + ' vs ' + b.length + ')';
+            countB.className = 'value-count warning';
           }
-          observed.push(row);
         }
-        var btn = section.querySelector('#runBtn');
-        btn.disabled = true;
-        btn.textContent = 'Running...';
-        runChiSquare(observed);
-      });
+        rawA.addEventListener('input', updateRawCounts);
+        rawB.addEventListener('input', updateRawCounts);
+
+        runBtn.addEventListener('click', function() {
+          var a = parseCategorical(rawA.value);
+          var b = parseCategorical(rawB.value);
+          var len = Math.min(a.length, b.length);
+          // Build contingency table from raw data
+          var rowLabels = []; var colLabels = [];
+          var rowSet = {}; var colSet = {};
+          for (var i = 0; i < len; i++) {
+            if (!rowSet[a[i]]) { rowSet[a[i]] = true; rowLabels.push(a[i]); }
+            if (!colSet[b[i]]) { colSet[b[i]] = true; colLabels.push(b[i]); }
+          }
+          var observed = [];
+          for (var r = 0; r < rowLabels.length; r++) {
+            var row = [];
+            for (var c = 0; c < colLabels.length; c++) {
+              var count = 0;
+              for (var i = 0; i < len; i++) {
+                if (a[i] === rowLabels[r] && b[i] === colLabels[c]) count++;
+              }
+              row.push(count);
+            }
+            observed.push(row);
+          }
+          runBtn.disabled = true;
+          runBtn.textContent = 'Running...';
+          runChiSquare(observed);
+        });
+      } else {
+        section.querySelector('#ctRows').addEventListener('change', function() {
+          nRows = Math.max(2, Math.min(10, parseInt(this.value) || 2));
+          build(); bindEvents();
+        });
+        section.querySelector('#ctCols').addEventListener('change', function() {
+          nCols = Math.max(2, Math.min(10, parseInt(this.value) || 2));
+          build(); bindEvents();
+        });
+        section.querySelector('#runBtn').addEventListener('click', function() {
+          var observed = [];
+          for (var r = 0; r < nRows; r++) {
+            var row = [];
+            for (var c = 0; c < nCols; c++) {
+              var cell = section.querySelector('.ct-cell[data-r="' + r + '"][data-c="' + c + '"]');
+              row.push(Math.max(0, parseInt(cell.value) || 0));
+            }
+            observed.push(row);
+          }
+          var btn = section.querySelector('#runBtn');
+          btn.disabled = true;
+          btn.textContent = 'Running...';
+          runChiSquare(observed);
+        });
+      }
     }
     bindEvents();
   }
@@ -3569,7 +3673,7 @@
      ================================================================== */
   function runPairedTTest(a, b, descA, descB) {
     if (a.length !== b.length) {
-      showError('Paired t-test requires equal-length columns. Group A has ' + a.length + ' values, Group B has ' + b.length + '.');
+      showError('Both columns must have the same number of values (each row is one person measured twice). Yours have ' + a.length + ' and ' + b.length + ' values. Check if you missed a row when pasting.');
       return;
     }
     var r = StatsEngine.pairedTTest(a, b);
@@ -4212,10 +4316,20 @@
         var xs = columns.slice(1);
 
         if (isLogistic) {
+          // Auto-recode: if Y has exactly 2 unique values that aren't 0/1, recode them
+          var uniqueY = {};
+          y.forEach(function(v) { uniqueY[v] = true; });
+          var uniqueKeys = Object.keys(uniqueY);
+          if (uniqueKeys.length === 2 && !(uniqueKeys.indexOf('0') > -1 && uniqueKeys.indexOf('1') > -1)) {
+            // Recode: smaller value → 0, larger → 1
+            var sorted = uniqueKeys.map(Number).sort(function(a, b) { return a - b; });
+            y = y.map(function(v) { return v === sorted[0] ? 0 : 1; });
+            addAssistantMessage('<small style="color:var(--text-2)">Auto-recoded outcome: ' + sorted[0] + ' \u2192 0, ' + sorted[1] + ' \u2192 1</small>');
+          }
           // Validate Y is 0/1
           for (var i = 0; i < y.length; i++) {
             if (y[i] !== 0 && y[i] !== 1) {
-              showError('Outcome column must contain only 0 and 1 values. Found "' + y[i] + '" at row ' + (i + 1) + '.');
+              showError('Outcome column must contain only 0 and 1 values (or exactly 2 categories). Found "' + y[i] + '" at row ' + (i + 1) + '. Unique values: ' + uniqueKeys.join(', '));
               return;
             }
           }
@@ -4674,7 +4788,7 @@
      ================================================================== */
   function runWilcoxon(a, b, descA, descB) {
     if (a.length !== b.length) {
-      showError('Wilcoxon test requires equal-length columns. Column 1 has ' + a.length + ' values, Column 2 has ' + b.length + '.');
+      showError('Both columns must have the same number of values (each row is one person measured twice). Yours have ' + a.length + ' and ' + b.length + ' values. Check if you missed a row when pasting.');
       return;
     }
     var r = StatsEngine.wilcoxon(a, b);
@@ -4721,30 +4835,86 @@
   function showFisherExactInput() {
     var section = document.createElement('div');
     section.className = 'data-input-section';
-    section.innerHTML =
-      '<div class="group-card">' +
-        '<div class="group-card-label">2&times;2 Contingency Table</div>' +
-        '<div class="grid-2x2">' +
-          '<div></div><div class="grid-header">Outcome +</div><div class="grid-header">Outcome &minus;</div>' +
-          '<div class="grid-row-label">Group 1</div><input type="number" id="fe_a" min="0" value="0"><input type="number" id="fe_b" min="0" value="0">' +
-          '<div class="grid-row-label">Group 2</div><input type="number" id="fe_c" min="0" value="0"><input type="number" id="fe_d" min="0" value="0">' +
-        '</div>' +
-      '</div>' +
-      '<button class="run-btn" id="runBtn">Run Analysis</button>';
+    var feMode = 'raw';
+
+    function buildFE() {
+      var html = '<div style="display:flex;gap:8px;margin-bottom:0.75rem">' +
+        '<button class="ct-mode-btn' + (feMode === 'raw' ? ' active' : '') + '" data-mode="raw">Paste raw data</button>' +
+        '<button class="ct-mode-btn' + (feMode === 'table' ? ' active' : '') + '" data-mode="table">Enter counts manually</button>' +
+      '</div>';
+
+      if (feMode === 'raw') {
+        html += '<div class="group-card"><div class="group-card-label">Paste Two Binary Columns</div>' +
+          '<p style="font-size:0.85rem;color:var(--text-2);margin:0 0 0.5rem">Paste two columns with exactly 2 categories each (e.g., Yes/No). The tool will build the 2\u00d72 table automatically.</p>' +
+          '<div class="input-grid">' +
+            '<div class="group-card" style="box-shadow:none"><div class="group-card-label">Variable A</div>' +
+              '<textarea id="feRawA" placeholder="Yes, No, Yes, No..."></textarea><div class="value-count" id="feRawACount">No values</div></div>' +
+            '<div class="group-card" style="box-shadow:none"><div class="group-card-label">Variable B</div>' +
+              '<textarea id="feRawB" placeholder="Pass, Fail, Pass..."></textarea><div class="value-count" id="feRawBCount">No values</div></div>' +
+          '</div></div>';
+      } else {
+        html += '<div class="group-card"><div class="group-card-label">2\u00d72 Contingency Table</div>' +
+          '<div class="grid-2x2">' +
+            '<div></div><div class="grid-header">Outcome +</div><div class="grid-header">Outcome \u2212</div>' +
+            '<div class="grid-row-label">Group 1</div><input type="number" id="fe_a" min="0" value="0"><input type="number" id="fe_b" min="0" value="0">' +
+            '<div class="grid-row-label">Group 2</div><input type="number" id="fe_c" min="0" value="0"><input type="number" id="fe_d" min="0" value="0">' +
+          '</div></div>';
+      }
+      html += '<button class="run-btn" id="runBtn" ' + (feMode === 'raw' ? 'disabled' : '') + '>Run Analysis</button>';
+      section.innerHTML = html;
+    }
+
+    buildFE();
     container.appendChild(section);
     scrollToBottom();
 
-    section.querySelector('#runBtn').addEventListener('click', function() {
-      var a = Math.max(0, parseInt(section.querySelector('#fe_a').value) || 0);
-      var b = Math.max(0, parseInt(section.querySelector('#fe_b').value) || 0);
-      var c = Math.max(0, parseInt(section.querySelector('#fe_c').value) || 0);
-      var d = Math.max(0, parseInt(section.querySelector('#fe_d').value) || 0);
-      if (a + b + c + d === 0) { showError('Please enter at least some counts.'); return; }
-      var btn = section.querySelector('#runBtn');
-      btn.disabled = true;
-      btn.textContent = 'Running...';
-      runFisherExact(a, b, c, d);
-    });
+    function bindFEEvents() {
+      section.querySelectorAll('.ct-mode-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() { feMode = this.getAttribute('data-mode'); buildFE(); bindFEEvents(); });
+      });
+
+      if (feMode === 'raw') {
+        var rawA = section.querySelector('#feRawA'), rawB = section.querySelector('#feRawB');
+        var cA = section.querySelector('#feRawACount'), cB = section.querySelector('#feRawBCount');
+        var runBtn = section.querySelector('#runBtn');
+        function updateFERaw() {
+          var a = parseCategorical(rawA.value), b = parseCategorical(rawB.value);
+          var uA = new Set(a).size, uB = new Set(b).size;
+          cA.textContent = a.length > 0 ? a.length + ' values, ' + uA + ' categories' : 'No values';
+          cA.className = a.length > 0 && uA === 2 ? 'value-count valid' : a.length > 0 ? 'value-count warning' : 'value-count';
+          if (a.length > 0 && uA !== 2) cA.textContent += ' (need exactly 2 categories)';
+          cB.textContent = b.length > 0 ? b.length + ' values, ' + uB + ' categories' : 'No values';
+          cB.className = b.length > 0 && uB === 2 ? 'value-count valid' : b.length > 0 ? 'value-count warning' : 'value-count';
+          if (b.length > 0 && uB !== 2) cB.textContent += ' (need exactly 2 categories)';
+          runBtn.disabled = !(a.length >= 2 && b.length >= 2 && a.length === b.length && uA === 2 && uB === 2);
+        }
+        rawA.addEventListener('input', updateFERaw);
+        rawB.addEventListener('input', updateFERaw);
+        runBtn.addEventListener('click', function() {
+          var a = parseCategorical(rawA.value), b = parseCategorical(rawB.value);
+          var len = Math.min(a.length, b.length);
+          var rL = Array.from(new Set(a)), cL = Array.from(new Set(b));
+          var counts = [0, 0, 0, 0]; // a=r0c0, b=r0c1, c=r1c0, d=r1c1
+          for (var i = 0; i < len; i++) {
+            var ri = a[i] === rL[0] ? 0 : 1, ci = b[i] === cL[0] ? 0 : 1;
+            counts[ri * 2 + ci]++;
+          }
+          runBtn.disabled = true; runBtn.textContent = 'Running...';
+          runFisherExact(counts[0], counts[1], counts[2], counts[3]);
+        });
+      } else {
+        section.querySelector('#runBtn').addEventListener('click', function() {
+          var a = Math.max(0, parseInt(section.querySelector('#fe_a').value) || 0);
+          var b = Math.max(0, parseInt(section.querySelector('#fe_b').value) || 0);
+          var c = Math.max(0, parseInt(section.querySelector('#fe_c').value) || 0);
+          var d = Math.max(0, parseInt(section.querySelector('#fe_d').value) || 0);
+          if (a + b + c + d === 0) { showError('Please enter at least some counts.'); return; }
+          var btn = section.querySelector('#runBtn'); btn.disabled = true; btn.textContent = 'Running...';
+          runFisherExact(a, b, c, d);
+        });
+      }
+    }
+    bindFEEvents();
   }
 
   function runFisherExact(a, b, c, d) {
