@@ -2791,22 +2791,23 @@
 
           // Tab click — switch panels (also allowed after answering)
           tab.addEventListener('click', function() {
-            // If answered, clean up downstream content first
-            if (outer.classList.contains('answered')) {
-              while (outer.nextSibling) {
-                container.removeChild(outer.nextSibling);
-              }
-              var outerIndex = Array.prototype.indexOf.call(container.children, outer);
-              while (chatHistory.length > 0 && chatHistory[chatHistory.length - 1] > outerIndex) {
-                chatHistory.pop();
-              }
-              outer.querySelectorAll('.chat-option-btn').forEach(function(b) { b.classList.remove('selected'); });
-              outer.classList.remove('answered');
+            // Always clean up downstream content when switching tabs
+            while (outer.nextSibling) {
+              container.removeChild(outer.nextSibling);
             }
+            var outerIndex = Array.prototype.indexOf.call(container.children, outer);
+            while (chatHistory.length > 0 && chatHistory[chatHistory.length - 1] > outerIndex) {
+              chatHistory.pop();
+            }
+            outer.querySelectorAll('.chat-option-btn').forEach(function(b) { b.classList.remove('selected'); });
+            outer.classList.remove('answered');
+
+            // Switch tab and panel
             tabBar.querySelectorAll('.chat-phase-tab').forEach(function(t) { t.classList.remove('active'); });
             tab.classList.add('active');
-            panels.forEach(function(p) { p.classList.remove('visible'); });
+            panels.forEach(function(p) { p.classList.remove('visible'); p.style.display = 'none'; });
             panel.classList.add('visible');
+            panel.style.display = 'flex';
             outer.scrollIntoView({ behavior: 'smooth', block: 'start' });
           });
         });
