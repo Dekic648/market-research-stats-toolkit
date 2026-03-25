@@ -2696,11 +2696,11 @@
             }
             btn.addEventListener('click', function() {
               // Remove everything added after this grouped options block
-              var outerIndex = Array.prototype.indexOf.call(container.children, outer);
-              while (container.children.length > outerIndex + 1) {
-                container.removeChild(container.lastChild);
+              while (outer.nextSibling) {
+                container.removeChild(outer.nextSibling);
               }
-              // Clean chatHistory entries beyond this point
+              // Clean chatHistory
+              var outerIndex = Array.prototype.indexOf.call(container.children, outer);
               while (chatHistory.length > 0 && chatHistory[chatHistory.length - 1] > outerIndex) {
                 chatHistory.pop();
               }
@@ -2719,10 +2719,10 @@
           tab.addEventListener('click', function() {
             // If answered, clean up downstream content first
             if (outer.classList.contains('answered')) {
-              var outerIndex = Array.prototype.indexOf.call(container.children, outer);
-              while (container.children.length > outerIndex + 1) {
-                container.removeChild(container.lastChild);
+              while (outer.nextSibling) {
+                container.removeChild(outer.nextSibling);
               }
+              var outerIndex = Array.prototype.indexOf.call(container.children, outer);
               while (chatHistory.length > 0 && chatHistory[chatHistory.length - 1] > outerIndex) {
                 chatHistory.pop();
               }
@@ -2769,11 +2769,11 @@
           }
           btn.addEventListener('click', function() {
             // Remove everything added after this options group
-            var wrapIndex = Array.prototype.indexOf.call(container.children, wrap);
-            while (container.children.length > wrapIndex + 1) {
-              container.removeChild(container.lastChild);
+            while (wrap.nextSibling) {
+              container.removeChild(wrap.nextSibling);
             }
-            // Clean chatHistory entries beyond this point
+            // Clean chatHistory — keep only entries before this wrap
+            var wrapIndex = Array.prototype.indexOf.call(container.children, wrap);
             while (chatHistory.length > 0 && chatHistory[chatHistory.length - 1] > wrapIndex) {
               chatHistory.pop();
             }
