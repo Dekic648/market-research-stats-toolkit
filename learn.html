@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Learn Statistics — Market Research Toolkit</title>
+  <style>
+    :root {
+      --bg-0: #ffffff; --bg-1: #f5f2f0; --bg-2: #eeebe9;
+      --bg-card: rgba(255, 255, 255, 0.65);
+      --text-0: #1a1a18; --text-1: #5f5a58; --text-2: #887f7d;
+      --rose: #D4587A; --rose-soft: rgba(212, 88, 122, 0.08);
+      --coral: #E08860; --coral-soft: rgba(224, 136, 96, 0.10);
+      --green: #3a9a5c; --green-soft: rgba(58, 154, 92, 0.10);
+      --blue: #4A90B8; --blue-soft: rgba(74, 144, 184, 0.10);
+      --border: rgba(0, 0, 0, 0.06);
+      --border-hover: rgba(212, 88, 122, 0.35);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-0: #1c1c1a; --bg-1: #252523; --bg-2: #2e2e2b;
+        --bg-card: rgba(37, 37, 35, 0.6);
+        --text-0: #f0ede8; --text-1: #b4aba8; --text-2: #887f7d;
+        --rose: #E8829E; --rose-soft: rgba(232, 130, 158, 0.10);
+        --coral: #F0A882; --coral-soft: rgba(240, 168, 130, 0.10);
+        --green: #4aad6a; --green-soft: rgba(74, 173, 106, 0.12);
+        --blue: #6AB0D4; --blue-soft: rgba(106, 176, 212, 0.12);
+        --border: rgba(255, 255, 255, 0.06);
+        --border-hover: rgba(232, 130, 158, 0.35);
+        --card-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-0); color: var(--text-0);
+      line-height: 1.6; -webkit-font-smoothing: antialiased;
+    }
+    .header {
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 1rem;
+      background: var(--bg-1);
+    }
+    .header a { color: var(--text-1); text-decoration: none; font-size: 0.85rem; }
+    .header a:hover { color: var(--rose); }
+    .header .title { font-weight: 700; color: var(--text-0); font-size: 0.95rem; }
+
+    .hero {
+      text-align: center; padding: 3rem 1.5rem 2rem;
+      max-width: 700px; margin: 0 auto;
+    }
+    .hero h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .hero h1 .accent { color: var(--rose); }
+    .hero p { color: var(--text-1); font-size: 1rem; max-width: 550px; margin: 0 auto; }
+
+    .examples { max-width: 800px; margin: 0 auto; padding: 1rem 1.5rem 4rem; }
+
+    .example-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.5rem; margin-bottom: 1.5rem;
+      box-shadow: var(--card-shadow);
+    }
+    .example-phase {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 0.5rem;
+      padding: 0.2rem 0.6rem; border-radius: 20px;
+    }
+    .phase-describe { background: var(--rose-soft); color: var(--rose); }
+    .phase-compare { background: var(--coral-soft); color: var(--coral); }
+    .phase-correlate { background: var(--green-soft); color: var(--green); }
+    .phase-predict { background: var(--blue-soft); color: var(--blue); }
+
+    .example-card h2 {
+      font-size: 1.15rem; font-weight: 700; margin-bottom: 0.35rem;
+    }
+    .example-card .scenario {
+      color: var(--text-1); font-size: 0.88rem; margin-bottom: 1rem;
+    }
+
+    .data-columns {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; margin-bottom: 1rem;
+    }
+    .data-col-single { margin-bottom: 1rem; }
+    .data-col label {
+      display: block; font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      color: var(--rose); margin-bottom: 4px;
+    }
+    .data-col textarea {
+      width: 100%; min-height: 120px; padding: 0.6rem;
+      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.78rem;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-1); color: var(--text-0);
+      resize: vertical; line-height: 1.5;
+    }
+    .data-col textarea:focus {
+      outline: none; border-color: var(--border-hover);
+    }
+
+    .example-steps {
+      background: var(--bg-1); border-radius: 8px; padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+    }
+    .example-steps h3 {
+      font-size: 0.78rem; font-weight: 700; margin-bottom: 0.35rem;
+      color: var(--text-0);
+    }
+    .example-steps ol {
+      padding-left: 1.2rem; font-size: 0.82rem; color: var(--text-1);
+    }
+    .example-steps li { margin-bottom: 0.2rem; }
+
+    .what-to-look-for {
+      font-size: 0.82rem; color: var(--text-1); margin-bottom: 1rem;
+      padding: 0.5rem 0.75rem; border-left: 2px solid var(--rose);
+    }
+    .what-to-look-for strong { color: var(--text-0); }
+
+    .try-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 0.55rem 1.2rem; border-radius: 8px;
+      background: var(--rose-soft); border: 1px solid var(--rose);
+      color: var(--rose); font-size: 0.85rem; font-weight: 600;
+      text-decoration: none; font-family: inherit;
+      transition: background 0.2s, transform 0.15s;
+      cursor: pointer;
+    }
+    .try-btn:hover { background: var(--rose); color: #fff; transform: translateY(-1px); }
+
+    .copy-hint {
+      font-size: 0.72rem; color: var(--text-2); margin-left: 0.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .data-columns { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 1.5rem; }
+      .header { padding: 0.75rem 1rem; }
+      .examples { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <a href="index.html">&larr; Home</a>
+    <span class="title">Learn with Examples</span>
+    <a href="analyze.html" style="margin-left:auto">Start Analyzing &rarr;</a>
+  </div>
+
+  <section class="hero">
+    <h1>Learn by <span class="accent">Doing</span></h1>
+    <p>Four real scenarios with sample data. Copy the data, open the analyzer, paste it in, and see real statistics in action. No experience needed.</p>
+  </section>
+
+  <div class="examples">
+
+    <!-- EXAMPLE 1: DESCRIBE -->
+    <div class="example-card">
+      <div class="example-phase phase-describe">1 &middot; Describe</div>
+      <h2>What does customer satisfaction look like?</h2>
+      <p class="scenario">You surveyed 40 customers asking "How satisfied are you?" on a 1&ndash;5 scale. You also recorded their age group. Let's see the distribution and compare segments.</p>
+
+      <div class="data-columns">
+        <div class="data-col">
+          <label>Satisfaction (1&ndash;5)</label>
+          <textarea readonly onclick="this.select()">4
+5
+3
+4
+2
+5
+4
+3
+4
+5
+3
+4
+4
+5
+2
+3
+4
+5
+4
+3
+1
+4
+5
+3
+4
+4
+5
+3
+2
+4
+5
+4
+3
+4
+5
+4
+3
+4
+5
+4</textarea>
+        </div>
+        <div class="data-col">
+          <label>Age Group (optional grouping)</label>
+          <textarea readonly onclick="this.select()">18-34
+18-34
+18-34
+18-34
+18-34
+18-34
+18-34
+18-34
+18-34
+18-34
+35-54
+35-54
+35-54
+35-54
+35-54
+35-54
+35-54
+35-54
+35-54
+35-54
+55+
+55+
+55+
+55+
+55+
+55+
+55+
+55+
+55+
+55+
+18-34
+18-34
+18-34
+35-54
+35-54
+35-54
+55+
+55+
+55+
+55+</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Click the button below to open the analyzer</li>
+          <li>Choose <strong>Describe</strong> &rarr; "What do my responses look like?"</li>
+          <li>Select "What percentage chose each answer?"</li>
+          <li>Paste the <strong>Satisfaction</strong> column into the left box</li>
+          <li>Paste the <strong>Age Group</strong> column into the right box to see breakdowns by segment</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Which rating is most common? Does satisfaction differ by age group? Are there any groups that stand out?
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- EXAMPLE 2: COMPARE -->
+    <div class="example-card">
+      <div class="example-phase phase-compare">2 &middot; Compare</div>
+      <h2>Did the new checkout flow improve completion time?</h2>
+      <p class="scenario">You ran an A/B test: 20 users got the old checkout (Control) and 20 users got the redesigned version (Test). You measured completion time in seconds.</p>
+
+      <div class="data-columns">
+        <div class="data-col">
+          <label>Control Group (seconds)</label>
+          <textarea readonly onclick="this.select()">94
+87
+102
+78
+91
+105
+83
+96
+88
+110
+99
+85
+93
+101
+89
+97
+86
+104
+92
+95</textarea>
+        </div>
+        <div class="data-col">
+          <label>Test Group (seconds)</label>
+          <textarea readonly onclick="this.select()">72
+68
+81
+65
+74
+79
+63
+77
+70
+85
+73
+66
+76
+82
+69
+75
+64
+80
+71
+78</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Compare</strong></li>
+          <li>Select "Is my A/B test result real or just noise?"</li>
+          <li>Choose "A number (revenue, time on page, score)"</li>
+          <li>Paste Control into the left box, Test into the right box</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Is the difference statistically significant (p &lt; 0.05)? How large is the effect size? Would you roll out the new design based on this?
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- EXAMPLE 3: CORRELATE -->
+    <div class="example-card">
+      <div class="example-phase phase-correlate">3 &middot; Correlate</div>
+      <h2>Is customer satisfaction related to spending?</h2>
+      <p class="scenario">You have satisfaction ratings (1&ndash;5) and monthly spend ($) for 25 customers. Do happier customers spend more?</p>
+
+      <div class="data-columns">
+        <div class="data-col">
+          <label>Satisfaction (1&ndash;5)</label>
+          <textarea readonly onclick="this.select()">4
+2
+5
+3
+4
+5
+1
+3
+4
+5
+2
+4
+3
+5
+4
+3
+5
+4
+2
+4
+3
+5
+4
+3
+4</textarea>
+        </div>
+        <div class="data-col">
+          <label>Monthly Spend ($)</label>
+          <textarea readonly onclick="this.select()">120
+45
+185
+78
+135
+210
+22
+68
+142
+195
+38
+128
+85
+200
+130
+72
+188
+140
+42
+125
+80
+205
+138
+75
+132</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Correlate</strong></li>
+          <li>Select "Are these two things related?"</li>
+          <li>Choose "Both are numbers" &rarr; "Any pattern / Not sure"</li>
+          <li>Paste Satisfaction as X and Spend as Y</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Is the correlation positive? How strong is it (close to 1 = very strong, close to 0 = weak)? Is it statistically significant?
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- EXAMPLE 4: PREDICT -->
+    <div class="example-card">
+      <div class="example-phase phase-predict">4 &middot; Predict</div>
+      <h2>What factors predict whether a customer will churn?</h2>
+      <p class="scenario">You have data on 30 customers: satisfaction (1&ndash;5), number of support tickets, months as customer, and whether they churned (1) or stayed (0). What drives churn?</p>
+
+      <div class="data-col-single">
+        <div class="data-col">
+          <label>Churned (0/1) &emsp; Satisfaction &emsp; Support Tickets &emsp; Months as Customer</label>
+          <textarea readonly onclick="this.select()" style="min-height:200px">0	4	1	24
+0	5	0	36
+1	2	5	6
+0	4	2	18
+1	1	4	3
+0	5	1	30
+0	4	0	42
+1	2	6	4
+0	3	2	15
+1	2	4	8
+0	5	0	48
+0	4	1	22
+1	1	5	2
+0	3	3	12
+1	2	7	5
+0	4	1	28
+0	5	0	38
+1	3	4	7
+0	4	2	20
+1	2	5	4
+0	5	1	32
+0	3	2	16
+1	1	6	3
+0	4	0	26
+1	2	3	9
+0	5	1	44
+0	4	2	19
+1	3	5	6
+0	4	1	34
+1	2	4	5</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Predict</strong></li>
+          <li>Select "What predicts whether someone will [buy / churn / convert]?"</li>
+          <li>Paste all 4 columns &mdash; the first column (Churned) is the outcome, the rest are predictors</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Which factors significantly predict churn? Is it low satisfaction, many support tickets, or being a new customer? How accurate is the model?
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+  </div>
+
+</body>
+</html>

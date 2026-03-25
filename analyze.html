@@ -2363,44 +2363,57 @@
         num: 1, label: "Describe", hint: "Understand what\u2019s in your data",
         options: [
           {
-            text: "How are responses distributed? (% breakdowns, charts)",
+            text: "What do my responses look like? (percentages, charts)",
             next: {
               id: 'summarize',
               question: "What kind of summary do you need?",
               options: [
-                { text: "Show % breakdown of responses (e.g., how many said 1, 2, 3... on a rating scale)", next: { id: 'frequencies_node', method: 'frequencies' } },
-                { text: "Show % breakdown split by groups (e.g., satisfaction by segment \u2014 grouped bar chart)", next: { id: 'frequencies_node', method: 'frequencies' } },
-                { text: "Calculate averages, medians, standard deviations", next: { id: 'summary', method: 'summary' } },
-                { text: "Analyze a checkbox / multi-response question (select all that apply)", next: { id: 'multi_response_node', method: 'multi_response' } }
+                { text: "What percentage chose each answer? (e.g., how many rated 1, 2, 3\u2026)", next: { id: 'frequencies_node', method: 'frequencies' } },
+                { text: "Compare answer breakdowns across groups (e.g., satisfaction by age group)", next: { id: 'frequencies_grouped_node', method: 'frequencies' } },
+                { text: "What are the averages, medians, and spread?", next: { id: 'summary', method: 'summary' } },
+                { text: "Analyze a \u2018select all that apply\u2019 question", next: { id: 'multi_response_node', method: 'multi_response' } }
               ]
             }
           },
           {
-            text: "Is my data clean and reliable? (normality, outliers, scale check)",
+            text: "How do results differ by segment? (e.g., by age, gender, region)",
+            next: { id: 'grouped_frequencies', method: 'frequencies' }
+          },
+          {
+            text: "Is my data clean enough to analyze? (outliers, normality, missing values)",
             next: {
               id: 'data_quality',
               question: "What would you like to check?",
               options: [
-                { text: "Is my data normally distributed? (Shapiro-Wilk)", next: { id: 'shapiro_node', method: 'shapiro_wilk' } },
-                { text: "Do my groups have equal variances? (Levene's test)", next: { id: 'levene_node', method: 'levene' } },
-                { text: "Full distribution check (normality + skewness + outliers)", next: { id: 'dist_node', method: 'distribution' } },
-                { text: "Handle missing data (multiple imputation)", next: { id: 'multiple_imputation_node', method: 'multiple_imputation' } },
-                { text: "Internal consistency of my scale (Cronbach's Alpha)", next: { id: 'cronbach_node', method: 'cronbach' } },
-                { text: "Discover hidden constructs (Factor Analysis)", next: { id: 'efa_node', method: 'factor_analysis' } },
-                { text: "Test a hypothesized factor structure (CFA)", next: { id: 'cfa_node', method: 'cfa' } },
-                { text: "Item difficulty & person ability (IRT Rasch)", next: { id: 'irt_node', method: 'irt' } },
-                { text: "Reduce variables (PCA)", next: { id: 'pca_node', method: 'pca' } }
+                { text: "Show me the full picture \u2014 shape, outliers, skewness", next: { id: 'dist_node', method: 'distribution' } },
+                { text: "Is my data normally distributed? (needed for many tests)", next: { id: 'shapiro_node', method: 'shapiro_wilk' } },
+                { text: "Do my groups have equal spread? (variance check)", next: { id: 'levene_node', method: 'levene' } },
+                { text: "I have missing values \u2014 can I fill them in responsibly?", next: { id: 'multiple_imputation_node', method: 'multiple_imputation' } }
               ]
             }
           },
           {
-            text: "What are people saying? (open-ended text, sentiment)",
+            text: "Do my survey questions reliably measure one thing? (scale quality)",
+            next: {
+              id: 'reliability',
+              question: "What would you like to check about your scale?",
+              options: [
+                { text: "Can I combine these items into a reliable score? (Cronbach\u2019s Alpha)", next: { id: 'cronbach_node', method: 'cronbach' } },
+                { text: "What hidden patterns exist across my questions? (Factor Analysis)", next: { id: 'efa_node', method: 'factor_analysis' } },
+                { text: "Does my expected structure match the data? (Confirmatory FA)", next: { id: 'cfa_node', method: 'cfa' } },
+                { text: "How well do individual items perform? (Item Response Theory)", next: { id: 'irt_node', method: 'irt' } },
+                { text: "Can I reduce many variables to a few key dimensions? (PCA)", next: { id: 'pca_node', method: 'pca' } }
+              ]
+            }
+          },
+          {
+            text: "What are people saying in open-ended responses? (themes, sentiment)",
             next: {
               id: 'text_analysis',
-              question: "What kind of text analysis would you like?",
+              question: "What would you like to learn from the text?",
               options: [
-                { text: "Word frequency and common phrases", next: { id: 'word_freq_node', method: 'word_freq' } },
-                { text: "Understand sentiment (positive/negative)", next: { id: 'sentiment_node', method: 'sentiment' } }
+                { text: "What words and phrases come up most?", next: { id: 'word_freq_node', method: 'word_freq' } },
+                { text: "Is the overall tone positive or negative?", next: { id: 'sentiment_node', method: 'sentiment' } }
               ]
             }
           }
@@ -2410,171 +2423,189 @@
         num: 2, label: "Compare", hint: "Are groups different?",
         options: [
           {
-            text: "Do groups differ? (e.g., age, segment, region)",
+            text: "Do different groups score differently? (e.g., by age, gender, segment)",
             next: {
               id: 'groups_diff',
               question: "How many groups are you comparing?",
               options: [
                 {
-                  text: "Two groups",
+                  text: "Two groups (e.g., male vs female, new vs returning)",
                   next: {
                     id: 'two_groups_type',
-                    question: "What kind of measurement are you comparing?",
+                    question: "What are you measuring?",
                     options: [
                       {
-                        text: "Numbers (revenue, scores, time)",
+                        text: "A number (scores, revenue, time spent)",
                         next: {
                           id: 'two_num_paired',
-                          question: "Are these the same people measured twice, or two separate groups of people?",
+                          question: "Are these the same people measured twice, or two separate groups?",
                           options: [
-                            { text: "Two separate groups", next: {
+                            { text: "Two separate groups of people", next: {
                               id: 'two_num_dist',
-                              question: "Is your data normally distributed, or do you have ratings/ranks?",
+                              question: "Is your data normally distributed, or are you unsure?",
                               options: [
-                                { text: "Normal / continuous data", next: { id: 'ttest', method: 'ttest' } },
-                                { text: "Not sure / ratings / ranks", next: { id: 'mann_whitney_node', method: 'mann_whitney' } }
+                                { text: "Yes, or it\u2019s continuous data", next: { id: 'ttest', method: 'ttest' } },
+                                { text: "Not sure, or it\u2019s ratings / ranks", next: { id: 'mann_whitney_node', method: 'mann_whitney' } }
                               ]
                             }},
-                            { text: "Same people, measured twice", next: {
+                            { text: "Same people, measured before and after", next: {
                               id: 'paired_dist',
                               question: "Is your data normally distributed?",
                               options: [
                                 { text: "Yes / continuous data", next: { id: 'paired_ttest', method: 'paired_ttest' } },
-                                { text: "No / ordinal / ratings", next: { id: 'wilcoxon_node', method: 'wilcoxon' } }
+                                { text: "Not sure / ordinal / ratings", next: { id: 'wilcoxon_node', method: 'wilcoxon' } }
                               ]
                             }}
                           ]
                         }
                       },
                       {
-                        text: "Categories (yes/no, bought/didn't)",
+                        text: "A category (yes/no, bought/didn\u2019t buy)",
                         next: {
                           id: 'two_cat_type',
                           question: "How large is your sample?",
                           options: [
-                            { text: "Large sample (all expected counts >= 5)", next: { id: 'chi_2', method: 'chi_square' } },
-                            { text: "Small sample (any expected count < 5)", next: { id: 'fisher_node', method: 'fisher_exact' } }
+                            { text: "50+ per group (typical survey)", next: { id: 'chi_2', method: 'chi_square' } },
+                            { text: "Very small (fewer than 5 expected in any cell)", next: { id: 'fisher_node', method: 'fisher_exact' } }
                           ]
                         }
                       },
-                      { text: "Proportions (conversion rates, response rates)", next: { id: 'two_prop_node', method: 'two_proportion_z' } }
+                      { text: "A rate or proportion (conversion %, click-through %)", next: { id: 'two_prop_node', method: 'two_proportion_z' } }
                     ]
                   }
                 },
                 {
-                  text: "Three or more groups",
+                  text: "Three or more groups (e.g., age brackets, regions)",
                   next: {
                     id: 'three_groups_type',
-                    question: "What kind of measurement are you comparing?",
+                    question: "What are you measuring?",
                     options: [
-                      { text: "Numbers (revenue, scores, time)", next: {
+                      { text: "A number (scores, revenue, time spent)", next: {
                         id: 'three_num_dist',
                         question: "Is your data normally distributed?",
                         options: [
-                          { text: "Yes / continuous data", next: {
+                          { text: "Yes, or it\u2019s continuous data", next: {
                             id: 'anova_variance',
-                            question: "Are variances roughly equal across groups?",
+                            question: "Are the groups roughly equal in spread (variance)?",
                             options: [
                               { text: "Yes / Not sure", next: { id: 'anova', method: 'anova' } },
-                              { text: "No, very different variances", next: { id: 'welch_anova_node', method: 'welch_anova' } }
+                              { text: "No, very different spread across groups", next: { id: 'welch_anova_node', method: 'welch_anova' } }
                             ]
                           }},
-                          { text: "No / ordinal / ratings", next: { id: 'kruskal_node', method: 'kruskal_wallis' } }
+                          { text: "Not sure / ordinal / ratings", next: { id: 'kruskal_node', method: 'kruskal_wallis' } }
                         ]
                       }},
-                      { text: "Categories (yes/no, bought/didn't)", next: { id: 'chi_3', method: 'chi_square' } }
+                      { text: "A category (yes/no, bought/didn\u2019t buy)", next: { id: 'chi_3', method: 'chi_square' } }
                     ]
                   }
                 },
                 {
-                  text: "Same people measured 3+ times (repeated measures)",
+                  text: "Same people measured 3+ times (e.g., monthly surveys)",
                   next: {
                     id: 'repeated_measures',
                     question: "Is your data normally distributed?",
                     options: [
                       { text: "Yes / continuous data", next: { id: 'repeated_anova_node', method: 'repeated_anova' } },
-                      { text: "No / ordinal / ratings", next: { id: 'friedman_node', method: 'friedman' } }
+                      { text: "Not sure / ordinal / ratings", next: { id: 'friedman_node', method: 'friedman' } }
                     ]
                   }
                 },
                 {
-                  text: "Two grouping variables (e.g., region AND product line)",
+                  text: "Two grouping variables at once (e.g., region AND product line)",
                   next: { id: 'two_way_anova_node', method: 'two_way_anova' }
                 },
                 {
-                  text: "Compare groups while controlling for a variable",
+                  text: "Compare groups while controlling for another variable",
                   next: { id: 'ancova_node', method: 'ancova' }
                 },
                 {
-                  text: "Nested data \u2014 respondents within groups (mixed-effects model)",
+                  text: "People nested within groups (e.g., students within schools)",
                   next: { id: 'mixed_effects_node', method: 'mixed_effects' }
                 },
                 {
-                  text: "Bayesian evidence (probability-based)",
+                  text: "I want probability-based evidence, not just p-values (Bayesian)",
                   next: { id: 'bayesian_node', method: 'bayesian' }
                 }
               ]
             }
           },
           {
-            text: "Are changes over time significant? (before/after, causal)",
+            text: "Did something change before vs after? (campaign, intervention, redesign)",
             next: {
               id: 'time_compare',
-              question: "What kind of time-based comparison?",
+              question: "What kind of before/after comparison?",
               options: [
-                { text: "Causal effect with before/after + treatment/control", next: { id: 'diff_in_diff_node', method: 'diff_in_diff' } },
-                { text: "Time until an event (e.g., churn, first purchase)", next: { id: 'survival_node', method: 'survival' } },
-                { text: "Compare groups fairly by matching on covariates", next: { id: 'propensity_node', method: 'propensity' } }
+                { text: "I have a treatment group and a control group (difference-in-differences)", next: { id: 'diff_in_diff_node', method: 'diff_in_diff' } },
+                { text: "How long until an event happens? (e.g., churn, first purchase)", next: { id: 'survival_node', method: 'survival' } },
+                { text: "Make groups comparable by matching on characteristics", next: { id: 'propensity_node', method: 'propensity' } }
               ]
             }
           },
-          { text: "Adjust my sample to match population demographics", next: { id: 'post_strat_node', method: 'post_strat' } }
+          {
+            text: "Is my A/B test result real or just noise? (experiment significance)",
+            next: {
+              id: 'ab_test',
+              question: "What kind of metric are you testing?",
+              options: [
+                { text: "A number (revenue, time on page, score)", next: { id: 'ab_numeric', method: 'ttest' } },
+                { text: "A rate or proportion (conversion %, click-through %)", next: { id: 'ab_prop', method: 'two_proportion_z' } },
+                { text: "I want probability-based evidence (Bayesian)", next: { id: 'ab_bayes', method: 'bayesian' } }
+              ]
+            }
+          },
+          {
+            text: "Are my results representative of the population? (sample weighting)",
+            next: { id: 'post_strat_node', method: 'post_strat' }
+          }
         ]
       },
       {
         num: 3, label: "Correlate", hint: "What moves together?",
         options: [
           {
-            text: "Are two variables related? (correlation, association)",
+            text: "Are these two things related? (e.g., does satisfaction drive loyalty?)",
             next: {
               id: 'related',
               question: "What types of variables are you looking at?",
               options: [
-                { text: "Both are numbers", next: {
+                { text: "Both are numbers (scores, amounts, ratings)", next: {
                   id: 'corr_type',
-                  question: "Is the relationship likely linear, or could it be any monotonic pattern?",
+                  question: "What kind of relationship are you expecting?",
                   options: [
-                    { text: "Linear relationship", next: { id: 'corr', method: 'pearson' } },
-                    { text: "Any pattern / Not sure", next: { id: 'spearman_node', method: 'spearman' } },
-                    { text: "Ordinal or small sample", next: { id: 'kendall_node', method: 'kendall' } }
+                    { text: "A straight-line relationship (linear)", next: { id: 'corr', method: 'pearson' } },
+                    { text: "Any pattern where one goes up as the other goes up (or down)", next: { id: 'spearman_node', method: 'spearman' } },
+                    { text: "Ordinal data or very small sample", next: { id: 'kendall_node', method: 'kendall' } }
                   ]
                 }},
-                { text: "Both are categories", next: {
+                { text: "Both are categories (yes/no, segments, choices)", next: {
                   id: 'cat_corr_type',
-                  question: "Are both variables binary (exactly two categories each, like yes/no)?",
+                  question: "Are both variables binary (exactly two options each)?",
                   options: [
-                    { text: "Yes, both are binary (yes/no)", next: { id: 'phi_node', method: 'phi' } },
-                    { text: "No, one or both have 3+ categories", next: { id: 'cramers', method: 'chi_square' } }
+                    { text: "Yes \u2014 both are yes/no", next: { id: 'phi_node', method: 'phi' } },
+                    { text: "No \u2014 one or both have 3+ categories", next: { id: 'cramers', method: 'chi_square' } }
                   ]
                 }},
-                { text: "Agreement between two raters", next: { id: 'irr_node', method: 'irr' } },
-                { text: "One number, one category", next: { id: 'pointbiserial', method: 'point_biserial' } },
-                { text: "Many variables at once (3+)", next: { id: 'corr_matrix_node', method: 'corr_matrix' } },
-                { text: "Controlling for other variables", next: { id: 'partial_corr_node', method: 'partial_corr' } }
+                { text: "One is a number, the other is a category", next: { id: 'pointbiserial', method: 'point_biserial' } },
+                { text: "Two raters \u2014 do they agree? (inter-rater reliability)", next: { id: 'irr_node', method: 'irr' } },
+                { text: "I want to control for other variables (partial correlation)", next: { id: 'partial_corr_node', method: 'partial_corr' } }
               ]
             }
           },
           {
-            text: "Are there distinct segments in my data? (clusters, types)",
+            text: "Which of my variables are most connected to each other? (explore all at once)",
+            next: { id: 'corr_matrix_node', method: 'corr_matrix' }
+          },
+          {
+            text: "Are there natural groups in my respondents? (segments, clusters)",
             next: {
               id: 'segments',
-              question: "What kind of data do you mostly have?",
+              question: "What kind of data are you segmenting on?",
               options: [
-                { text: "Numbers (scores, amounts)", next: { id: 'kmeans', method: 'kmeans' } },
-                { text: "Tree-based segmentation (hierarchical)", next: { id: 'hierarchical_node', method: 'hierarchical_clustering' } },
-                { text: "Categories (yes/no, choices)", next: { id: 'lca', method: 'lca' } },
-                { text: "Build a decision tree", next: { id: 'decision_trees_node', method: 'decision_trees' } },
-                { text: "Predict group membership", next: { id: 'discriminant_node', method: 'discriminant' } }
+                { text: "Numbers \u2014 find groups based on scores or amounts (K-Means)", next: { id: 'kmeans', method: 'kmeans' } },
+                { text: "Build a tree of nested segments (Hierarchical)", next: { id: 'hierarchical_node', method: 'hierarchical_clustering' } },
+                { text: "Categories \u2014 find groups from yes/no patterns (Latent Class)", next: { id: 'lca', method: 'lca' } },
+                { text: "Create interpretable rules that classify people (Decision Tree)", next: { id: 'decision_trees_node', method: 'decision_trees' } },
+                { text: "Which variables best separate known groups? (Discriminant)", next: { id: 'discriminant_node', method: 'discriminant' } }
               ]
             }
           }
@@ -2584,36 +2615,40 @@
         num: 4, label: "Predict", hint: "What drives outcomes?",
         options: [
           {
-            text: "What drives my key outcome? (regression, prediction)",
+            text: "What factors matter most for this outcome? (key drivers analysis)",
             next: {
               id: 'drivers',
-              question: "What type of outcome are you trying to predict?",
+              question: "What are you trying to predict?",
               options: [
-                { text: "A number (revenue, score)", next: {
+                { text: "A number (satisfaction score, revenue, time)", next: {
                   id: 'regression_type',
-                  question: "How many predictors do you have?",
+                  question: "How many potential factors do you have?",
                   options: [
-                    { text: "One predictor", next: { id: 'simple_reg_node', method: 'simple_regression' } },
-                    { text: "Multiple predictors", next: { id: 'regression', method: 'linear_regression' } }
+                    { text: "Just one factor", next: { id: 'simple_reg_node', method: 'simple_regression' } },
+                    { text: "Multiple factors", next: { id: 'regression', method: 'linear_regression' } }
                   ]
                 }},
-                { text: "Yes or No", next: { id: 'logistic', method: 'logistic_regression' } },
-                { text: "A rating scale (1-5, 1-7)", next: { id: 'ordinal', method: 'ordinal_regression' } },
-                { text: "3+ unordered categories", next: { id: 'multinomial', method: 'multinomial_logistic' } },
-                { text: "Does a variable change the relationship? (moderation)", next: { id: 'moderation_node', method: 'moderation' } },
-                { text: "Count data (how many times something happened)", next: { id: 'poisson_node', method: 'poisson_regression' } },
-                { text: "Test if the effect goes through a mediator", next: { id: 'mediation_node', method: 'mediation' } }
+                { text: "A yes or no (churned, converted, purchased)", next: { id: 'logistic', method: 'logistic_regression' } },
+                { text: "A rating scale (1\u20135, 1\u20137 satisfaction)", next: { id: 'ordinal', method: 'ordinal_regression' } },
+                { text: "A choice between 3+ options (which brand, which plan)", next: { id: 'multinomial', method: 'multinomial_logistic' } },
+                { text: "A count (number of complaints, visits, purchases)", next: { id: 'poisson_node', method: 'poisson_regression' } },
+                { text: "Does the effect of X depend on another variable? (moderation)", next: { id: 'moderation_node', method: 'moderation' } },
+                { text: "Does X affect Y through an intermediary? (mediation)", next: { id: 'mediation_node', method: 'mediation' } }
               ]
             }
           },
           {
-            text: "What do people prefer? (conjoint, MaxDiff, choice modeling)",
+            text: "What predicts whether someone will [buy / churn / convert]? (yes/no outcome)",
+            next: { id: 'logistic_direct', method: 'logistic_regression' }
+          },
+          {
+            text: "How do people weigh trade-offs when choosing? (preferences, priorities)",
             next: {
               id: 'preference_choice',
               question: "What kind of preference analysis do you need?",
               options: [
-                { text: "Which attributes matter most? (Conjoint Analysis)", next: { id: 'conjoint_node', method: 'conjoint' } },
-                { text: "Rank items by importance (MaxDiff / Best-Worst)", next: { id: 'maxdiff_node', method: 'maxdiff' } },
+                { text: "Which product attributes matter most? (Conjoint Analysis)", next: { id: 'conjoint_node', method: 'conjoint' } },
+                { text: "Rank items from most to least important (MaxDiff)", next: { id: 'maxdiff_node', method: 'maxdiff' } },
                 { text: "Predict which option people will choose (Discrete Choice)", next: { id: 'discrete_choice_node', method: 'discrete_choice' } }
               ]
             }
@@ -2679,7 +2714,7 @@
           if (gi === 0) {
             var note = document.createElement('div');
             note.className = 'chat-phase-note';
-            note.textContent = 'All analyses below can be split by a grouping column (e.g., age group, segment, region).';
+            note.textContent = 'Tip: Most analyses below let you add a grouping column (e.g., age, segment) to compare across groups.';
             panel.appendChild(note);
           }
 
