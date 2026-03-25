@@ -5535,7 +5535,24 @@
     var colCount = 2;
     var maxCols = 10;
 
-    function buildGrid() {
+    function saveGridData() {
+      var saved = [];
+      section.querySelectorAll('.multi-data').forEach(function(ta, i) {
+        var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
+        saved.push({ data: ta.value, desc: descEl ? descEl.value : '' });
+      });
+      return saved;
+    }
+    function restoreGridData(saved) {
+      saved.forEach(function(s, i) {
+        var ta = section.querySelector('.multi-data[data-idx="' + i + '"]');
+        var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
+        if (ta && s.data) ta.value = s.data;
+        if (descEl && s.desc) descEl.value = s.desc;
+      });
+    }
+
+    function buildGrid(savedData) {
       var gridHtml = '<div class="input-grid multi-col">';
       for (var i = 0; i < colCount; i++) {
         var label, placeholder;
@@ -5562,6 +5579,7 @@
       gridHtml += '</div>';
       gridHtml += '<button class="run-btn" id="runBtn" disabled>Run Analysis</button>';
       section.innerHTML = gridHtml;
+      if (savedData) restoreGridData(savedData);
     }
 
     buildGrid();
@@ -5612,14 +5630,15 @@
 
       var addBtn = section.querySelector('#addColBtn');
       if (addBtn) addBtn.addEventListener('click', function() {
+        var saved = saveGridData();
         colCount++;
-        buildGrid();
+        buildGrid(saved);
         bindEvents();
         scrollToBottom();
       });
       var removeBtn = section.querySelector('#removeColBtn');
       if (removeBtn) removeBtn.addEventListener('click', function() {
-        if (colCount > 2) { colCount--; buildGrid(); bindEvents(); scrollToBottom(); }
+        if (colCount > 2) { var saved = saveGridData(); colCount--; buildGrid(saved); bindEvents(); scrollToBottom(); }
       });
 
       runBtn.addEventListener('click', function() {
@@ -5898,7 +5917,24 @@
     var colCount = 2;
     var maxCols = 10;
 
-    function buildGrid() {
+    function saveGridData() {
+      var saved = [];
+      section.querySelectorAll('.multi-data').forEach(function(ta, i) {
+        var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
+        saved.push({ data: ta.value, desc: descEl ? descEl.value : '' });
+      });
+      return saved;
+    }
+    function restoreGridData(saved) {
+      saved.forEach(function(s, i) {
+        var ta = section.querySelector('.multi-data[data-idx="' + i + '"]');
+        var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
+        if (ta && s.data) ta.value = s.data;
+        if (descEl && s.desc) descEl.value = s.desc;
+      });
+    }
+
+    function buildGrid(savedData) {
       var gridHtml =
         '<div class="analysis-controls">' +
           '<label>Number of clusters (K): <input type="number" id="kInput" min="2" max="8" value="3"></label>' +
@@ -5921,6 +5957,7 @@
       gridHtml += '</div>';
       gridHtml += '<button class="run-btn" id="runBtn" disabled>Run Analysis</button>';
       section.innerHTML = gridHtml;
+      if (savedData) restoreGridData(savedData);
     }
 
     buildGrid();
@@ -5949,14 +5986,15 @@
 
       var addBtn = section.querySelector('#addColBtn');
       if (addBtn) addBtn.addEventListener('click', function() {
+        var saved = saveGridData();
         colCount++;
-        buildGrid();
+        buildGrid(saved);
         bindEvents();
         scrollToBottom();
       });
       var removeBtn = section.querySelector('#removeColBtn');
       if (removeBtn) removeBtn.addEventListener('click', function() {
-        if (colCount > 2) { colCount--; buildGrid(); bindEvents(); scrollToBottom(); }
+        if (colCount > 2) { var saved = saveGridData(); colCount--; buildGrid(saved); bindEvents(); scrollToBottom(); }
       });
 
       runBtn.addEventListener('click', function() {
@@ -6821,7 +6859,24 @@
     var colCount = 3;
     var maxCols = 20;
 
-    function buildGrid() {
+    function saveGridData() {
+      var saved = [];
+      section.querySelectorAll('.multi-data').forEach(function(ta, i) {
+        var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
+        saved.push({ data: ta.value, desc: descEl ? descEl.value : '' });
+      });
+      return saved;
+    }
+    function restoreGridData(saved) {
+      saved.forEach(function(s, i) {
+        var ta = section.querySelector('.multi-data[data-idx="' + i + '"]');
+        var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
+        if (ta && s.data) ta.value = s.data;
+        if (descEl && s.desc) descEl.value = s.desc;
+      });
+    }
+
+    function buildGrid(savedData) {
       var gridHtml =
         '<div class="analysis-controls">' +
           '<label>Number of factors: <input type="number" id="nFactorsInput" min="1" max="10" value="2"></label>' +
@@ -6845,6 +6900,7 @@
       gridHtml += '</div>';
       gridHtml += '<button class="run-btn" id="runBtn" disabled>Run Analysis</button>';
       section.innerHTML = gridHtml;
+      if (savedData) restoreGridData(savedData);
     }
 
     buildGrid();
@@ -6873,14 +6929,15 @@
 
       var addBtn = section.querySelector('#addColBtn');
       if (addBtn) addBtn.addEventListener('click', function() {
+        var saved = saveGridData();
         colCount++;
-        buildGrid();
+        buildGrid(saved);
         bindEvents();
         scrollToBottom();
       });
       var removeBtn = section.querySelector('#removeColBtn');
       if (removeBtn) removeBtn.addEventListener('click', function() {
-        if (colCount > 3) { colCount--; buildGrid(); bindEvents(); scrollToBottom(); }
+        if (colCount > 3) { var saved = saveGridData(); colCount--; buildGrid(saved); bindEvents(); scrollToBottom(); }
       });
 
       runBtn.addEventListener('click', function() {
@@ -9509,7 +9566,24 @@
     var colCount = 2;
     var maxCols = 10;
 
-    function buildGrid() {
+    function saveGridData() {
+      var saved = [];
+      section.querySelectorAll('.multi-data').forEach(function(ta, i) {
+        var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
+        saved.push({ data: ta.value, desc: descEl ? descEl.value : '' });
+      });
+      return saved;
+    }
+    function restoreGridData(saved) {
+      saved.forEach(function(s, i) {
+        var ta = section.querySelector('.multi-data[data-idx="' + i + '"]');
+        var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
+        if (ta && s.data) ta.value = s.data;
+        if (descEl && s.desc) descEl.value = s.desc;
+      });
+    }
+
+    function buildGrid(savedData) {
       var gridHtml =
         '<div class="analysis-controls">' +
           '<label>Linkage method: <select id="linkageSelect"><option value="average" selected>Average</option><option value="single">Single</option><option value="complete">Complete</option></select></label>' +
@@ -9533,6 +9607,7 @@
       gridHtml += '</div>';
       gridHtml += '<button class="run-btn" id="runBtn" disabled>Run Analysis</button>';
       section.innerHTML = gridHtml;
+      if (savedData) restoreGridData(savedData);
     }
 
     buildGrid();
@@ -9561,14 +9636,15 @@
 
       var addBtn = section.querySelector('#addColBtn');
       if (addBtn) addBtn.addEventListener('click', function() {
+        var saved = saveGridData();
         colCount++;
-        buildGrid();
+        buildGrid(saved);
         bindEvents();
         scrollToBottom();
       });
       var removeBtn = section.querySelector('#removeColBtn');
       if (removeBtn) removeBtn.addEventListener('click', function() {
-        if (colCount > 2) { colCount--; buildGrid(); bindEvents(); scrollToBottom(); }
+        if (colCount > 2) { var saved = saveGridData(); colCount--; buildGrid(saved); bindEvents(); scrollToBottom(); }
       });
 
       runBtn.addEventListener('click', function() {
@@ -12412,7 +12488,24 @@
     var colCount = 3;
     var maxCols = 20;
 
-    function buildGrid() {
+    function saveGridData() {
+      var saved = [];
+      section.querySelectorAll('textarea.cfa-data[data-idx]').forEach(function(ta, i) {
+        var descEl = section.querySelector('.cfa-desc[data-idx="' + i + '"]');
+        saved.push({ data: ta.value, desc: descEl ? descEl.value : '' });
+      });
+      return saved;
+    }
+    function restoreGridData(saved) {
+      saved.forEach(function(s, i) {
+        var ta = section.querySelector('textarea.cfa-data[data-idx="' + i + '"]');
+        var descEl = section.querySelector('.cfa-desc[data-idx="' + i + '"]');
+        if (ta && s.data) ta.value = s.data;
+        if (descEl && s.desc) descEl.value = s.desc;
+      });
+    }
+
+    function buildGrid(savedData) {
       var gridHtml = '<div class="input-grid multi-col">';
       for (var i = 0; i < colCount; i++) {
         gridHtml +=
@@ -12466,6 +12559,7 @@
         }
         modelArea.value = template;
       }
+      if (savedData) restoreGridData(savedData);
     }
 
     buildGrid();
@@ -12526,9 +12620,9 @@
       section.querySelector('#cfaModelSpec').addEventListener('input', checkReady);
 
       var addBtn = section.querySelector('#addCFAColBtn');
-      if (addBtn) addBtn.addEventListener('click', function() { colCount++; buildGrid(); bindEvents(); scrollToBottom(); });
+      if (addBtn) addBtn.addEventListener('click', function() { var saved = saveGridData(); colCount++; buildGrid(saved); bindEvents(); scrollToBottom(); });
       var removeBtn = section.querySelector('#removeCFAColBtn');
-      if (removeBtn) removeBtn.addEventListener('click', function() { if (colCount > 3) { colCount--; buildGrid(); bindEvents(); scrollToBottom(); } });
+      if (removeBtn) removeBtn.addEventListener('click', function() { if (colCount > 3) { var saved = saveGridData(); colCount--; buildGrid(saved); bindEvents(); scrollToBottom(); } });
 
       runBtn.addEventListener('click', function() {
         var cols = [];
@@ -12871,7 +12965,24 @@
     var colCount = 3;
     var maxCols = 20;
 
-    function buildGrid() {
+    function saveGridData() {
+      var saved = [];
+      section.querySelectorAll('.irt-data').forEach(function(ta, i) {
+        var descEl = section.querySelector('.irt-desc[data-idx="' + i + '"]');
+        saved.push({ data: ta.value, desc: descEl ? descEl.value : '' });
+      });
+      return saved;
+    }
+    function restoreGridData(saved) {
+      saved.forEach(function(s, i) {
+        var ta = section.querySelector('.irt-data[data-idx="' + i + '"]');
+        var descEl = section.querySelector('.irt-desc[data-idx="' + i + '"]');
+        if (ta && s.data) ta.value = s.data;
+        if (descEl && s.desc) descEl.value = s.desc;
+      });
+    }
+
+    function buildGrid(savedData) {
       var gridHtml = '<div class="input-grid multi-col">';
       for (var i = 0; i < colCount; i++) {
         gridHtml +=
@@ -12890,6 +13001,7 @@
       gridHtml += '</div>';
       gridHtml += '<button class="run-btn" id="runBtn" disabled>Run IRT Rasch Analysis</button>';
       section.innerHTML = gridHtml;
+      if (savedData) restoreGridData(savedData);
     }
 
     buildGrid();
@@ -12932,9 +13044,9 @@
       });
 
       var addBtn = section.querySelector('#addIRTColBtn');
-      if (addBtn) addBtn.addEventListener('click', function() { colCount++; buildGrid(); bindEvents(); scrollToBottom(); });
+      if (addBtn) addBtn.addEventListener('click', function() { var saved = saveGridData(); colCount++; buildGrid(saved); bindEvents(); scrollToBottom(); });
       var removeBtn = section.querySelector('#removeIRTColBtn');
-      if (removeBtn) removeBtn.addEventListener('click', function() { if (colCount > 3) { colCount--; buildGrid(); bindEvents(); scrollToBottom(); } });
+      if (removeBtn) removeBtn.addEventListener('click', function() { if (colCount > 3) { var saved = saveGridData(); colCount--; buildGrid(saved); bindEvents(); scrollToBottom(); } });
 
       runBtn.addEventListener('click', function() {
         var cols = [];
