@@ -1089,6 +1089,25 @@
       margin-top: 2px;
       width: 100%;
     }
+    .palette-method-coming-soon {
+      opacity: 0.45;
+    }
+    .palette-method-coming-soon .palette-method-name {
+      color: var(--text-2);
+    }
+    .palette-coming-soon-tag {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-2);
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-left: 8px;
+      white-space: nowrap;
+    }
     .palette-method-name {
       font-size: 0.85rem;
       font-weight: 600;
@@ -1814,60 +1833,60 @@
      ================================================================== */
   var METHOD_REGISTRY = [
     { category: "Descriptive & Distributional", methods: [
-      { id: "summary", name: "Summary Statistics", desc: "means, medians, SD, confidence intervals", hint: "e.g., What\u2019s the average customer satisfaction score?", implemented: true },
+      { id: "summary", name: "Summary Statistics", desc: "means, medians, SD, confidence intervals", hint: "e.g., What\u2019s the average customer satisfaction score?", implemented: true, enriched: true },
       { id: "distribution", name: "Distribution Checker", desc: "normality tests, skewness, kurtosis", hint: "e.g., Is my revenue data normally distributed or skewed?", implemented: true },
       { id: "shapiro_wilk", name: "Shapiro-Wilk Test", desc: "test if data follows a normal distribution", hint: "e.g., Should I use a parametric or non-parametric test?", implemented: true },
-      { id: "frequencies", name: "Frequencies & Crosstabs", desc: "frequency tables, percentages, crosstabs", hint: "e.g., How many respondents chose each brand?", implemented: true },
-      { id: "multi_response", name: "Multi-Response / Checkbox Analysis", desc: "analyze select-all-that-apply questions", hint: "e.g., Which features did customers select? (check all that apply)", implemented: true }
+      { id: "frequencies", name: "Frequencies & Crosstabs", desc: "frequency tables, percentages, crosstabs", hint: "e.g., How many respondents chose each brand?", implemented: true, enriched: true },
+      { id: "multi_response", name: "Multi-Response / Checkbox Analysis", desc: "analyze select-all-that-apply questions", hint: "e.g., Which features did customers select? (check all that apply)", implemented: true, enriched: true }
     ]},
     { category: "Group Comparison", methods: [
-      { id: "ttest", name: "Independent Samples t-test", desc: "compare means between two groups", hint: "e.g., Do male and female customers spend differently?", implemented: true },
-      { id: "paired_ttest", name: "Paired Samples t-test", desc: "compare before/after measurements", hint: "e.g., Did scores improve after training?", implemented: true },
-      { id: "anova", name: "One-way ANOVA", desc: "compare means across 3+ groups", hint: "e.g., Does satisfaction differ across 4 regions?", implemented: true },
-      { id: "two_way_anova", name: "Two-way ANOVA", desc: "compare with multiple grouping variables", hint: "e.g., Does satisfaction differ by region AND by product?", implemented: true },
+      { id: "ttest", name: "Independent Samples t-test", desc: "compare means between two groups", hint: "e.g., Do male and female customers spend differently?", implemented: true, enriched: true },
+      { id: "paired_ttest", name: "Paired Samples t-test", desc: "compare before/after measurements", hint: "e.g., Did scores improve after training?", implemented: true, enriched: true },
+      { id: "anova", name: "One-way ANOVA", desc: "compare means across 3+ groups", hint: "e.g., Does satisfaction differ across 4 regions?", implemented: true, enriched: true },
+      { id: "two_way_anova", name: "Two-way ANOVA", desc: "compare with multiple grouping variables", hint: "e.g., Does satisfaction differ by region AND by product?", implemented: true, enriched: true },
       { id: "ancova", name: "ANCOVA", desc: "ANOVA controlling for a covariate", hint: "e.g., Compare regions while controlling for income", implemented: true },
-      { id: "mann_whitney", name: "Mann-Whitney U", desc: "non-parametric comparison of two groups", hint: "e.g., Compare ratings when data isn\u2019t normally distributed", implemented: true },
-      { id: "kruskal_wallis", name: "Kruskal-Wallis", desc: "non-parametric comparison of 3+ groups", hint: "e.g., Compare 3+ groups on ordinal rating data", implemented: true },
-      { id: "wilcoxon", name: "Wilcoxon Signed-Rank", desc: "non-parametric paired comparison", hint: "e.g., Before/after comparison on non-normal data", implemented: true },
-      { id: "friedman", name: "Friedman Test", desc: "non-parametric repeated measures", hint: "e.g., Rate 3 products \u2014 same people, non-normal data", implemented: true },
+      { id: "mann_whitney", name: "Mann-Whitney U", desc: "non-parametric comparison of two groups", hint: "e.g., Compare ratings when data isn\u2019t normally distributed", implemented: true, enriched: true },
+      { id: "kruskal_wallis", name: "Kruskal-Wallis", desc: "non-parametric comparison of 3+ groups", hint: "e.g., Compare 3+ groups on ordinal rating data", implemented: true, enriched: true },
+      { id: "wilcoxon", name: "Wilcoxon Signed-Rank", desc: "non-parametric paired comparison", hint: "e.g., Before/after comparison on non-normal data", implemented: true, enriched: true },
+      { id: "friedman", name: "Friedman Test", desc: "non-parametric repeated measures", hint: "e.g., Rate 3 products \u2014 same people, non-normal data", implemented: true, enriched: true },
       { id: "chi_square", name: "Chi-Square Test", desc: "compare categorical distributions", hint: "e.g., Is purchase intent related to age group?", implemented: true },
       { id: "fisher_exact", name: "Fisher\u2019s Exact Test", desc: "categorical comparison with small samples", hint: "e.g., Small sample 2\u00d72 comparison", implemented: true },
       { id: "mcnemar", name: "McNemar\u2019s Test", desc: "paired categorical comparison", hint: "e.g., Did brand preference change after the ad campaign?", implemented: true },
       { id: "two_proportion_z", name: "Two-Proportion Z-Test", desc: "compare two proportions", hint: "e.g., Did conversion rate differ between campaigns?", implemented: true },
       { id: "levene", name: "Levene\u2019s Test", desc: "check if groups have equal variances", hint: "e.g., Do my groups have similar variability?", implemented: true },
-      { id: "welch_anova", name: "Welch\u2019s ANOVA", desc: "comparison with unequal variances", hint: "e.g., Compare groups when variances are very different", implemented: true }
+      { id: "welch_anova", name: "Welch\u2019s ANOVA", desc: "comparison with unequal variances", hint: "e.g., Compare groups when variances are very different", implemented: true, enriched: true }
     ]},
     { category: "Correlation & Association", methods: [
-      { id: "pearson", name: "Pearson Correlation", desc: "linear relationship between two numeric variables", hint: "e.g., Does spending increase with income?", implemented: true },
-      { id: "spearman", name: "Spearman Correlation", desc: "monotonic relationship, ordinal data", hint: "e.g., Do satisfaction rankings match loyalty rankings?", implemented: true },
-      { id: "kendall", name: "Kendall\u2019s Tau", desc: "ordinal correlation for small samples", hint: "e.g., Agreement between two ordinal rankings", implemented: true },
-      { id: "point_biserial", name: "Point-Biserial Correlation", desc: "binary vs continuous relationship", hint: "e.g., Does gender predict test scores?", implemented: true },
+      { id: "pearson", name: "Pearson Correlation", desc: "linear relationship between two numeric variables", hint: "e.g., Does spending increase with income?", implemented: true, enriched: true },
+      { id: "spearman", name: "Spearman Correlation", desc: "monotonic relationship, ordinal data", hint: "e.g., Do satisfaction rankings match loyalty rankings?", implemented: true, enriched: true },
+      { id: "kendall", name: "Kendall\u2019s Tau", desc: "ordinal correlation for small samples", hint: "e.g., Agreement between two ordinal rankings", implemented: true, enriched: true },
+      { id: "point_biserial", name: "Point-Biserial Correlation", desc: "binary vs continuous relationship", hint: "e.g., Does gender predict test scores?", implemented: true, enriched: true },
       { id: "cramers_v", name: "Cram\u00e9r\u2019s V", desc: "strength of categorical association (included in Chi-Square)", hint: "e.g., How strongly are brand and region linked?", implemented: true },
       { id: "phi", name: "Phi Coefficient", desc: "binary \u00d7 binary association", hint: "e.g., Are two yes/no questions related?", implemented: true },
       { id: "partial_corr", name: "Partial Correlation", desc: "controlling for a third variable", hint: "e.g., Does price predict satisfaction, controlling for quality?", implemented: true },
       { id: "corr_matrix", name: "Correlation Matrix", desc: "explore multiple variable relationships at once", hint: "e.g., Explore relationships among 10 survey items at once", implemented: true }
     ]},
     { category: "Regression & Prediction", methods: [
-      { id: "simple_regression", name: "Simple Linear Regression", desc: "predict one outcome from one predictor", hint: "e.g., Does ad spend predict revenue?", implemented: true },
-      { id: "multiple_regression", name: "Multiple Linear Regression", desc: "predict from multiple factors", hint: "e.g., What drives customer satisfaction \u2014 price, quality, or service?", implemented: true },
-      { id: "logistic_regression", name: "Logistic Regression", desc: "predict yes/no outcomes", hint: "e.g., What predicts whether a customer will churn?", implemented: true },
+      { id: "simple_regression", name: "Simple Linear Regression", desc: "predict one outcome from one predictor", hint: "e.g., Does ad spend predict revenue?", implemented: true, enriched: true },
+      { id: "multiple_regression", name: "Multiple Linear Regression", desc: "predict from multiple factors", hint: "e.g., What drives customer satisfaction \u2014 price, quality, or service?", implemented: true, enriched: true },
+      { id: "logistic_regression", name: "Logistic Regression", desc: "predict yes/no outcomes", hint: "e.g., What predicts whether a customer will churn?", implemented: true, enriched: true },
       { id: "multinomial_logistic", name: "Multinomial Logistic", desc: "predict 3+ category outcomes", hint: "e.g., What predicts which brand a customer chooses?", implemented: true },
-      { id: "ordinal_regression", name: "Ordinal Regression", desc: "predict Likert scale outcomes", hint: "e.g., What predicts satisfaction on a 1-5 scale?", implemented: true },
+      { id: "ordinal_regression", name: "Ordinal Regression", desc: "predict Likert scale outcomes", hint: "e.g., What predicts satisfaction on a 1-5 scale?", implemented: true, enriched: true },
       { id: "poisson_regression", name: "Poisson Regression", desc: "predict count data", hint: "e.g., What predicts number of complaints per month?", implemented: true },
       { id: "mediation", name: "Mediation Analysis", desc: "test indirect effects via a mediator", hint: "e.g., Does training improve performance through confidence?", implemented: true },
       { id: "moderation", name: "Moderation Analysis", desc: "test interaction effects", hint: "e.g., Does the effect of price on sales depend on brand?", implemented: true }
     ]},
     { category: "Scale & Construct Analysis", methods: [
-      { id: "reliability", name: "Reliability Analysis (Cronbach\u2019s \u03b1)", desc: "check scale consistency", hint: "e.g., Do these 5 survey items reliably measure satisfaction?", implemented: true },
-      { id: "efa", name: "Factor Analysis (EFA)", desc: "discover underlying constructs", hint: "e.g., What hidden themes underlie my 20 survey questions?", implemented: true },
-      { id: "cfa", name: "Confirmatory Factor Analysis", desc: "test hypothesized structure", hint: "e.g., Do items 1-5 really measure \u2018trust\u2019 as I hypothesized?", implemented: true },
-      { id: "pca", name: "Principal Component Analysis", desc: "data reduction", hint: "e.g., Can I reduce 15 variables to 3 main dimensions?", implemented: true },
+      { id: "reliability", name: "Reliability Analysis (Cronbach\u2019s \u03b1)", desc: "check scale consistency", hint: "e.g., Do these 5 survey items reliably measure satisfaction?", implemented: true, enriched: true },
+      { id: "efa", name: "Factor Analysis (EFA)", desc: "discover underlying constructs", hint: "e.g., What hidden themes underlie my 20 survey questions?", implemented: true, enriched: true },
+      { id: "cfa", name: "Confirmatory Factor Analysis", desc: "test hypothesized structure", hint: "e.g., Do items 1-5 really measure \u2018trust\u2019 as I hypothesized?", implemented: true, enriched: true },
+      { id: "pca", name: "Principal Component Analysis", desc: "data reduction", hint: "e.g., Can I reduce 15 variables to 3 main dimensions?", implemented: true, enriched: true },
       { id: "irt", name: "Item Response Theory", desc: "Rasch and 2PL models", hint: "e.g., Which test items are too easy or too hard?", implemented: true }
     ]},
     { category: "Segmentation & Classification", methods: [
-      { id: "kmeans", name: "K-Means Clustering", desc: "find natural groupings in data", hint: "e.g., Are there 3-4 distinct customer types in my data?", implemented: true },
-      { id: "hierarchical_clustering", name: "Hierarchical Clustering", desc: "tree-based segmentation", hint: "e.g., Build a tree of nested customer segments", implemented: true },
-      { id: "lca", name: "Latent Class Analysis", desc: "probabilistic clustering from categories", hint: "e.g., Find hidden groups from yes/no survey patterns", implemented: true },
+      { id: "kmeans", name: "K-Means Clustering", desc: "find natural groupings in data", hint: "e.g., Are there 3-4 distinct customer types in my data?", implemented: true, enriched: true },
+      { id: "hierarchical_clustering", name: "Hierarchical Clustering", desc: "tree-based segmentation", hint: "e.g., Build a tree of nested customer segments", implemented: true, enriched: true },
+      { id: "lca", name: "Latent Class Analysis", desc: "probabilistic clustering from categories", hint: "e.g., Find hidden groups from yes/no survey patterns", implemented: true, enriched: true },
       { id: "decision_trees", name: "Decision Trees", desc: "classify with interpretable rules", hint: "e.g., What rules predict who will buy?", implemented: true },
       { id: "discriminant", name: "Discriminant Analysis", desc: "predict group membership", hint: "e.g., Which variables best separate loyal vs churned customers?", implemented: true }
     ]},
@@ -1877,7 +1896,7 @@
       { id: "discrete_choice", name: "Discrete Choice Modeling", desc: "predict choices from attributes", hint: "e.g., Predict which package option customers will pick", implemented: true }
     ]},
     { category: "Longitudinal & Repeated Measures", methods: [
-      { id: "repeated_anova", name: "Repeated Measures ANOVA", desc: "compare across time points", hint: "e.g., Did scores change across 4 quarterly measurements?", implemented: true },
+      { id: "repeated_anova", name: "Repeated Measures ANOVA", desc: "compare across time points", hint: "e.g., Did scores change across 4 quarterly measurements?", implemented: true, enriched: true },
       { id: "mixed_effects", name: "Mixed-Effects Models", desc: "nested data analysis", hint: "e.g., Analyze students nested within classrooms", implemented: true },
       { id: "survival", name: "Survival Analysis", desc: "time-to-event modeling", hint: "e.g., How long until customers churn?", implemented: true }
     ]},
@@ -1936,14 +1955,15 @@
 
       cat.methods.forEach(function(method) {
         var row = document.createElement('div');
-        row.className = 'palette-method';
+        row.className = 'palette-method' + (method.enriched ? '' : ' palette-method-coming-soon');
         row.setAttribute('data-method-id', method.id);
         row.setAttribute('data-name', method.name.toLowerCase());
         row.setAttribute('data-desc', method.desc.toLowerCase());
         row.innerHTML =
           '<span class="palette-method-name">' + method.name + '</span>' +
           '<span class="palette-method-sep">&mdash;</span>' +
-          '<span class="palette-method-desc">' + method.desc + '</span>';
+          '<span class="palette-method-desc">' + method.desc + '</span>' +
+          (method.enriched ? '' : '<span class="palette-coming-soon-tag">coming soon</span>');
         if (method.hint) {
           row.innerHTML += '<span class="palette-method-hint">' + method.hint + '</span>';
         }
