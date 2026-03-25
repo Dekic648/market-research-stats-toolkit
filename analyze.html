@@ -360,13 +360,13 @@
     }
 
     .chat-options.answered .chat-option-btn:not(.selected) {
-      opacity: 0.35;
-      pointer-events: none;
+      opacity: 0.4;
     }
-
+    .chat-options.answered .chat-option-btn:not(.selected):hover {
+      opacity: 0.8;
+    }
     .chat-options.answered .chat-option-btn.selected {
       opacity: 0.85;
-      pointer-events: none;
     }
 
     /* ========================================
@@ -838,19 +838,21 @@
     }
     .chat-options-grouped.answered .chat-phase-tab:not(.active) {
       opacity: 0.35;
-      pointer-events: none;
+    }
+    .chat-options-grouped.answered .chat-phase-tab:not(.active):hover {
+      opacity: 0.7;
     }
     .chat-options-grouped.answered .chat-phase-tab.active {
       opacity: 0.85;
-      pointer-events: none;
     }
     .chat-options-grouped.answered .chat-option-btn:not(.selected) {
-      opacity: 0.35;
-      pointer-events: none;
+      opacity: 0.4;
+    }
+    .chat-options-grouped.answered .chat-option-btn:not(.selected):hover {
+      opacity: 0.8;
     }
     .chat-options-grouped.answered .chat-option-btn.selected {
       opacity: 0.85;
-      pointer-events: none;
     }
 
     /* Back button */
@@ -2693,6 +2695,17 @@
               btn.textContent = opt.text;
             }
             btn.addEventListener('click', function() {
+              // Remove everything added after this grouped options block
+              var outerIndex = Array.prototype.indexOf.call(container.children, outer);
+              while (container.children.length > outerIndex + 1) {
+                container.removeChild(container.lastChild);
+              }
+              // Clean chatHistory entries beyond this point
+              while (chatHistory.length > 0 && chatHistory[chatHistory.length - 1] > outerIndex) {
+                chatHistory.pop();
+              }
+              // Clear all selections across all panels
+              outer.querySelectorAll('.chat-option-btn').forEach(function(b) { b.classList.remove('selected'); });
               outer.classList.add('answered');
               btn.classList.add('selected');
               callback(opt);
@@ -2702,9 +2715,20 @@
 
           panels.push(panel);
 
-          // Tab click — switch panels
+          // Tab click — switch panels (also allowed after answering)
           tab.addEventListener('click', function() {
-            if (outer.classList.contains('answered')) return;
+            // If answered, clean up downstream content first
+            if (outer.classList.contains('answered')) {
+              var outerIndex = Array.prototype.indexOf.call(container.children, outer);
+              while (container.children.length > outerIndex + 1) {
+                container.removeChild(container.lastChild);
+              }
+              while (chatHistory.length > 0 && chatHistory[chatHistory.length - 1] > outerIndex) {
+                chatHistory.pop();
+              }
+              outer.querySelectorAll('.chat-option-btn').forEach(function(b) { b.classList.remove('selected'); });
+              outer.classList.remove('answered');
+            }
             tabBar.querySelectorAll('.chat-phase-tab').forEach(function(t) { t.classList.remove('active'); });
             tab.classList.add('active');
             panels.forEach(function(p) { p.classList.remove('visible'); });
@@ -2744,7 +2768,17 @@
             btn.textContent = opt.text;
           }
           btn.addEventListener('click', function() {
-            // Mark as answered
+            // Remove everything added after this options group
+            var wrapIndex = Array.prototype.indexOf.call(container.children, wrap);
+            while (container.children.length > wrapIndex + 1) {
+              container.removeChild(container.lastChild);
+            }
+            // Clean chatHistory entries beyond this point
+            while (chatHistory.length > 0 && chatHistory[chatHistory.length - 1] > wrapIndex) {
+              chatHistory.pop();
+            }
+            // Update selection
+            wrap.querySelectorAll('.chat-option-btn').forEach(function(b) { b.classList.remove('selected'); });
             wrap.classList.add('answered');
             btn.classList.add('selected');
             callback(opt, i);
