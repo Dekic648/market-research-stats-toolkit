@@ -835,6 +835,45 @@
       gap: 8px;
     }
 
+    /* Significance Settings */
+    .sig-settings-btn {
+      background: none; border: none; cursor: pointer; font-size: 1.2rem;
+      color: var(--text-2); transition: color 0.2s;
+    }
+    .sig-settings-btn:hover { color: var(--rose); }
+    .sig-settings-overlay {
+      display: none; position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center;
+    }
+    .sig-settings-overlay.active { display: flex; }
+    .sig-settings-panel {
+      background: var(--bg-1); border: 1px solid var(--border); border-radius: 14px;
+      padding: 1.5rem; width: 340px; max-width: 90vw; box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    }
+    .sig-settings-title {
+      font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--rose); margin-bottom: 1rem;
+    }
+    .sig-settings-group { margin-bottom: 0.9rem; }
+    .sig-settings-label {
+      font-size: 0.78rem; color: var(--text-2); display: block; margin-bottom: 0.3rem;
+    }
+    .sig-settings-group select {
+      width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-0); color: var(--text-0); font-family: inherit; font-size: 0.85rem;
+    }
+    .sig-settings-footer {
+      display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;
+      padding-top: 0.75rem; border-top: 1px solid var(--border);
+    }
+    .sig-settings-note { font-size: 0.72rem; color: var(--text-2); }
+    .sig-settings-close {
+      padding: 0.4rem 1rem; border-radius: 8px; border: none; cursor: pointer;
+      background: var(--rose); color: #fff; font-weight: 600; font-size: 0.82rem;
+      font-family: inherit;
+    }
+
     .next-step-btn {
       padding: 0.6rem 1rem;
       border-radius: 10px;
@@ -1802,9 +1841,45 @@
     </div>
     <div class="header-right">
       <button class="start-over-link" id="startOverLink">Start over</button>
+      <button class="sig-settings-btn" id="sigSettingsBtn" aria-label="Significance settings" title="Significance settings">&#9881;</button>
       <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">&#9790;</button>
     </div>
   </header>
+
+  <!-- Significance Settings Panel -->
+  <div class="sig-settings-overlay" id="sigSettingsOverlay">
+    <div class="sig-settings-panel">
+      <div class="sig-settings-title">Significance Settings</div>
+      <div class="sig-settings-group">
+        <label class="sig-settings-label">Significance Level (&alpha;)</label>
+        <select id="sigAlpha">
+          <option value="0.10">.10</option>
+          <option value="0.05" selected>.05 (default)</option>
+          <option value="0.01">.01</option>
+          <option value="0.001">.001</option>
+        </select>
+      </div>
+      <div class="sig-settings-group">
+        <label class="sig-settings-label">Test Direction</label>
+        <select id="sigTails">
+          <option value="2" selected>Two-tailed (default)</option>
+          <option value="1">One-tailed</option>
+        </select>
+      </div>
+      <div class="sig-settings-group">
+        <label class="sig-settings-label">Multiple Comparison Correction</label>
+        <select id="sigCorrection">
+          <option value="bonferroni" selected>Bonferroni (default)</option>
+          <option value="holm">Holm</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+      <div class="sig-settings-footer">
+        <span class="sig-settings-note">Applied to all analyses in this session</span>
+        <button class="sig-settings-close" id="sigSettingsClose">Done</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ====== Chat ====== -->
   <div class="chat-container" id="chatContainer">
@@ -3415,7 +3490,16 @@
     return '<button class="copy-btn" id="' + uid + '">&#128203; Copy to clipboard</button>';
   }
 
-  function pClass(p) { return p < 0.05 ? 'p-sig' : p < 0.10 ? 'p-marginal' : 'p-nonsig'; }
+  // Global significance settings
+  var SIG_SETTINGS = { alpha: 0.05, tails: 2, correction: 'bonferroni' };
+
+  function getAlpha() { return SIG_SETTINGS.alpha; }
+  function sigFooter() {
+    return '\u03b1 = ' + SIG_SETTINGS.alpha + ', ' + SIG_SETTINGS.tails + '-tailed, ' +
+      (SIG_SETTINGS.correction === 'none' ? 'no correction' : SIG_SETTINGS.correction + ' correction');
+  }
+
+  function pClass(p) { var a = getAlpha(); return p < a ? 'p-sig' : p < a * 2 ? 'p-marginal' : 'p-nonsig'; }
 
   function effectLabel(d) {
     d = Math.abs(d);
@@ -3432,12 +3516,13 @@
 
   // === Shared enrichment helpers for survey-style output ===
   function sigBadge(p) {
-    var isSig = p < 0.05;
+    var a = getAlpha();
+    var isSig = p < a;
     return '<div style="text-align:center;margin-top:0.6rem">' +
       '<span style="display:inline-block;padding:0.25rem 0.7rem;border-radius:4px;font-size:0.82rem;font-weight:600;' +
       (isSig ? 'background:rgba(58,154,92,0.15);color:var(--green)' : 'background:rgba(153,153,153,0.15);color:var(--text-2)') + '">' +
       (isSig ? 'Statistically significant (p = ' + round4(p) + ')' : 'Not statistically significant (p = ' + round4(p) + ')') +
-      '</span></div>';
+      '</span><div style="font-size:0.68rem;color:var(--text-2);margin-top:3px">' + sigFooter() + '</div></div>';
   }
 
   function groupMeansCard(groups, labels, title) {
@@ -3590,12 +3675,13 @@
 
   // Polished significance badge
   function renderSigBadge(p) {
-    var isSig = p < 0.05;
+    var a = getAlpha();
+    var isSig = p < a;
     return '<div style="text-align:center;margin-top:0.75rem">' +
       '<span style="display:inline-block;padding:0.3rem 0.9rem;border-radius:6px;font-size:0.82rem;font-weight:600;letter-spacing:0.02em;' +
       (isSig ? 'background:var(--green-soft);color:var(--green);border:1px solid rgba(58,154,92,0.2)' : 'background:var(--bg-1);color:var(--text-2);border:1px solid var(--border)') + '">' +
       (isSig ? 'Statistically significant (p = ' + round4(p) + ')' : 'Not statistically significant (p = ' + round4(p) + ')') +
-      '</span></div>';
+      '</span><div style="font-size:0.68rem;color:var(--text-2);margin-top:3px">' + sigFooter() + '</div></div>';
   }
 
   /* ==================================================================
@@ -6897,15 +6983,50 @@
       html += '</table></div></div>';
     }
 
-    // Crosstab HTML table
+    // Column significance testing (A/B/C letter system)
+    var colLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    var sigLetters = []; // sigLetters[g][c] = array of letters this cell is sig higher than
+    var alpha = getAlpha();
+    for (var g = 0; g < groupLabels.length; g++) {
+      sigLetters.push([]);
+      for (var c = 0; c < optionLabels.length; c++) {
+        var letters = [];
+        var p1 = pctData[g][c] / 100;
+        var n1 = groupN[groupLabels[g]];
+        for (var g2 = 0; g2 < groupLabels.length; g2++) {
+          if (g2 === g) continue;
+          var p2 = pctData[g2][c] / 100;
+          var n2 = groupN[groupLabels[g2]];
+          if (n1 < 2 || n2 < 2) continue;
+          // Two-proportion z-test
+          var pPool = (p1 * n1 + p2 * n2) / (n1 + n2);
+          if (pPool <= 0 || pPool >= 1) continue;
+          var se = Math.sqrt(pPool * (1 - pPool) * (1 / n1 + 1 / n2));
+          if (se <= 0) continue;
+          var z = (p1 - p2) / se;
+          var pVal = 2 * (1 - jStat.normal.cdf(Math.abs(z), 0, 1));
+          if (p1 > p2 && pVal < alpha) {
+            letters.push(colLetters[g2]);
+          }
+        }
+        sigLetters[g].push(letters);
+      }
+    }
+
+    // Crosstab HTML table with significance letters
     var ctHtml = '<div style="overflow-x:auto"><table class="freq-table">';
     ctHtml += '<tr><th></th>';
     for (var c = 0; c < optionLabels.length; c++) ctHtml += '<th>' + escHtml(optionLabels[c]) + '</th>';
     ctHtml += '<th>N</th></tr>';
+    // Column letter header
+    ctHtml += '<tr style="border-bottom:2px solid var(--border)"><td></td>';
+    for (var c = 0; c < optionLabels.length; c++) ctHtml += '<td style="text-align:center;font-size:0.7rem;color:var(--text-2);font-weight:600"></td>';
+    ctHtml += '<td></td></tr>';
     for (var g = 0; g < groupLabels.length; g++) {
-      ctHtml += '<tr><td><strong>' + escHtml(groupLabels[g]) + '</strong></td>';
+      ctHtml += '<tr><td><strong>' + escHtml(groupLabels[g]) + '</strong> <span style="font-size:0.7rem;color:var(--rose);font-weight:600">(' + colLetters[g] + ')</span></td>';
       for (var c = 0; c < optionLabels.length; c++) {
-        ctHtml += '<td>' + pctData[g][c].toFixed(1) + '%</td>';
+        var sigStr = sigLetters[g][c].length > 0 ? '<sup style="color:var(--green);font-size:0.65rem;font-weight:700">' + sigLetters[g][c].join('') + '</sup>' : '';
+        ctHtml += '<td>' + pctData[g][c].toFixed(1) + '%' + sigStr + '</td>';
       }
       ctHtml += '<td>' + groupN[groupLabels[g]] + '</td></tr>';
     }
@@ -6913,7 +7034,7 @@
     for (var c = 0; c < optionLabels.length; c++) ctHtml += '<td>' + optionTotals[c] + '</td>';
     ctHtml += '<td>' + n + '</td></tr>';
     ctHtml += '</table></div>';
-    ctHtml += '<div style="margin-top:6px;font-size:0.82em;color:var(--text-2)">Total N = ' + n + ' &middot; Metric: Row %</div>';
+    ctHtml += '<div style="margin-top:6px;font-size:0.82em;color:var(--text-2)">Total N = ' + n + ' &middot; Row % &middot; ' + sigFooter() + ' &middot; Superscripts show columns this cell is significantly higher than</div>';
     html += '<div class="result-card"><div class="result-card-title">Distribution by Group (Row %)</div>' + ctHtml + '</div>';
 
     // Grouped bar chart
@@ -13410,6 +13531,30 @@
   }
 
   startConversation();
+
+  // Significance Settings Panel handlers
+  var sigOverlay = document.getElementById('sigSettingsOverlay');
+  var sigBtn = document.getElementById('sigSettingsBtn');
+  var sigClose = document.getElementById('sigSettingsClose');
+  var sigAlphaEl = document.getElementById('sigAlpha');
+  var sigTailsEl = document.getElementById('sigTails');
+  var sigCorrEl = document.getElementById('sigCorrection');
+
+  sigBtn.addEventListener('click', function() { sigOverlay.classList.add('active'); });
+  sigClose.addEventListener('click', function() {
+    SIG_SETTINGS.alpha = parseFloat(sigAlphaEl.value);
+    SIG_SETTINGS.tails = parseInt(sigTailsEl.value);
+    SIG_SETTINGS.correction = sigCorrEl.value;
+    sigOverlay.classList.remove('active');
+  });
+  sigOverlay.addEventListener('click', function(e) {
+    if (e.target === sigOverlay) {
+      SIG_SETTINGS.alpha = parseFloat(sigAlphaEl.value);
+      SIG_SETTINGS.tails = parseInt(sigTailsEl.value);
+      SIG_SETTINGS.correction = sigCorrEl.value;
+      sigOverlay.classList.remove('active');
+    }
+  });
 
 })();
 </script>
