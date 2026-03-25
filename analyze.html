@@ -14498,6 +14498,16 @@
   };
 
   function showNextSteps(methodType, result) {
+    // Reset Run button to "Done"
+    var runBtns = container.querySelectorAll('.run-btn');
+    runBtns.forEach(function(btn) {
+      if (btn.textContent === 'Running...') {
+        btn.textContent = '\u2713 Done';
+        btn.style.background = 'var(--green)';
+        btn.style.opacity = '0.8';
+      }
+    });
+
     if (methodType) {
       showValidationChecklist(methodType, result || {});
     }
