@@ -4008,6 +4008,112 @@
     ctx.fillText('Mean: ' + round2(meanVal), mx2, cy - boxH / 2 - 5 - 10);
   }
 
+  // --- Regression Assumption Check ---
+  function buildAssumptionCard(y, xs, coefficients, durbinWatson) {
+    var n = y.length;
+    var nPred = xs ? xs.length : 1;
+    var checks = [];
+    var passed = 0;
+    var total = 0;
+
+    // 1. Durbin-Watson (autocorrelation)
+    if (durbinWatson !== undefined) {
+      total++;
+      var dwOk = durbinWatson >= 1.5 && durbinWatson <= 2.5;
+      if (dwOk) passed++;
+      checks.push({
+        name: 'Independence (Durbin-Watson)',
+        value: round4(durbinWatson),
+        pass: dwOk,
+        detail: dwOk ? 'No autocorrelation detected (1.5\u20132.5 range)' : 'Possible autocorrelation \u2014 observations may not be independent'
+      });
+    }
+
+    // 2. Residual normality (Shapiro-Wilk on residuals)
+    if (coefficients) {
+      var residuals = [];
+      for (var i = 0; i < n; i++) {
+        var pred = coefficients[0]; // intercept
+        if (xs) {
+          for (var j = 0; j < nPred; j++) pred += coefficients[j + 1] * xs[j][i];
+        }
+        residuals.push(y[i] - pred);
+      }
+      try {
+        var sw = StatsEngine.shapiroWilk(residuals.slice(0, Math.min(residuals.length, 5000)));
+        total++;
+        var normOk = sw.p >= 0.05;
+        if (normOk) passed++;
+        checks.push({
+          name: 'Residual Normality (Shapiro-Wilk)',
+          value: 'p = ' + round4(sw.p),
+          pass: normOk,
+          detail: normOk ? 'Residuals appear normally distributed' : 'Residuals are not normally distributed \u2014 predictions may be less precise'
+        });
+      } catch(e) {}
+
+      // 4. Cook's Distance (influential cases)
+      var meanResid = residuals.reduce(function(a, b) { return a + b; }, 0) / n;
+      var mse = residuals.reduce(function(a, b) { return a + b * b; }, 0) / (n - nPred - 1);
+      var cookThreshold = 4 / n;
+      var influential = [];
+      // Simplified Cook's D: D_i = (residual_i^2 / (p * MSE)) * h_ii / (1 - h_ii)^2
+      // Approximate h_ii as 1/n + (x_i - mean_x)^2 / sum((x - mean_x)^2) for simple regression
+      // For multiple, just use residual-based approximation: D_i ~ e_i^2 / (p * MSE * n)
+      for (var i = 0; i < n; i++) {
+        var cookD = (residuals[i] * residuals[i]) / ((nPred + 1) * mse);
+        if (cookD > cookThreshold) influential.push(i + 1);
+      }
+      total++;
+      var cookOk = influential.length <= Math.max(1, Math.floor(n * 0.02));
+      if (cookOk) passed++;
+      checks.push({
+        name: 'Influential Cases (Cook\u2019s D)',
+        value: influential.length + ' case' + (influential.length !== 1 ? 's' : '') + ' flagged',
+        pass: cookOk,
+        detail: cookOk ? 'No problematic influential cases' : influential.length + ' observation' + (influential.length !== 1 ? 's have' : ' has') + ' outsized influence (rows: ' + influential.slice(0, 10).join(', ') + (influential.length > 10 ? '...' : '') + ')'
+      });
+    }
+
+    // 3. VIF (multicollinearity) — only for multiple predictors
+    if (xs && xs.length > 1) {
+      var maxVIF = 0;
+      var vifItems = [];
+      for (var j = 0; j < xs.length; j++) {
+        // Regress predictor j on all other predictors
+        var otherXs = xs.filter(function(_, idx) { return idx !== j; });
+        try {
+          var vifR = StatsEngine.linearRegression(xs[j], otherXs);
+          var vif = vifR.R2 < 1 ? 1 / (1 - vifR.R2) : 999;
+          if (vif > maxVIF) maxVIF = vif;
+          if (vif > 5) vifItems.push(round2(vif));
+        } catch(e) {}
+      }
+      total++;
+      var vifOk = maxVIF <= 5;
+      if (vifOk) passed++;
+      checks.push({
+        name: 'Multicollinearity (VIF)',
+        value: 'Max VIF = ' + round2(maxVIF),
+        pass: vifOk,
+        detail: vifOk ? 'No multicollinearity concerns (all VIF \u2264 5)' : 'High VIF detected \u2014 some predictors are too correlated with each other. Consider removing one.'
+      });
+    }
+
+    // Build HTML
+    var verdictColor = passed === total ? 'var(--green)' : passed >= total - 1 ? 'var(--amber)' : 'var(--rose)';
+    var html = '<div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.75rem">' +
+      '<div style="font-size:1.8rem;font-weight:700;color:' + verdictColor + '">' + passed + '/' + total + '</div>' +
+      '<div style="font-size:0.85rem;color:var(--text-1)">assumption checks passed</div></div>';
+    checks.forEach(function(ck) {
+      html += '<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">' +
+        '<div style="width:18px;text-align:center;font-size:0.9rem;flex-shrink:0">' + (ck.pass ? '\u2705' : '\u26A0\uFE0F') + '</div>' +
+        '<div style="flex:1"><div style="font-size:0.82rem;font-weight:600;color:var(--text-0)">' + ck.name + ' <span style="font-weight:400;color:var(--text-2)">' + ck.value + '</span></div>' +
+        '<div style="font-size:0.78rem;color:' + (ck.pass ? 'var(--text-2)' : 'var(--amber)') + '">' + ck.detail + '</div></div></div>';
+    });
+    return RC('Assumption Checks', html);
+  }
+
   // --- Residual Plot for Regression ---
   function drawResidualPlot(canvasId, predicted, residuals) {
     var c = initCanvas(canvasId, 500, 250);
@@ -5073,6 +5179,9 @@
       html += renderChart(chartId, 'Which Predictors Matter Most', 500, Math.max(180, bars.length * 55 + 30),
         'Standardized coefficients: longer bar = stronger effect');
     }
+
+    // Assumption checks
+    html += buildAssumptionCard(y, xs, r.coefficients, r.durbinWatson);
 
     // Coefficient table (collapsed)
     html += renderCollapsed('Coefficient Table &amp; Details',
@@ -7174,6 +7283,16 @@
     // Residual plot
     var residChartId = 'residPlot_' + Date.now();
     html += renderChart(residChartId, 'Residual Plot', 500, 250, 'Random scatter around zero = good model fit. Patterns = assumption violation.');
+
+    // Assumption checks
+    var dwSimple = 0;
+    var residsForDW = [];
+    for (var i = 0; i < n; i++) residsForDW.push(y[i] - (slope * x[i] + intercept));
+    var dwNum = 0;
+    for (var i = 1; i < n; i++) dwNum += Math.pow(residsForDW[i] - residsForDW[i - 1], 2);
+    var dwDen = residsForDW.reduce(function(a, b) { return a + b * b; }, 0);
+    dwSimple = dwDen > 0 ? dwNum / dwDen : 2;
+    html += buildAssumptionCard(y, [x], [intercept, slope], dwSimple);
 
     // Statistical details (collapsed)
     html += renderCollapsed('Statistical Details',
