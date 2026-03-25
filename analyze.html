@@ -3611,8 +3611,9 @@
 
     var allVals = [];
     bars.forEach(function(b) {
-      allVals.push(b.value + (b.sd || 0));
-      allVals.push(b.value - (b.sd || 0));
+      var halfCI = b.sd ? (b.n ? 1.96 * b.sd / Math.sqrt(b.n) : b.sd) : 0;
+      allVals.push(b.value + halfCI);
+      allVals.push(b.value - halfCI);
       allVals.push(0);
     });
     var minVal = Math.min.apply(null, allVals);
@@ -3651,15 +3652,19 @@
       ctx.fill();
       ctx.globalAlpha = 1;
 
-      if (bar.sd !== undefined && bar.sd !== null) {
-        var errLeft = xPos(bar.value - bar.sd);
-        var errRight = xPos(bar.value + bar.sd);
+      if (bar.sd !== undefined && bar.sd !== null && bar.sd > 0) {
+        // 95% CI: mean +/- 1.96 * SE. SE = sd / sqrt(n). Fall back to +/- 1 SD if no n.
+        var halfCI = bar.n ? 1.96 * bar.sd / Math.sqrt(bar.n) : bar.sd;
+        var errLeft = xPos(bar.value - halfCI);
+        var errRight = xPos(bar.value + halfCI);
         var errY = y + barHeight / 2;
-        ctx.strokeStyle = bar.color || CHART_COLORS[i % CHART_COLORS.length];
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = colors.text;
+        ctx.globalAlpha = 0.6;
+        ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.moveTo(errLeft, errY); ctx.lineTo(errRight, errY); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(errLeft, errY - 5); ctx.lineTo(errLeft, errY + 5); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(errRight, errY - 5); ctx.lineTo(errRight, errY + 5); ctx.stroke();
+        ctx.globalAlpha = 1;
       }
 
       ctx.fillStyle = colors.text;
@@ -3921,8 +3926,8 @@
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     drawBarChart(chartId, [
-      { label: descA, value: r.ma, sd: r.sa, color: CHART_COLORS[0] },
-      { label: descB, value: r.mb, sd: r.sb, color: CHART_COLORS[1] }
+      { label: descA, value: r.ma, sd: r.sa, n: r.na, color: CHART_COLORS[0] },
+      { label: descB, value: r.mb, sd: r.sb, n: r.nb, color: CHART_COLORS[1] }
     ]);
     showNextSteps('group_comparison', { na: r.na, nb: r.nb, p: r.p });
   }
@@ -3971,8 +3976,8 @@
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     drawBarChart(chartId, [
-      { label: descA, value: mA, sd: round2(StatsEngine._helpers.sd(a, 1)), color: CHART_COLORS[0] },
-      { label: descB, value: mB, sd: round2(StatsEngine._helpers.sd(b, 1)), color: CHART_COLORS[1] }
+      { label: descA, value: mA, sd: round2(StatsEngine._helpers.sd(a, 1)), n: a.length, color: CHART_COLORS[0] },
+      { label: descB, value: mB, sd: round2(StatsEngine._helpers.sd(b, 1)), n: b.length, color: CHART_COLORS[1] }
     ]);
     showNextSteps('paired', r);
   }
@@ -4041,7 +4046,7 @@
 
     var bars = [];
     for (var i = 0; i < r.k; i++) {
-      bars.push({ label: labels[i], value: r.groupMeans[i], sd: sds[i], color: CHART_COLORS[i % CHART_COLORS.length] });
+      bars.push({ label: labels[i], value: r.groupMeans[i], sd: sds[i], n: groups[i].length, color: CHART_COLORS[i % CHART_COLORS.length] });
     }
     drawBarChart(chartId, bars);
     showNextSteps('group_comparison', r);
@@ -4239,18 +4244,41 @@
         '</div></div>'
     );
 
-    // Item analysis: which items to keep/drop
-    var weakItems = [];
+    // Item analysis: which items to keep/drop, with alpha-if-deleted recommendations
+    var itemIssues = [];
     for (var i = 0; i < r.k; i++) {
-      if (r.itemTotalCorrelations[i] < 0.3) weakItems.push(labels[i]);
+      var issues = [];
+      if (r.itemTotalCorrelations[i] < 0.3) issues.push('weak correlation (r = ' + round4(r.itemTotalCorrelations[i]) + ')');
+      if (r.itemTotalCorrelations[i] < 0) issues.push('negative correlation \u2014 may need reverse-coding');
+      if (r.alphaIfDeleted[i] > r.alpha + 0.02) issues.push('removing it would improve alpha from ' + round4(r.alpha) + ' to ' + round4(r.alphaIfDeleted[i]));
+      if (issues.length > 0) itemIssues.push({ label: labels[i], issues: issues });
     }
-    if (weakItems.length > 0) {
-      html += '<div class="result-card"><div class="result-card-title">Items to Review</div>' +
-        '<div style="font-size:0.9rem;color:var(--text-0)">These items have weak correlations with the rest of the scale (r < 0.3). Removing them may improve reliability:</div>' +
-        '<ul style="margin:0.5rem 0 0 1.2rem;font-size:0.85rem;color:var(--amber)">';
-      weakItems.forEach(function(w) { html += '<li>' + escHtml(w) + '</li>'; });
-      html += '</ul></div>';
+    if (itemIssues.length > 0) {
+      var reviewHtml = '';
+      itemIssues.forEach(function(item) {
+        reviewHtml += '<div style="padding:6px 0;border-bottom:1px solid var(--border)">' +
+          '<strong style="color:var(--amber)">' + escHtml(item.label) + '</strong>' +
+          '<ul style="margin:2px 0 0 1.2rem;font-size:0.82rem;color:var(--text-1)">';
+        item.issues.forEach(function(iss) { reviewHtml += '<li>' + iss + '</li>'; });
+        reviewHtml += '</ul></div>';
+      });
+      html += RC('Items to Review', reviewHtml);
     }
+
+    // Dimensionality check: quick 1-factor PCA
+    try {
+      var pcaR = StatsEngine.pca(items);
+      var firstEigPct = pcaR.explainedVariance[0] ? round2(pcaR.explainedVariance[0] * 100) : 0;
+      var dimVerdict = firstEigPct >= 50 ? 'Your items appear to measure a single concept.' : firstEigPct >= 30 ? 'Your items may measure more than one thing \u2014 consider running Factor Analysis.' : 'These items don\u2019t hang together well \u2014 they likely measure different concepts.';
+      var dimColor = firstEigPct >= 50 ? 'var(--green)' : firstEigPct >= 30 ? 'var(--amber)' : 'var(--rose)';
+      html += RC('Dimensionality Check',
+        '<div style="display:flex;align-items:center;gap:1rem">' +
+          '<div style="font-size:2rem;font-weight:700;color:' + dimColor + '">' + firstEigPct + '%</div>' +
+          '<div style="font-size:0.85rem;color:var(--text-1);line-height:1.45">' +
+            'of variance explained by the first factor.<br>' + dimVerdict +
+          '</div></div>'
+      );
+    } catch(e) { /* PCA might fail on very small datasets */ }
 
     // Item-total correlations chart
     html += renderChart(chartId, 'Item-Total Correlations', 500, Math.max(180, r.k * 55 + 30),
@@ -4260,9 +4288,10 @@
     html += renderCollapsed('Detailed Item Analysis', itemHtml);
 
     // Plain English
+    var weakNames = itemIssues.map(function(item) { return item.label; });
     var plainText2 = 'Cronbach\u2019s Alpha = ' + round4(r.alpha) + ' (' + level + '). ' +
       (isReliable ? 'Your ' + r.k + ' items form a reliable scale.' : 'Your scale is below the 0.7 threshold. ') +
-      (weakItems.length > 0 ? 'Consider reviewing: ' + weakItems.join(', ') + '.' : '');
+      (weakNames.length > 0 ? 'Review: ' + weakNames.join(', ') + '.' : '');
     html += renderPlainEnglish(plainText2);
 
     html += '</div>';
@@ -4305,6 +4334,27 @@
       { label: 'Median', value: round2(r.median) },
       { label: 'Std Dev', value: round2(r.sd) }
     ]));
+
+    // Distribution health flags
+    var flags = [];
+    var meanMedianGap = Math.abs(r.mean - r.median);
+    if (meanMedianGap > 0.5) flags.push({ color: 'var(--amber)', text: 'Mean (' + round2(r.mean) + ') and median (' + round2(r.median) + ') diverge by ' + round2(meanMedianGap) + ' \u2014 the median may be a more reliable summary. This suggests the data is skewed.' });
+    var skewSE = r.n > 2 ? Math.sqrt(6.0 / r.n) : 1;
+    var skewRatio = Math.abs(r.skewness) / skewSE;
+    if (skewRatio > 2) flags.push({ color: r.skewness > 0 ? 'var(--amber)' : 'var(--amber)', text: 'Significantly ' + (r.skewness > 0 ? 'right-skewed (long tail toward high values)' : 'left-skewed (pile-up at high values, tail toward low)') + '. Skewness = ' + round2(r.skewness) + ' (ratio = ' + round2(skewRatio) + ').' });
+    if (r.sd > r.mean && r.mean > 0) flags.push({ color: 'var(--rose)', text: 'Standard deviation (' + round2(r.sd) + ') is larger than the mean (' + round2(r.mean) + ') \u2014 extreme spread. Check for outliers or mixed populations.' });
+    var kurtSE = r.n > 3 ? Math.sqrt(24.0 / r.n) : 1;
+    var kurtRatio = Math.abs(r.kurtosis) / kurtSE;
+    if (kurtRatio > 2) flags.push({ color: 'var(--text-2)', text: r.kurtosis > 0 ? 'Heavy tails (leptokurtic) \u2014 more extreme values than a normal distribution.' : 'Light tails (platykurtic) \u2014 fewer extreme values than normal.' });
+    if (flags.length > 0) {
+      var flagsHtml = '';
+      flags.forEach(function(f) {
+        flagsHtml += '<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px">' +
+          '<div style="width:6px;min-width:6px;height:6px;border-radius:50%;background:' + f.color + ';margin-top:6px"></div>' +
+          '<div style="font-size:0.82rem;line-height:1.45;color:var(--text-1)">' + f.text + '</div></div>';
+      });
+      html += RC('Distribution Health', flagsHtml);
+    }
 
     // Top-box / Bottom-box for Likert
     if (isDiscrete && sortedKeys.length >= 5) {
@@ -6468,8 +6518,20 @@
             if (ov >= maxOpt - 1) topPct += pctData[g][c];
             if (ov <= minOpt + 1) botPct += pctData[g][c];
           }
-          topBotByGroup.push({ name: groupLabels[g], top: round2(topPct), bot: round2(botPct), mean: groupMeans[g].mean, n: groupN[groupLabels[g]] });
+          topBotByGroup.push({ name: groupLabels[g], top: round2(topPct), bot: round2(botPct), mean: groupMeans[g].mean, n: groupN[groupLabels[g]], index: 0 });
         }
+      }
+    }
+
+    // Compute total mean and indexes
+    var totalMeanCross = 0;
+    if (isLikertCross && groupMeans.length > 0) {
+      var totalSum = 0, totalN = 0;
+      groupMeans.forEach(function(gm) { totalSum += gm.mean * gm.n; totalN += gm.n; });
+      totalMeanCross = totalN > 0 ? totalSum / totalN : 0;
+      groupMeans.forEach(function(gm) { gm.index = totalMeanCross > 0 ? Math.round(gm.mean / totalMeanCross * 100) : 100; });
+      if (topBotByGroup) {
+        topBotByGroup.forEach(function(row) { row.index = totalMeanCross > 0 ? Math.round(row.mean / totalMeanCross * 100) : 100; });
       }
     }
 
@@ -6481,10 +6543,11 @@
       html += '<div class="result-card"><div class="result-card-title">Summary by Group</div>';
       html += '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">';
       groupMeans.forEach(function(gm) {
+        var idxColor = gm.index >= 110 ? 'color:var(--green)' : gm.index <= 90 ? 'color:var(--rose)' : 'color:var(--text-2)';
         html += '<div style="flex:1;min-width:90px;background:var(--bg-0,#1a1a1e);border:1px solid var(--border);border-radius:8px;padding:0.6rem;text-align:center">' +
           '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase">' + escHtml(gm.name) + '</div>' +
           '<div style="font-size:1.3rem;font-weight:700;margin:0.2rem 0">' + gm.mean + '</div>' +
-          '<div style="font-size:0.72rem;color:var(--text-2)">n=' + gm.n + '</div>' +
+          '<div style="font-size:0.72rem;' + idxColor + '">index ' + gm.index + ' &middot; n=' + gm.n + '</div>' +
         '</div>';
       });
       html += '</div>';
@@ -6509,9 +6572,10 @@
       var topLabel = (maxOpt - 1) + '\u2013' + maxOpt;
       var botLabel = minOpt + '\u2013' + (minOpt + 1);
       html += '<div class="result-card"><div class="result-card-title">Top-Box / Bottom-Box by Group</div>' +
-        '<div style="overflow-x:auto"><table class="freq-table"><tr><th>Group</th><th style="color:var(--green)">Top-2 (' + topLabel + ')</th><th style="color:var(--rose)">Bottom-2 (' + botLabel + ')</th><th>Mean</th><th>n</th></tr>';
+        '<div style="overflow-x:auto"><table class="freq-table"><tr><th>Group</th><th style="color:var(--green)">Top-2 (' + topLabel + ')</th><th style="color:var(--rose)">Bottom-2 (' + botLabel + ')</th><th>Mean</th><th>Index</th><th>n</th></tr>';
       topBotByGroup.forEach(function(row) {
-        html += '<tr><td><strong>' + escHtml(row.name) + '</strong></td><td style="color:var(--green)">' + row.top + '%</td><td style="color:var(--rose)">' + row.bot + '%</td><td>' + row.mean + '</td><td>' + row.n + '</td></tr>';
+        var idxColor = row.index >= 110 ? 'color:var(--green);font-weight:600' : row.index <= 90 ? 'color:var(--rose);font-weight:600' : '';
+        html += '<tr><td><strong>' + escHtml(row.name) + '</strong></td><td style="color:var(--green)">' + row.top + '%</td><td style="color:var(--rose)">' + row.bot + '%</td><td>' + row.mean + '</td><td style="' + idxColor + '">' + row.index + '</td><td>' + row.n + '</td></tr>';
       });
       html += '</table></div></div>';
     }
@@ -7213,8 +7277,8 @@
       container.insertAdjacentHTML('beforeend', html);
       scrollToBottom();
       drawBarChart(chartId, [
-        { label: descC, value: parseFloat(meanC), sd: parseFloat(sdC), color: CHART_COLORS[1] },
-        { label: descV, value: parseFloat(meanV), sd: parseFloat(sdV), color: CHART_COLORS[0] }
+        { label: descC, value: parseFloat(meanC), sd: parseFloat(sdC), n: control.length, color: CHART_COLORS[1] },
+        { label: descV, value: parseFloat(meanV), sd: parseFloat(sdV), n: variant.length, color: CHART_COLORS[0] }
       ]);
     }
     showNextSteps('causal', {});
@@ -7417,7 +7481,7 @@
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     var bars = [];
-    for (var i = 0; i < k; i++) bars.push({ label: labels[i], value: means[i], sd: Math.sqrt(vars[i]), color: CHART_COLORS[i % CHART_COLORS.length] });
+    for (var i = 0; i < k; i++) bars.push({ label: labels[i], value: means[i], sd: Math.sqrt(vars[i]), n: ns[i], color: CHART_COLORS[i % CHART_COLORS.length] });
     drawBarChart(chartId, bars);
     showNextSteps('group_comparison', { groupNs: ns, p: p });
   }
@@ -7504,7 +7568,7 @@
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     var bars = [];
-    for (var i = 0; i < r.k; i++) bars.push({ label: labels[i], value: r.groupStats[i].mean, sd: r.groupStats[i].sd, color: CHART_COLORS[i % CHART_COLORS.length] });
+    for (var i = 0; i < r.k; i++) bars.push({ label: labels[i], value: r.groupStats[i].mean, sd: r.groupStats[i].sd, n: groups[i].length, color: CHART_COLORS[i % CHART_COLORS.length] });
     drawBarChart(chartId, bars);
     showNextSteps('paired', r);
   }
