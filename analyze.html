@@ -2794,7 +2794,7 @@
       cfa: "<strong>Confirmatory Factor Analysis</strong> tests whether your hypothesized factor structure fits the data &mdash; e.g., do items 1&ndash;3 really measure &lsquo;satisfaction&rsquo; and items 4&ndash;6 measure &lsquo;loyalty&rsquo;? (Simplified version)",
       irt: "<strong>IRT Rasch Model</strong> estimates how difficult each item is and how able each respondent is &mdash; on the same scale. Useful for test development and item calibration. (1PL Rasch model)<br><strong style='color:var(--amber)'>\u26A0 Requires binary (0/1) data</strong> &mdash; e.g., correct/incorrect or selected/not-selected. Rating scales (1&ndash;5, 1&ndash;7) will be silently converted to binary and produce misleading results. Use <strong>Cronbach&rsquo;s Alpha</strong> or <strong>Factor Analysis</strong> for rating scales instead.",
       mixed_effects: "<strong>Mixed-Effects Model</strong> handles nested data &mdash; respondents within teams, stores within regions. This random-intercept model accounts for group-level variation. (Simplified: random intercept only)",
-      multi_response: "<strong>Multi-Response / Checkbox Analysis</strong> summarizes &lsquo;select all that apply&rsquo; questions. Paste tab-separated columns (one column per option, 1 = selected, 0 = not selected) or a single column will be detected automatically."
+      multi_response: "<strong>Multi-Response / Checkbox Analysis</strong> summarizes &lsquo;select all that apply&rsquo; questions. Paste tab-separated columns (one column per option, 1 = selected, 0 = not selected).<br><small style='color:var(--text-2)'>Also works for comparing multiple rating scale items (e.g., 5 satisfaction questions on a 1&ndash;7 scale). Scale data is auto-detected and shown as a comparison chart.</small>"
     };
     var inputFns = {
       ttest: showTwoColumnInput.bind(null, 'Group A', 'Group B', 3, function(a, b, dA, dB) { runTTest(a, b, dA, dB); }),
@@ -6472,7 +6472,7 @@
         '</div>' +
         '<div class="group-card">' +
           '<div class="group-card-label">Grouping Variable (optional)</div>' +
-          '<textarea id="freqGrp" placeholder="One value per line (same row count):\n18-24\n25-34\n35-44"></textarea>' +
+          '<textarea id="freqGrp" placeholder="One value per line (same row count):\n18-24\n25-34\n35-44\n\nTip: paste multiple columns to cross by several variables at once (e.g., Age + Gender)"></textarea>' +
           '<div class="value-count" id="freqGrpCount">Leave empty for simple frequency</div>' +
         '</div>' +
       '</div>' +
@@ -6579,8 +6579,19 @@
       runBtn.disabled = parsed.rows.length < 3;
     });
 
+    // Parse grouping: supports multi-column paste (tabs) by combining into "A | B"
+    function parseGrouping(text) {
+      var lines = text.split(/\n/).filter(function(l) { return l.trim() !== '' && !isExcelError(l.trim()); });
+      var hasTabs = lines.some(function(l) { return l.indexOf('\t') > -1; });
+      if (!hasTabs) return lines.map(function(l) { return l.trim(); });
+      // Multi-column grouping: combine columns with " | "
+      return lines.map(function(l) {
+        return l.split('\t').map(function(c) { return c.trim(); }).filter(function(c) { return c !== ''; }).join(' | ');
+      });
+    }
+
     grpEl.addEventListener('input', function() {
-      var grpLines = parseCategorical(grpEl.value);
+      var grpLines = parseGrouping(grpEl.value);
       var parsed = parseMultiCols(valEl.value);
       if (grpLines.length === 0) {
         grpCountEl.textContent = 'Leave empty for simple frequency';
@@ -6588,7 +6599,9 @@
       } else {
         var unique2 = {};
         grpLines.forEach(function(v) { unique2[v] = true; });
-        grpCountEl.textContent = grpLines.length + ' value' + (grpLines.length !== 1 ? 's' : '') + ', ' + Object.keys(unique2).length + ' groups';
+        var nGroups = Object.keys(unique2).length;
+        var hasTabs = grpEl.value.split(/\n/).some(function(l) { return l.indexOf('\t') > -1; });
+        grpCountEl.textContent = grpLines.length + ' value' + (grpLines.length !== 1 ? 's' : '') + ', ' + nGroups + ' groups' + (hasTabs ? ' (combined from multiple columns)' : '');
         grpCountEl.className = 'value-count valid';
         if (parsed.rows.length > 0 && grpLines.length !== parsed.rows.length) {
           grpCountEl.textContent += ' \u2014 \u26A0 mismatch (' + parsed.rows.length + ' respondents vs ' + grpLines.length + ' groups)';
@@ -6599,7 +6612,7 @@
 
     runBtn.addEventListener('click', function() {
       var parsed = parseMultiCols(valEl.value);
-      var grpLines = parseCategorical(grpEl.value);
+      var grpLines = parseGrouping(grpEl.value);
       runBtn.disabled = true;
       runBtn.textContent = 'Running...';
       if (grpLines.length > 0 && grpLines.length === parsed.rows.length) {
@@ -12834,8 +12847,30 @@
       columns.push(col);
     }
 
+    // Detect scale data: all non-empty values are integers in a consistent range (e.g., 1-5, 1-7)
+    var isScaleData = false;
+    var scaleMin = Infinity, scaleMax = -Infinity;
+    var allScaleInts = true;
+    for (var c = 0; c < maxCols; c++) {
+      for (var r = 0; r < matrix.length; r++) {
+        var v = columns[c][r];
+        if (v === '' || v === undefined) continue;
+        var num = parseFloat(v);
+        if (isNaN(num) || num !== Math.floor(num)) { allScaleInts = false; break; }
+        if (num < scaleMin) scaleMin = num;
+        if (num > scaleMax) scaleMax = num;
+      }
+      if (!allScaleInts) break;
+    }
+    if (allScaleInts && scaleMax - scaleMin >= 2 && scaleMax - scaleMin <= 10 && scaleMin >= 0) {
+      isScaleData = true;
+    }
+
     return {
       isMultiResponse: true,
+      isScaleData: isScaleData,
+      scaleMin: isScaleData ? scaleMin : null,
+      scaleMax: isScaleData ? scaleMax : null,
       columns: columns,
       nColumns: maxCols,
       nRows: matrix.length,
@@ -12873,8 +12908,13 @@
     dataEl.addEventListener('input', function() {
       var parsed = parseMultiResponse(dataEl.value);
       if (parsed.isMultiResponse) {
-        var mrStatus = 'Multi-response detected: ' + parsed.nRows + ' responses \u00d7 ' + parsed.nColumns + ' options';
-        if (parsed.excelErrors > 0) mrStatus += ' \u2014 ' + parsed.excelErrors + ' row' + (parsed.excelErrors !== 1 ? 's' : '') + ' with spreadsheet errors (#N/A, #REF!) removed';
+        var mrStatus;
+        if (parsed.isScaleData) {
+          mrStatus = 'Scale data detected: ' + parsed.nRows + ' respondents \u00d7 ' + parsed.nColumns + ' items (scale ' + parsed.scaleMin + '\u2013' + parsed.scaleMax + ')';
+        } else {
+          mrStatus = 'Multi-response detected: ' + parsed.nRows + ' responses \u00d7 ' + parsed.nColumns + ' options';
+        }
+        if (parsed.excelErrors > 0) mrStatus += ' \u2014 ' + parsed.excelErrors + ' row' + (parsed.excelErrors !== 1 ? 's' : '') + ' with spreadsheet errors removed';
         countEl.textContent = mrStatus;
         countEl.className = parsed.excelErrors > 0 ? 'value-count warning' : 'value-count valid';
         runBtn.disabled = parsed.nRows < 2 || parsed.nColumns < 2;
@@ -12923,17 +12963,107 @@
     runBtn.addEventListener('click', function() {
       var parsed = parseMultiResponse(dataEl.value);
       if (!parsed.isMultiResponse || parsed.nColumns < 2) return;
-      // Collect column names
       var colNameInputs = colNamesDiv.querySelectorAll('.mr-col-name');
       var colNames = [];
       for (var i = 0; i < colNameInputs.length; i++) {
-        colNames.push(colNameInputs[i].value.trim() || ('Option ' + (i + 1)));
+        colNames.push(colNameInputs[i].value.trim() || (parsed.isScaleData ? 'Item ' + (i + 1) : 'Option ' + (i + 1)));
       }
-      var label = section.querySelector('#mrLabel').value.trim() || 'Multi-response question';
+      var label = section.querySelector('#mrLabel').value.trim() || (parsed.isScaleData ? 'Scale comparison' : 'Multi-response question');
       runBtn.disabled = true;
       runBtn.textContent = 'Running...';
-      runMultiResponse(parsed, colNames, label);
+      if (parsed.isScaleData) {
+        runScaleComparison(parsed, colNames, label);
+      } else {
+        runMultiResponse(parsed, colNames, label);
+      }
     });
+  }
+
+  // --- Scale Comparison (diverging Likert chart) ---
+  function runScaleComparison(data, columnNames, questionLabel) {
+    var nRows = data.nRows;
+    var nCols = data.nColumns;
+    var columns = data.columns;
+    var scaleMin = data.scaleMin;
+    var scaleMax = data.scaleMax;
+    var scalePoints = [];
+    for (var s = scaleMin; s <= scaleMax; s++) scalePoints.push(s);
+    var midpoint = (scaleMin + scaleMax) / 2;
+
+    // Compute per-item: mean, distribution %, net score
+    var items = [];
+    for (var c = 0; c < nCols; c++) {
+      var vals = [];
+      var dist = {};
+      scalePoints.forEach(function(sp) { dist[sp] = 0; });
+      for (var r = 0; r < nRows; r++) {
+        var v = parseFloat(columns[c][r]);
+        if (!isNaN(v)) { vals.push(v); if (dist[v] !== undefined) dist[v]++; }
+      }
+      var mean = vals.length > 0 ? vals.reduce(function(a, b) { return a + b; }, 0) / vals.length : 0;
+      var n = vals.length;
+      // Net score: % above midpoint - % below midpoint
+      var above = 0, below = 0;
+      scalePoints.forEach(function(sp) { if (sp > midpoint) above += dist[sp]; if (sp < midpoint) below += dist[sp]; });
+      var netScore = n > 0 ? round2((above - below) / n * 100) : 0;
+      // Convert counts to %
+      var distPct = {};
+      scalePoints.forEach(function(sp) { distPct[sp] = n > 0 ? round2(dist[sp] / n * 100) : 0; });
+      items.push({ name: columnNames[c], mean: round2(mean), n: n, netScore: netScore, distPct: distPct });
+    }
+
+    // Sort by net score descending
+    items.sort(function(a, b) { return b.netScore - a.netScore; });
+
+    var html = '<div class="results-section">';
+
+    // Summary card
+    html += RC('Scale Comparison \u2014 ' + escHtml(questionLabel),
+      '<div style="font-size:0.85rem;color:var(--text-2)">' + nRows + ' respondents, ' + nCols + ' items, scale ' + scaleMin + '\u2013' + scaleMax + '. Sorted by net score (% positive \u2212 % negative).</div>'
+    );
+
+    // Mean comparison bar chart
+    var chartId = 'scaleChart_' + Date.now();
+    html += renderChart(chartId, 'Mean Scores by Item', 500, Math.max(180, items.length * 55 + 30), 'Higher mean = more positive response');
+
+    // Diverging distribution table
+    var tableHtml = '<div style="overflow-x:auto"><table class="freq-table"><tr><th>Item</th>';
+    scalePoints.forEach(function(sp) { tableHtml += '<th>' + sp + '</th>'; });
+    tableHtml += '<th>Mean</th><th>Net</th></tr>';
+    items.forEach(function(item) {
+      tableHtml += '<tr><td><strong>' + escHtml(item.name) + '</strong></td>';
+      scalePoints.forEach(function(sp) {
+        var pct = item.distPct[sp];
+        var intensity = Math.min(1, pct / 40);
+        var bgColor = sp > midpoint ? 'rgba(58,154,92,' + (intensity * 0.3) + ')' : sp < midpoint ? 'rgba(212,88,122,' + (intensity * 0.3) + ')' : 'transparent';
+        tableHtml += '<td style="text-align:center;background:' + bgColor + ';font-size:0.82rem">' + pct + '%</td>';
+      });
+      var netColor = item.netScore > 10 ? 'color:var(--green)' : item.netScore < -10 ? 'color:var(--rose)' : '';
+      tableHtml += '<td style="text-align:center;font-weight:600">' + item.mean + '</td>';
+      tableHtml += '<td style="text-align:center;font-weight:600;' + netColor + '">' + (item.netScore > 0 ? '+' : '') + item.netScore + '</td></tr>';
+    });
+    tableHtml += '</table></div>';
+    tableHtml += '<div style="font-size:0.75rem;color:var(--text-2);margin-top:6px">Net = % above midpoint \u2212 % below midpoint. Cells shaded: green = positive end, red = negative end. Sorted by net score.</div>';
+    html += RC('Response Distribution by Item', tableHtml);
+
+    // Plain English
+    var bestItem = items[0];
+    var worstItem = items[items.length - 1];
+    var plainText = nCols + ' items compared on a ' + scaleMin + '\u2013' + scaleMax + ' scale. ' +
+      '"' + bestItem.name + '" scores highest (mean ' + bestItem.mean + ', net +' + bestItem.netScore + '). ' +
+      '"' + worstItem.name + '" scores lowest (mean ' + worstItem.mean + ', net ' + worstItem.netScore + ').';
+    html += renderPlainEnglish(plainText);
+
+    html += '</div>';
+    container.insertAdjacentHTML('beforeend', html);
+    scrollToBottom();
+
+    // Draw means bar chart
+    var bars = items.map(function(item, i) {
+      return { label: item.name, value: item.mean, color: CHART_COLORS[i % CHART_COLORS.length] };
+    });
+    drawBarChart(chartId, bars);
+    showNextSteps('descriptive', { n: nRows });
   }
 
   function runMultiResponse(data, columnNames, questionLabel) {
