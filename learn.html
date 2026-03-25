@@ -13,6 +13,7 @@
       --coral: #E08860; --coral-soft: rgba(224, 136, 96, 0.10);
       --green: #3a9a5c; --green-soft: rgba(58, 154, 92, 0.10);
       --blue: #4A90B8; --blue-soft: rgba(74, 144, 184, 0.10);
+      --purple: #8B6DB0; --purple-soft: rgba(139, 109, 176, 0.10);
       --border: rgba(0, 0, 0, 0.06);
       --border-hover: rgba(212, 88, 122, 0.35);
       --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
@@ -26,6 +27,7 @@
         --coral: #F0A882; --coral-soft: rgba(240, 168, 130, 0.10);
         --green: #4aad6a; --green-soft: rgba(74, 173, 106, 0.12);
         --blue: #6AB0D4; --blue-soft: rgba(106, 176, 212, 0.12);
+        --purple: #A88DC8; --purple-soft: rgba(168, 141, 200, 0.12);
         --border: rgba(255, 255, 255, 0.06);
         --border-hover: rgba(232, 130, 158, 0.35);
         --card-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
@@ -53,9 +55,46 @@
     }
     .hero h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
     .hero h1 .accent { color: var(--rose); }
-    .hero p { color: var(--text-1); font-size: 1rem; max-width: 550px; margin: 0 auto; }
+    .hero p { color: var(--text-1); font-size: 1rem; max-width: 600px; margin: 0 auto; }
 
-    .examples { max-width: 800px; margin: 0 auto; padding: 1rem 1.5rem 4rem; }
+    /* Table of Contents */
+    .toc {
+      max-width: 800px; margin: 0 auto; padding: 0 1.5rem 1.5rem;
+    }
+    .toc-box {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.25rem 1.5rem;
+      box-shadow: var(--card-shadow);
+    }
+    .toc-box h2 {
+      font-size: 0.88rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--text-2); margin-bottom: 0.75rem;
+    }
+    .toc-list {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0.35rem 2rem; list-style: none;
+    }
+    .toc-list li { font-size: 0.82rem; }
+    .toc-list a { color: var(--text-1); text-decoration: none; }
+    .toc-list a:hover { color: var(--rose); text-decoration: underline; }
+    .toc-stage {
+      font-weight: 700; font-size: 0.78rem; text-transform: uppercase;
+      letter-spacing: 0.04em; margin-top: 0.6rem; margin-bottom: 0.25rem;
+      grid-column: 1 / -1;
+    }
+    .toc-stage-describe { color: var(--rose); }
+    .toc-stage-compare { color: var(--coral); }
+    .toc-stage-correlate { color: var(--green); }
+    .toc-stage-predict { color: var(--blue); }
+    .toc-stage-segment { color: var(--purple); }
+
+    .stage-heading {
+      max-width: 800px; margin: 2rem auto 0.5rem; padding: 0 1.5rem;
+      font-size: 1.3rem; font-weight: 800;
+    }
+    .stage-heading .num { color: var(--text-2); }
+
+    .examples { max-width: 800px; margin: 0 auto; padding: 0.5rem 1.5rem 4rem; }
 
     .example-card {
       background: var(--bg-card); border: 1px solid var(--border);
@@ -72,6 +111,7 @@
     .phase-compare { background: var(--coral-soft); color: var(--coral); }
     .phase-correlate { background: var(--green-soft); color: var(--green); }
     .phase-predict { background: var(--blue-soft); color: var(--blue); }
+    .phase-segment { background: var(--purple-soft); color: var(--purple); }
 
     .example-card h2 {
       font-size: 1.15rem; font-weight: 700; margin-bottom: 0.35rem;
@@ -137,9 +177,12 @@
 
     @media (max-width: 600px) {
       .data-columns { grid-template-columns: 1fr; }
+      .toc-list { grid-template-columns: 1fr; }
       .hero h1 { font-size: 1.5rem; }
       .header { padding: 0.75rem 1rem; }
-      .examples { padding: 1rem; }
+      .examples { padding: 0.5rem 1rem 4rem; }
+      .toc { padding: 0 1rem 1.5rem; }
+      .stage-heading { padding: 0 1rem; }
     }
   </style>
 </head>
@@ -153,16 +196,66 @@
 
   <section class="hero">
     <h1>Learn by <span class="accent">Doing</span></h1>
-    <p>Four real scenarios with sample data. Copy the data, open the analyzer, paste it in, and see real statistics in action. No experience needed.</p>
+    <p>28 real-world scenarios with sample data, organized by workflow stage. Click any data box to select it, copy, open the analyzer, and paste. No statistics background needed.</p>
   </section>
 
+  <!-- TABLE OF CONTENTS -->
+  <div class="toc">
+    <div class="toc-box">
+      <h2>Table of Contents</h2>
+      <ul class="toc-list">
+        <li class="toc-stage toc-stage-describe">Stage 1: Describe (5 methods)</li>
+        <li><a href="#frequencies">1. Frequencies</a></li>
+        <li><a href="#summary-statistics">2. Summary Statistics</a></li>
+        <li><a href="#multi-response">3. Multi-Response</a></li>
+        <li><a href="#scale-comparison">4. Scale Comparison</a></li>
+        <li><a href="#cronbachs-alpha">5. Cronbach's Alpha</a></li>
+
+        <li class="toc-stage toc-stage-compare">Stage 2: Compare (9 methods)</li>
+        <li><a href="#t-test">6. T-test</a></li>
+        <li><a href="#paired-t-test">7. Paired T-test</a></li>
+        <li><a href="#mann-whitney">8. Mann-Whitney</a></li>
+        <li><a href="#wilcoxon">9. Wilcoxon</a></li>
+        <li><a href="#anova">10. ANOVA</a></li>
+        <li><a href="#kruskal-wallis">11. Kruskal-Wallis</a></li>
+        <li><a href="#welch-anova">12. Welch ANOVA</a></li>
+        <li><a href="#two-way-anova">13. Two-Way ANOVA</a></li>
+        <li><a href="#repeated-measures-anova">14. Repeated Measures ANOVA</a></li>
+
+        <li class="toc-stage toc-stage-correlate">Stage 3: Correlate (5 methods)</li>
+        <li><a href="#pearson">15. Pearson</a></li>
+        <li><a href="#spearman">16. Spearman</a></li>
+        <li><a href="#kendall">17. Kendall</a></li>
+        <li><a href="#point-biserial">18. Point-Biserial</a></li>
+        <li><a href="#correlation-matrix">19. Correlation Matrix</a></li>
+
+        <li class="toc-stage toc-stage-predict">Stage 4: Predict (5 methods)</li>
+        <li><a href="#simple-regression">20. Simple Regression</a></li>
+        <li><a href="#multiple-regression">21. Multiple Regression</a></li>
+        <li><a href="#logistic-regression">22. Logistic Regression</a></li>
+        <li><a href="#ordinal-regression">23. Ordinal Regression</a></li>
+        <li><a href="#friedman">24. Friedman</a></li>
+
+        <li class="toc-stage toc-stage-segment">Stage 5: Segment &amp; Structure (4 methods)</li>
+        <li><a href="#k-means">25. K-Means</a></li>
+        <li><a href="#hierarchical-clustering">26. Hierarchical Clustering</a></li>
+        <li><a href="#factor-analysis">27. Factor Analysis</a></li>
+        <li><a href="#pca">28. PCA</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- STAGE 1: DESCRIBE                                            -->
+  <!-- ============================================================ -->
+  <h2 class="stage-heading" id="stage-describe"><span class="num">Stage 1 &mdash;</span> Describe</h2>
   <div class="examples">
 
-    <!-- EXAMPLE 1: DESCRIBE -->
-    <div class="example-card">
+    <!-- 1. FREQUENCIES -->
+    <div class="example-card" id="frequencies">
       <div class="example-phase phase-describe">1 &middot; Describe</div>
-      <h2>What does customer satisfaction look like?</h2>
-      <p class="scenario">You surveyed 40 customers asking "How satisfied are you?" on a 1&ndash;5 scale. You also recorded their age group. Let's see the distribution and compare segments.</p>
+      <h2>How satisfied are our customers?</h2>
+      <p class="scenario">You surveyed 30 customers on a 1&ndash;5 satisfaction scale and recorded their age group. Let's see how ratings distribute and whether segments differ.</p>
 
       <div class="data-columns">
         <div class="data-col">
@@ -175,19 +268,12 @@
 5
 4
 3
-4
 5
-3
 4
+3
 4
 5
 2
-3
-4
-5
-4
-3
-1
 4
 5
 3
@@ -203,10 +289,7 @@
 4
 5
 4
-3
-4
-5
-4</textarea>
+3</textarea>
         </div>
         <div class="data-col">
           <label>Age Group (optional grouping)</label>
@@ -239,16 +322,6 @@
 55+
 55+
 55+
-55+
-18-34
-18-34
-18-34
-35-54
-35-54
-35-54
-55+
-55+
-55+
 55+</textarea>
         </div>
       </div>
@@ -256,31 +329,233 @@
       <div class="example-steps">
         <h3>Try it yourself</h3>
         <ol>
-          <li>Click the button below to open the analyzer</li>
-          <li>Choose <strong>Describe</strong> &rarr; "What do my responses look like?"</li>
-          <li>Select "What percentage chose each answer?"</li>
-          <li>Paste the <strong>Satisfaction</strong> column into the left box</li>
-          <li>Paste the <strong>Age Group</strong> column into the right box to see breakdowns by segment</li>
+          <li>Open the analyzer and choose <strong>Describe</strong></li>
+          <li>Select "What percentage chose each answer?" (Frequencies)</li>
+          <li>Paste the <strong>Satisfaction</strong> column into the data box</li>
+          <li>Paste the <strong>Age Group</strong> column into the grouping box to see breakdowns by segment</li>
         </ol>
       </div>
 
       <div class="what-to-look-for">
-        <strong>What to look for:</strong> Which rating is most common? Does satisfaction differ by age group? Are there any groups that stand out?
+        <strong>What to look for:</strong> Which rating is most common? Do younger and older groups differ? Is there a skew toward high or low satisfaction?
       </div>
 
       <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
-    <!-- EXAMPLE 2: COMPARE -->
-    <div class="example-card">
-      <div class="example-phase phase-compare">2 &middot; Compare</div>
-      <h2>Did the new checkout flow improve completion time?</h2>
-      <p class="scenario">You ran an A/B test: 20 users got the old checkout (Control) and 20 users got the redesigned version (Test). You measured completion time in seconds.</p>
+    <!-- 2. SUMMARY STATISTICS -->
+    <div class="example-card" id="summary-statistics">
+      <div class="example-phase phase-describe">1 &middot; Describe</div>
+      <h2>What's the average response time?</h2>
+      <p class="scenario">Your support team logged response times (in seconds) for 20 tickets. Get the mean, median, standard deviation, and distribution shape.</p>
 
       <div class="data-columns">
         <div class="data-col">
-          <label>Control Group (seconds)</label>
+          <label>Response Time (seconds)</label>
+          <textarea readonly onclick="this.select()">23.4
+45.1
+12.8
+34.7
+28.3
+51.2
+19.6
+37.9
+41.5
+15.3
+29.8
+44.6
+22.1
+38.4
+33.0
+48.7
+26.5
+35.2
+20.9
+42.3</textarea>
+        </div>
+        <div class="data-col">
+          <label>Notes</label>
+          <textarea readonly onclick="this.select()" style="min-height:120px;background:var(--bg-2);color:var(--text-2);font-family:inherit;font-size:0.82rem;">This is a single column of continuous data.
+
+Paste it into the analyzer to get:
+- Mean, median, mode
+- Standard deviation &amp; variance
+- Min, max, range
+- Skewness &amp; kurtosis</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Describe</strong></li>
+          <li>Select "What are the averages and spread?" (Summary Statistics)</li>
+          <li>Paste the <strong>Response Time</strong> column into the data box</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Is the mean close to the median (symmetric data) or far apart (skewed)? How much variability is there? Are there potential outliers?
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 3. MULTI-RESPONSE -->
+    <div class="example-card" id="multi-response">
+      <div class="example-phase phase-describe">1 &middot; Describe</div>
+      <h2>Which features do customers use?</h2>
+      <p class="scenario">You asked 15 users which of 5 features they use regularly. Each row is a user; a 1 means they use that feature, blank means they don't.</p>
+
+      <div class="data-col-single">
+        <div class="data-col">
+          <label>Feature A &emsp; Feature B &emsp; Feature C &emsp; Feature D &emsp; Feature E</label>
+          <textarea readonly onclick="this.select()" style="min-height:200px">Feature A	Feature B	Feature C	Feature D	Feature E
+1	1		1
+1		1		1
+	1	1	1
+1	1			1
+1		1	1	1
+	1		1
+1	1	1
+1			1	1
+	1	1		1
+1	1		1
+1		1		1
+	1	1	1
+1	1			1
+1		1	1
+	1		1	1</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Describe</strong></li>
+          <li>Select the Multi-Response analysis</li>
+          <li>Paste all 5 columns (with the header row) &mdash; the tool will count how often each feature was selected</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Which feature is most widely used? Which is least? Do any features cluster together (people who use A also tend to use E)?
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 4. SCALE COMPARISON -->
+    <div class="example-card" id="scale-comparison">
+      <div class="example-phase phase-describe">1 &middot; Describe</div>
+      <h2>Which satisfaction dimension scores highest?</h2>
+      <p class="scenario">You measured 15 customers on four dimensions (Speed, Quality, Support, Value) using a 1&ndash;7 Likert scale. Compare the average scores across dimensions.</p>
+
+      <div class="data-col-single">
+        <div class="data-col">
+          <label>Speed &emsp; Quality &emsp; Support &emsp; Value</label>
+          <textarea readonly onclick="this.select()" style="min-height:200px">Speed	Quality	Support	Value
+5	6	4	5
+4	7	3	4
+6	6	5	6
+5	5	4	5
+3	6	3	4
+6	7	5	5
+4	6	4	6
+5	7	3	5
+6	5	4	4
+4	6	5	5
+5	7	4	6
+3	6	3	4
+6	7	5	5
+5	6	4	5
+4	7	3	6</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Describe</strong></li>
+          <li>Select the Scale Comparison / Multi-Response analysis</li>
+          <li>Paste all 4 columns with the header row</li>
+          <li>The tool will compare average ratings across the four dimensions</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Quality should score highest (mostly 6s and 7s). Support is the weakest link (mostly 3s&ndash;5s). This tells you where to invest improvement effort.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 5. CRONBACH'S ALPHA -->
+    <div class="example-card" id="cronbachs-alpha">
+      <div class="example-phase phase-describe">1 &middot; Describe</div>
+      <h2>Do these 5 items measure the same thing?</h2>
+      <p class="scenario">You designed a 5-item scale to measure "brand trust." Before analyzing results, check whether the items are internally consistent (reliable).</p>
+
+      <div class="data-col-single">
+        <div class="data-col">
+          <label>Item 1 &emsp; Item 2 &emsp; Item 3 &emsp; Item 4 &emsp; Item 5</label>
+          <textarea readonly onclick="this.select()" style="min-height:200px">Item1	Item2	Item3	Item4	Item5
+4	5	4	4	5
+3	3	4	3	3
+5	5	5	4	5
+2	2	3	2	2
+4	4	4	4	4
+5	5	5	5	5
+3	4	3	3	4
+4	4	5	4	4
+2	3	2	2	3
+5	5	4	5	5
+4	4	4	4	4
+3	3	3	3	3
+5	4	5	5	4
+4	5	4	4	5
+3	3	4	3	3</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Describe</strong></li>
+          <li>Select "Do these items measure the same construct?" (Cronbach's Alpha)</li>
+          <li>Paste all 5 columns with headers</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Alpha above 0.70 means acceptable reliability. These items should score high because they move together. Look at "alpha if item deleted" to see if removing any item would improve the scale.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- STAGE 2: COMPARE                                             -->
+  <!-- ============================================================ -->
+  <h2 class="stage-heading" id="stage-compare"><span class="num">Stage 2 &mdash;</span> Compare</h2>
+  <div class="examples">
+
+    <!-- 6. T-TEST -->
+    <div class="example-card" id="t-test">
+      <div class="example-phase phase-compare">2 &middot; Compare</div>
+      <h2>Did the new checkout improve time?</h2>
+      <p class="scenario">You ran an A/B test: 15 users on the old checkout (Control) and 15 on the redesign (Test). Measured completion time in seconds.</p>
+
+      <div class="data-columns">
+        <div class="data-col">
+          <label>Control (seconds)</label>
           <textarea readonly onclick="this.select()">94
 87
 102
@@ -295,15 +570,10 @@
 85
 93
 101
-89
-97
-86
-104
-92
-95</textarea>
+89</textarea>
         </div>
         <div class="data-col">
-          <label>Test Group (seconds)</label>
+          <label>Test (seconds)</label>
           <textarea readonly onclick="this.select()">72
 68
 81
@@ -318,12 +588,7 @@
 66
 76
 82
-69
-75
-64
-80
-71
-78</textarea>
+69</textarea>
         </div>
       </div>
 
@@ -331,82 +596,476 @@
         <h3>Try it yourself</h3>
         <ol>
           <li>Open the analyzer and choose <strong>Compare</strong></li>
-          <li>Select "Is my A/B test result real or just noise?"</li>
-          <li>Choose "A number (revenue, time on page, score)"</li>
-          <li>Paste Control into the left box, Test into the right box</li>
+          <li>Select the T-test (independent samples)</li>
+          <li>Paste Control into the first box, Test into the second</li>
         </ol>
       </div>
 
       <div class="what-to-look-for">
-        <strong>What to look for:</strong> Is the difference statistically significant (p &lt; 0.05)? How large is the effect size? Would you roll out the new design based on this?
+        <strong>What to look for:</strong> Is the difference statistically significant (p &lt; 0.05)? The Test group should be clearly faster. Check the effect size (Cohen's d) &mdash; above 0.8 is large.
       </div>
 
       <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
-    <!-- EXAMPLE 3: CORRELATE -->
-    <div class="example-card">
-      <div class="example-phase phase-correlate">3 &middot; Correlate</div>
-      <h2>Is customer satisfaction related to spending?</h2>
-      <p class="scenario">You have satisfaction ratings (1&ndash;5) and monthly spend ($) for 25 customers. Do happier customers spend more?</p>
+    <!-- 7. PAIRED T-TEST -->
+    <div class="example-card" id="paired-t-test">
+      <div class="example-phase phase-compare">2 &middot; Compare</div>
+      <h2>Did satisfaction improve after training?</h2>
+      <p class="scenario">15 employees rated their job satisfaction (1&ndash;10) before and after a training program. Each row is the same person measured twice.</p>
 
       <div class="data-columns">
         <div class="data-col">
-          <label>Satisfaction (1&ndash;5)</label>
-          <textarea readonly onclick="this.select()">4
+          <label>Before Training</label>
+          <textarea readonly onclick="this.select()">5
+4
+6
+3
+5
+4
+7
+5
+3
+6
+4
+5
+6
+4
+5</textarea>
+        </div>
+        <div class="data-col">
+          <label>After Training</label>
+          <textarea readonly onclick="this.select()">7
+6
+7
+5
+7
+6
+8
+7
+5
+8
+6
+7
+8
+6
+7</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Compare</strong></li>
+          <li>Select Paired T-test (same subjects, two time points)</li>
+          <li>Paste Before into the first box, After into the second</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Nearly every person improved by 1&ndash;2 points. The paired test accounts for individual baselines, giving more statistical power than an independent test.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 8. MANN-WHITNEY -->
+    <div class="example-card" id="mann-whitney">
+      <div class="example-phase phase-compare">2 &middot; Compare</div>
+      <h2>Do segments rate differently?</h2>
+      <p class="scenario">You have satisfaction ratings (1&ndash;5) from two customer segments: Premium and Standard. Ratings are ordinal, so use a non-parametric test.</p>
+
+      <div class="data-columns">
+        <div class="data-col">
+          <label>Premium Segment</label>
+          <textarea readonly onclick="this.select()">5
+4
+5
+4
+5
+4
+4
+5
+3
+4
+5
+4
+5
+4
+5</textarea>
+        </div>
+        <div class="data-col">
+          <label>Standard Segment</label>
+          <textarea readonly onclick="this.select()">3
+4
 2
-5
 3
 4
-5
-1
+3
+2
 3
 4
-5
+3
+2
+3
+3
+4
+3</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Compare</strong></li>
+          <li>Select Mann-Whitney U test (non-parametric, two independent groups)</li>
+          <li>Paste Premium into the first box, Standard into the second</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Premium customers rate significantly higher. The Mann-Whitney works on ranks rather than raw values, making it ideal for ordinal Likert data.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 9. WILCOXON -->
+    <div class="example-card" id="wilcoxon">
+      <div class="example-phase phase-compare">2 &middot; Compare</div>
+      <h2>Did ratings change after the update?</h2>
+      <p class="scenario">12 users rated your app (1&ndash;5) before and after a major UX update. Use the Wilcoxon signed-rank test for paired ordinal data.</p>
+
+      <div class="data-columns">
+        <div class="data-col">
+          <label>Before Update</label>
+          <textarea readonly onclick="this.select()">3
 2
 4
 3
-5
-4
+2
 3
-5
 4
 2
-4
 3
-5
-4
 3
+2
 4</textarea>
         </div>
         <div class="data-col">
-          <label>Monthly Spend ($)</label>
-          <textarea readonly onclick="this.select()">120
-45
-185
-78
-135
-210
+          <label>After Update</label>
+          <textarea readonly onclick="this.select()">4
+4
+5
+4
+3
+4
+5
+3
+4
+5
+4
+5</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Compare</strong></li>
+          <li>Select Wilcoxon signed-rank test (paired, ordinal)</li>
+          <li>Paste Before into the first box, After into the second</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Every user improved by 1&ndash;2 points. The Wilcoxon is the non-parametric equivalent of the paired t-test, appropriate for ordinal rating scales.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 10. ANOVA -->
+    <div class="example-card" id="anova">
+      <div class="example-phase phase-compare">2 &middot; Compare</div>
+      <h2>Does satisfaction differ across 3 regions?</h2>
+      <p class="scenario">You collected satisfaction scores (0&ndash;100) from customers in three regions. ANOVA tests whether at least one region's mean differs from the others.</p>
+
+      <div class="data-columns">
+        <div class="data-col">
+          <label>Region data (paste all 3 columns)</label>
+          <textarea readonly onclick="this.select()" style="min-height:180px">North	South	West
+78	62	71
+82	58	68
+75	65	74
+80	60	70
+77	63	73
+84	57	69
+79	61	72
+81	64	75
+76	59	67
+83	66	71</textarea>
+        </div>
+        <div class="data-col">
+          <label>Notes</label>
+          <textarea readonly onclick="this.select()" style="min-height:180px;background:var(--bg-2);color:var(--text-2);font-family:inherit;font-size:0.82rem;">Pattern in the data:
+- North: highest (~80 avg)
+- South: lowest (~62 avg)
+- West: middle (~71 avg)
+
+ANOVA tests if these differences
+are statistically significant.</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Compare</strong></li>
+          <li>Select One-Way ANOVA (3+ groups)</li>
+          <li>Paste all three columns with headers</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> A significant F-statistic means at least one region differs. Check post-hoc tests (Tukey) to see which specific pairs differ. South should stand out as lowest.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 11. KRUSKAL-WALLIS -->
+    <div class="example-card" id="kruskal-wallis">
+      <div class="example-phase phase-compare">2 &middot; Compare</div>
+      <h2>Do 4 age groups rate features differently?</h2>
+      <p class="scenario">Four age groups each rated a product on a 1&ndash;7 scale. Use Kruskal-Wallis when you have 3+ groups of ordinal data.</p>
+
+      <div class="data-col-single">
+        <div class="data-col">
+          <label>18-24 &emsp; 25-34 &emsp; 35-49 &emsp; 50+</label>
+          <textarea readonly onclick="this.select()" style="min-height:180px">18-24	25-34	35-49	50+
+6	5	4	3
+7	6	4	2
+5	5	3	3
+6	6	5	4
+7	5	4	2
+6	6	3	3
+5	5	4	4
+7	6	5	3
+6	5	3	2
+7	6	4	3</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Compare</strong></li>
+          <li>Select Kruskal-Wallis (non-parametric, 3+ groups)</li>
+          <li>Paste all four columns with headers</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Younger groups should rate significantly higher than older ones. The Kruskal-Wallis is the non-parametric alternative to ANOVA, appropriate for ordinal rating scales.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 12. WELCH ANOVA -->
+    <div class="example-card" id="welch-anova">
+      <div class="example-phase phase-compare">2 &middot; Compare</div>
+      <h2>Compare revenue across segments with unequal sizes</h2>
+      <p class="scenario">Three customer segments have different sample sizes (8, 12, and 15 customers). Welch ANOVA handles unequal variances and group sizes better than standard ANOVA.</p>
+
+      <div class="data-col-single">
+        <div class="data-col">
+          <label>Enterprise &emsp; Mid-Market &emsp; SMB</label>
+          <textarea readonly onclick="this.select()" style="min-height:220px">Enterprise	Mid-Market	SMB
+45200	28400	12300
+52100	31200	9800
+48700	25600	11500
+51300	29800	10200
+47600	27100	13100
+49800	32500	8900
+53400	26800	11800
+46900	30100	10500
+	28900	12800
+	31800	9400
+	27500	11200
+	29400	10800
+		12500
+		9100
+		11600</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Compare</strong></li>
+          <li>Select Welch ANOVA (unequal variances / group sizes)</li>
+          <li>Paste all three columns with headers &mdash; blank cells in shorter columns are fine</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Enterprise revenue is much higher and more variable than SMB. Welch ANOVA adjusts for this, giving a more reliable p-value than standard ANOVA would.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 13. TWO-WAY ANOVA -->
+    <div class="example-card" id="two-way-anova">
+      <div class="example-phase phase-compare">2 &middot; Compare</div>
+      <h2>Effect of region AND product on satisfaction</h2>
+      <p class="scenario">You want to know if satisfaction depends on region, product type, or their interaction. Two-Way ANOVA tests two factors simultaneously.</p>
+
+      <div class="data-col-single">
+        <div class="data-col">
+          <label>Satisfaction &emsp; Region &emsp; Product</label>
+          <textarea readonly onclick="this.select()" style="min-height:280px">Satisfaction	Region	Product
+82	North	Premium
+78	North	Premium
+85	North	Premium
+74	North	Basic
+70	North	Basic
+68	South	Premium
+72	South	Premium
+65	South	Premium
+58	South	Basic
+55	South	Basic
+76	West	Premium
+79	West	Premium
+73	West	Premium
+66	West	Basic
+62	West	Basic
+80	North	Premium
+71	North	Basic
+63	South	Basic
+75	West	Premium
+64	West	Basic</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Compare</strong></li>
+          <li>Select Two-Way ANOVA</li>
+          <li>Paste all three columns &mdash; first column is the outcome, second and third are the two factors</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Check three things: (1) main effect of Region, (2) main effect of Product, (3) interaction effect. Premium should score higher everywhere, but the gap might vary by region.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 14. REPEATED MEASURES ANOVA -->
+    <div class="example-card" id="repeated-measures-anova">
+      <div class="example-phase phase-compare">2 &middot; Compare</div>
+      <h2>Did scores change across 3 time points?</h2>
+      <p class="scenario">12 participants were measured at baseline (T1), 3 months (T2), and 6 months (T3). Each row is the same person across three time points.</p>
+
+      <div class="data-col-single">
+        <div class="data-col">
+          <label>T1 (Baseline) &emsp; T2 (3 months) &emsp; T3 (6 months)</label>
+          <textarea readonly onclick="this.select()" style="min-height:200px">T1	T2	T3
+45	52	61
+50	56	64
+42	50	58
+48	55	62
+44	51	60
+51	58	65
+46	53	59
+49	57	63
+43	50	57
+47	54	61
+50	56	64
+44	52	60</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Compare</strong></li>
+          <li>Select Repeated Measures ANOVA</li>
+          <li>Paste all three columns with headers &mdash; each row is one subject measured three times</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Scores increase steadily from T1 to T3 (~45 &rarr; ~53 &rarr; ~61). The test tells you whether this upward trend is statistically significant across time points.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- STAGE 3: CORRELATE                                           -->
+  <!-- ============================================================ -->
+  <h2 class="stage-heading" id="stage-correlate"><span class="num">Stage 3 &mdash;</span> Correlate</h2>
+  <div class="examples">
+
+    <!-- 15. PEARSON -->
+    <div class="example-card" id="pearson">
+      <div class="example-phase phase-correlate">3 &middot; Correlate</div>
+      <h2>Does ad spend predict revenue?</h2>
+      <p class="scenario">You have monthly ad spend and revenue for 15 months. Pearson correlation measures the linear relationship between two continuous variables.</p>
+
+      <div class="data-columns">
+        <div class="data-col">
+          <label>Ad Spend ($K)</label>
+          <textarea readonly onclick="this.select()">12
+15
+8
+20
+18
+10
+25
 22
-68
-142
-195
-38
-128
-85
-200
-130
+14
+30
+16
+11
+28
+19
+24</textarea>
+        </div>
+        <div class="data-col">
+          <label>Revenue ($K)</label>
+          <textarea readonly onclick="this.select()">48
+58
+35
+78
 72
-188
-140
 42
-125
-80
-205
-138
-75
-132</textarea>
+95
+85
+55
+112
+62
+44
+105
+74
+90</textarea>
         </div>
       </div>
 
@@ -414,59 +1073,300 @@
         <h3>Try it yourself</h3>
         <ol>
           <li>Open the analyzer and choose <strong>Correlate</strong></li>
-          <li>Select "Are these two things related?"</li>
-          <li>Choose "Both are numbers" &rarr; "Any pattern / Not sure"</li>
-          <li>Paste Satisfaction as X and Spend as Y</li>
+          <li>Select Pearson correlation (two continuous variables)</li>
+          <li>Paste Ad Spend as X and Revenue as Y</li>
         </ol>
       </div>
 
       <div class="what-to-look-for">
-        <strong>What to look for:</strong> Is the correlation positive? How strong is it (close to 1 = very strong, close to 0 = weak)? Is it statistically significant?
+        <strong>What to look for:</strong> The correlation should be strong and positive (r close to +1). Higher spend consistently leads to higher revenue. Check the p-value to confirm it's not due to chance.
       </div>
 
       <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
-    <!-- EXAMPLE 4: PREDICT -->
-    <div class="example-card">
-      <div class="example-phase phase-predict">4 &middot; Predict</div>
-      <h2>What factors predict whether a customer will churn?</h2>
-      <p class="scenario">You have data on 30 customers: satisfaction (1&ndash;5), number of support tickets, months as customer, and whether they churned (1) or stayed (0). What drives churn?</p>
+    <!-- 16. SPEARMAN -->
+    <div class="example-card" id="spearman">
+      <div class="example-phase phase-correlate">3 &middot; Correlate</div>
+      <h2>Do satisfaction and loyalty rank together?</h2>
+      <p class="scenario">15 customers rated both satisfaction and loyalty on a 1&ndash;7 scale. Spearman measures monotonic (rank-order) relationships, ideal for ordinal data.</p>
+
+      <div class="data-columns">
+        <div class="data-col">
+          <label>Satisfaction (1&ndash;7)</label>
+          <textarea readonly onclick="this.select()">6
+3
+7
+4
+5
+7
+2
+4
+6
+5
+3
+7
+5
+6
+4</textarea>
+        </div>
+        <div class="data-col">
+          <label>Loyalty (1&ndash;7)</label>
+          <textarea readonly onclick="this.select()">5
+2
+7
+4
+5
+6
+1
+3
+6
+4
+3
+7
+5
+6
+4</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Correlate</strong></li>
+          <li>Select Spearman rank correlation</li>
+          <li>Paste Satisfaction as X and Loyalty as Y</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> A strong positive Spearman rho means people who rate satisfaction high also rate loyalty high. The relationship is monotonic even if not perfectly linear.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 17. KENDALL -->
+    <div class="example-card" id="kendall">
+      <div class="example-phase phase-correlate">3 &middot; Correlate</div>
+      <h2>Agreement between two ordinal rankings</h2>
+      <p class="scenario">Two judges ranked 10 product concepts from 1 (best) to 10 (worst). Kendall's tau measures how closely their rankings agree.</p>
+
+      <div class="data-columns">
+        <div class="data-col">
+          <label>Judge A Ranks</label>
+          <textarea readonly onclick="this.select()">1
+2
+3
+4
+5
+6
+7
+8
+9
+10</textarea>
+        </div>
+        <div class="data-col">
+          <label>Judge B Ranks</label>
+          <textarea readonly onclick="this.select()">2
+1
+4
+3
+5
+7
+6
+9
+8
+10</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Correlate</strong></li>
+          <li>Select Kendall's tau (rank agreement)</li>
+          <li>Paste Judge A as X and Judge B as Y</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Tau close to +1 means strong agreement. These judges mostly agree (just a few neighbor swaps). Kendall's tau is more robust than Spearman for small samples with ties.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 18. POINT-BISERIAL -->
+    <div class="example-card" id="point-biserial">
+      <div class="example-phase phase-correlate">3 &middot; Correlate</div>
+      <h2>Does gender predict satisfaction?</h2>
+      <p class="scenario">You have a binary variable (Yes/No for premium membership) and a continuous satisfaction score for 20 customers. Point-biserial tests the correlation between a binary and continuous variable.</p>
+
+      <div class="data-columns">
+        <div class="data-col">
+          <label>Premium Member (Yes/No)</label>
+          <textarea readonly onclick="this.select()">Yes
+Yes
+No
+Yes
+No
+No
+Yes
+No
+Yes
+Yes
+No
+No
+Yes
+No
+Yes
+No
+Yes
+Yes
+No
+No</textarea>
+        </div>
+        <div class="data-col">
+          <label>Satisfaction Score</label>
+          <textarea readonly onclick="this.select()">82
+78
+55
+85
+60
+52
+79
+58
+88
+76
+48
+62
+84
+54
+80
+50
+77
+83
+56
+45</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Correlate</strong></li>
+          <li>Select Point-Biserial correlation (one binary, one continuous)</li>
+          <li>Paste Premium Member as X and Satisfaction as Y</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Premium members should have noticeably higher satisfaction. A significant positive correlation confirms that membership status is associated with satisfaction levels.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 19. CORRELATION MATRIX -->
+    <div class="example-card" id="correlation-matrix">
+      <div class="example-phase phase-correlate">3 &middot; Correlate</div>
+      <h2>Explore relationships among 4 variables</h2>
+      <p class="scenario">You have 4 metrics for 15 customers: Satisfaction, Engagement, Tenure (months), and Spend ($). A correlation matrix shows all pairwise relationships at once.</p>
 
       <div class="data-col-single">
         <div class="data-col">
-          <label>Churned (0/1) &emsp; Satisfaction &emsp; Support Tickets &emsp; Months as Customer</label>
-          <textarea readonly onclick="this.select()" style="min-height:200px">0	4	1	24
-0	5	0	36
-1	2	5	6
-0	4	2	18
-1	1	4	3
-0	5	1	30
-0	4	0	42
-1	2	6	4
-0	3	2	15
-1	2	4	8
-0	5	0	48
-0	4	1	22
-1	1	5	2
-0	3	3	12
-1	2	7	5
-0	4	1	28
-0	5	0	38
-1	3	4	7
-0	4	2	20
-1	2	5	4
-0	5	1	32
-0	3	2	16
-1	1	6	3
-0	4	0	26
-1	2	3	9
-0	5	1	44
-0	4	2	19
-1	3	5	6
-0	4	1	34
-1	2	4	5</textarea>
+          <label>Satisfaction &emsp; Engagement &emsp; Tenure &emsp; Spend</label>
+          <textarea readonly onclick="this.select()" style="min-height:220px">Satisfaction	Engagement	Tenure	Spend
+85	72	24	320
+62	45	6	120
+90	80	36	450
+70	55	12	180
+78	68	18	280
+92	85	48	520
+55	38	4	90
+74	60	15	210
+88	78	30	400
+65	48	8	140
+82	70	22	310
+95	88	42	480
+60	42	5	100
+76	62	16	240
+84	74	26	360</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Correlate</strong></li>
+          <li>Select Correlation Matrix</li>
+          <li>Paste all four columns with headers</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> All four variables should be positively correlated. Engagement and Satisfaction should show the strongest link. The matrix makes it easy to spot which pairs are most tightly coupled.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- STAGE 4: PREDICT                                             -->
+  <!-- ============================================================ -->
+  <h2 class="stage-heading" id="stage-predict"><span class="num">Stage 4 &mdash;</span> Predict</h2>
+  <div class="examples">
+
+    <!-- 20. SIMPLE REGRESSION -->
+    <div class="example-card" id="simple-regression">
+      <div class="example-phase phase-predict">4 &middot; Predict</div>
+      <h2>Does price predict satisfaction?</h2>
+      <p class="scenario">You want to know if there's a linear relationship between product price and customer satisfaction. Simple regression gives you a formula: Satisfaction = a + b * Price.</p>
+
+      <div class="data-columns">
+        <div class="data-col">
+          <label>Price ($)</label>
+          <textarea readonly onclick="this.select()">29
+49
+19
+79
+59
+39
+99
+69
+35
+89
+45
+25
+75
+55
+65</textarea>
+        </div>
+        <div class="data-col">
+          <label>Satisfaction (1&ndash;100)</label>
+          <textarea readonly onclick="this.select()">72
+65
+78
+48
+60
+68
+38
+55
+70
+42
+63
+75
+52
+62
+58</textarea>
         </div>
       </div>
 
@@ -474,13 +1374,404 @@
         <h3>Try it yourself</h3>
         <ol>
           <li>Open the analyzer and choose <strong>Predict</strong></li>
-          <li>Select "What predicts whether someone will [buy / churn / convert]?"</li>
-          <li>Paste all 4 columns &mdash; the first column (Churned) is the outcome, the rest are predictors</li>
+          <li>Select Simple Regression (one predictor)</li>
+          <li>Paste Price as X (predictor) and Satisfaction as Y (outcome)</li>
         </ol>
       </div>
 
       <div class="what-to-look-for">
-        <strong>What to look for:</strong> Which factors significantly predict churn? Is it low satisfaction, many support tickets, or being a new customer? How accurate is the model?
+        <strong>What to look for:</strong> A negative slope means higher prices predict lower satisfaction. Check R-squared &mdash; it tells you what percentage of satisfaction variation is explained by price alone.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 21. MULTIPLE REGRESSION -->
+    <div class="example-card" id="multiple-regression">
+      <div class="example-phase phase-predict">4 &middot; Predict</div>
+      <h2>What drives NPS?</h2>
+      <p class="scenario">You want to know which factors &mdash; perceived quality, speed of service, and price fairness &mdash; best predict Net Promoter Score. Multiple regression tests all three simultaneously.</p>
+
+      <div class="data-col-single">
+        <div class="data-col">
+          <label>NPS &emsp; Quality &emsp; Speed &emsp; Price Fairness</label>
+          <textarea readonly onclick="this.select()" style="min-height:280px">NPS	Quality	Speed	PriceFairness
+82	8	7	6
+45	4	5	4
+90	9	8	7
+55	5	6	5
+72	7	6	6
+95	9	9	8
+38	3	4	3
+65	6	7	5
+78	8	6	7
+50	5	5	4
+85	8	8	6
+42	4	3	4
+88	9	7	7
+60	6	6	5
+75	7	7	6
+92	9	8	8
+48	4	5	3
+70	7	6	6
+80	8	7	7
+58	5	6	5</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Predict</strong></li>
+          <li>Select Multiple Regression</li>
+          <li>Paste all four columns &mdash; first column (NPS) is the outcome, the rest are predictors</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Which predictor has the largest standardized coefficient? Quality should dominate. Check R-squared to see how much total variance the model explains. Are all three significant?
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 22. LOGISTIC REGRESSION -->
+    <div class="example-card" id="logistic-regression">
+      <div class="example-phase phase-predict">4 &middot; Predict</div>
+      <h2>What predicts churn?</h2>
+      <p class="scenario">You have data on 20 customers: whether they churned (1) or stayed (0), plus their tenure (months) and number of complaints. Logistic regression predicts binary outcomes.</p>
+
+      <div class="data-col-single">
+        <div class="data-col">
+          <label>Churned (0/1) &emsp; Tenure (months) &emsp; Complaints</label>
+          <textarea readonly onclick="this.select()" style="min-height:280px">Churned	Tenure	Complaints
+0	24	1
+0	36	0
+1	3	5
+0	18	2
+1	2	4
+0	30	1
+0	42	0
+1	4	6
+0	15	2
+1	5	4
+0	48	0
+0	22	1
+1	3	5
+0	12	2
+1	6	7
+0	28	1
+0	38	0
+1	4	4
+0	20	2
+1	5	5</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Predict</strong></li>
+          <li>Select Logistic Regression (binary outcome)</li>
+          <li>Paste all three columns &mdash; first column (Churned) is the 0/1 outcome</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Short tenure and many complaints should strongly predict churn. Look at odds ratios &mdash; each additional complaint multiplies churn risk. Check model accuracy and classification table.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 23. ORDINAL REGRESSION -->
+    <div class="example-card" id="ordinal-regression">
+      <div class="example-phase phase-predict">4 &middot; Predict</div>
+      <h2>What predicts satisfaction level?</h2>
+      <p class="scenario">Satisfaction is measured on an ordered scale (1&ndash;5). You want to know if age and product usage frequency predict which level a customer falls into. Ordinal regression respects the ordering.</p>
+
+      <div class="data-col-single">
+        <div class="data-col">
+          <label>Satisfaction (1&ndash;5) &emsp; Age &emsp; Usage (hrs/week)</label>
+          <textarea readonly onclick="this.select()" style="min-height:280px">Satisfaction	Age	Usage
+5	32	15
+4	28	12
+3	45	6
+5	35	18
+2	55	3
+4	38	10
+3	50	5
+5	30	16
+4	33	11
+2	58	2
+5	29	14
+3	42	7
+4	36	9
+1	62	1
+5	31	17
+4	40	8
+3	48	5
+2	56	3
+4	34	10
+5	27	20</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Predict</strong></li>
+          <li>Select Ordinal Regression (ordered categorical outcome)</li>
+          <li>Paste all three columns &mdash; first column (Satisfaction 1-5) is the ordered outcome</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Younger, heavier users should land in higher satisfaction tiers. Ordinal regression preserves the 1 &lt; 2 &lt; 3 &lt; 4 &lt; 5 ordering without assuming equal gaps between levels.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 24. FRIEDMAN -->
+    <div class="example-card" id="friedman">
+      <div class="example-phase phase-predict">4 &middot; Predict</div>
+      <h2>Rank 3 prototypes by usability</h2>
+      <p class="scenario">12 users rated three prototype designs on a 1&ndash;10 usability scale. The Friedman test is a non-parametric alternative to repeated measures ANOVA for ranked/ordinal data.</p>
+
+      <div class="data-col-single">
+        <div class="data-col">
+          <label>Prototype A &emsp; Prototype B &emsp; Prototype C</label>
+          <textarea readonly onclick="this.select()" style="min-height:200px">PrototypeA	PrototypeB	PrototypeC
+7	5	8
+8	4	9
+6	5	7
+7	6	8
+8	4	9
+6	5	8
+7	3	7
+8	5	9
+7	4	8
+6	5	7
+8	6	9
+7	4	8</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Predict</strong> or <strong>Compare</strong></li>
+          <li>Select Friedman test (non-parametric repeated measures)</li>
+          <li>Paste all three columns with headers &mdash; each row is one user rating all three prototypes</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Prototype C should rank highest (~8.2 avg), A is middle (~7.1), and B is lowest (~4.7). The Friedman test tells you if these rank differences are significant across all participants.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- STAGE 5: SEGMENT & STRUCTURE                                 -->
+  <!-- ============================================================ -->
+  <h2 class="stage-heading" id="stage-segment"><span class="num">Stage 5 &mdash;</span> Segment &amp; Structure</h2>
+  <div class="examples">
+
+    <!-- 25. K-MEANS -->
+    <div class="example-card" id="k-means">
+      <div class="example-phase phase-segment">5 &middot; Segment</div>
+      <h2>Find 3 customer segments</h2>
+      <p class="scenario">You have 20 customers scored on engagement, satisfaction, and purchase frequency. K-Means clustering will group them into distinct segments based on behavioral patterns.</p>
+
+      <div class="data-col-single">
+        <div class="data-col">
+          <label>Engagement &emsp; Satisfaction &emsp; Frequency</label>
+          <textarea readonly onclick="this.select()" style="min-height:280px">Engagement	Satisfaction	Frequency
+85	90	12
+82	88	11
+78	85	10
+90	92	14
+88	87	13
+22	30	2
+18	25	1
+25	35	3
+20	28	2
+15	22	1
+50	55	6
+48	52	5
+55	58	7
+45	50	5
+52	54	6
+87	91	13
+80	86	11
+24	32	2
+53	56	7
+46	51	5</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Segment &amp; Structure</strong></li>
+          <li>Select K-Means Clustering</li>
+          <li>Paste all three columns with headers</li>
+          <li>Set k=3 (three clusters)</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Three clear groups should emerge: Power Users (high everything), At-Risk (low everything), and a Middle Tier. Check cluster centers to profile each segment and decide on targeted strategies.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 26. HIERARCHICAL CLUSTERING -->
+    <div class="example-card" id="hierarchical-clustering">
+      <div class="example-phase phase-segment">5 &middot; Segment</div>
+      <h2>Build a segmentation tree</h2>
+      <p class="scenario">Same customer data as K-Means, but hierarchical clustering shows you a dendrogram &mdash; a tree that reveals how groups merge at different levels. You don't need to choose k upfront.</p>
+
+      <div class="data-col-single">
+        <div class="data-col">
+          <label>Engagement &emsp; Satisfaction &emsp; Frequency</label>
+          <textarea readonly onclick="this.select()" style="min-height:280px">Engagement	Satisfaction	Frequency
+85	90	12
+82	88	11
+78	85	10
+90	92	14
+88	87	13
+22	30	2
+18	25	1
+25	35	3
+20	28	2
+15	22	1
+50	55	6
+48	52	5
+55	58	7
+45	50	5
+52	54	6
+87	91	13
+80	86	11
+24	32	2
+53	56	7
+46	51	5</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Segment &amp; Structure</strong></li>
+          <li>Select Hierarchical Clustering</li>
+          <li>Paste all three columns with headers</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> The dendrogram should show three main branches merging at different heights. Cut the tree at different levels to get 2, 3, or 4 segments. Compare with K-Means to see if both methods agree.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 27. FACTOR ANALYSIS -->
+    <div class="example-card" id="factor-analysis">
+      <div class="example-phase phase-segment">5 &middot; Segment</div>
+      <h2>What themes underlie 6 survey items?</h2>
+      <p class="scenario">You asked 15 respondents to rate 6 statements on a 1&ndash;5 scale. Factor analysis reveals hidden themes (latent factors) that explain the correlations among items.</p>
+
+      <div class="data-col-single">
+        <div class="data-col">
+          <label>Q1 &emsp; Q2 &emsp; Q3 &emsp; Q4 &emsp; Q5 &emsp; Q6</label>
+          <textarea readonly onclick="this.select()" style="min-height:220px">Q1	Q2	Q3	Q4	Q5	Q6
+5	4	5	2	3	2
+4	5	4	3	2	3
+5	5	5	1	2	1
+3	3	4	4	4	5
+4	4	5	2	3	2
+5	5	4	1	2	1
+3	4	3	5	5	4
+4	4	5	2	2	2
+5	5	4	1	3	1
+3	3	3	4	5	5
+4	5	4	2	2	2
+5	4	5	1	1	1
+3	3	4	5	4	4
+4	4	5	2	3	2
+5	5	4	1	2	1</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Segment &amp; Structure</strong></li>
+          <li>Select Factor Analysis</li>
+          <li>Paste all 6 columns with headers</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> Two factors should emerge: Q1-Q3 load on Factor 1 (they move together) and Q4-Q6 load on Factor 2 (inversely related to the first group). This reveals two underlying dimensions in your survey.
+      </div>
+
+      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <span class="copy-hint">Click any data box to select &amp; copy it</span>
+    </div>
+
+    <!-- 28. PCA -->
+    <div class="example-card" id="pca">
+      <div class="example-phase phase-segment">5 &middot; Segment</div>
+      <h2>Reduce 5 variables to fewer dimensions</h2>
+      <p class="scenario">You have 5 metrics per customer but suspect they overlap. PCA (Principal Component Analysis) finds the fewest dimensions needed to capture most of the variation in your data.</p>
+
+      <div class="data-col-single">
+        <div class="data-col">
+          <label>Satisfaction &emsp; Quality &emsp; Support &emsp; Value &emsp; Loyalty</label>
+          <textarea readonly onclick="this.select()" style="min-height:220px">Satisfaction	Quality	Support	Value	Loyalty
+82	85	78	80	84
+45	48	42	44	46
+90	88	85	87	92
+55	52	50	53	54
+72	75	68	70	74
+95	92	88	90	96
+38	40	35	37	39
+65	62	60	63	66
+78	80	72	76	79
+50	48	45	49	51
+85	82	80	83	86
+42	45	38	40	43
+88	85	82	86	90
+60	58	55	59	62
+75	78	70	73	76</textarea>
+        </div>
+      </div>
+
+      <div class="example-steps">
+        <h3>Try it yourself</h3>
+        <ol>
+          <li>Open the analyzer and choose <strong>Segment &amp; Structure</strong></li>
+          <li>Select PCA (Principal Component Analysis)</li>
+          <li>Paste all 5 columns with headers</li>
+        </ol>
+      </div>
+
+      <div class="what-to-look-for">
+        <strong>What to look for:</strong> The first principal component should explain 90%+ of variance since all 5 variables are highly correlated. This means one "overall experience" score could replace all five metrics. Check the scree plot and cumulative variance explained.
       </div>
 
       <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
