@@ -3819,6 +3819,36 @@
       ctx.textAlign = 'right';
       ctx.fillText(maxPct.toFixed(0) + '%', pad.left - 6, pad.top + 5);
       ctx.fillText('0%', pad.left - 6, pad.top + ch + 4);
+
+      // Mean/Median lines (discrete mode)
+      var meanVal = values.reduce(function(a, b) { return a + b; }, 0) / totalN;
+      var sortedVals = values.slice().sort(function(a, b) { return a - b; });
+      var medianVal = totalN % 2 === 0 ? (sortedVals[totalN / 2 - 1] + sortedVals[totalN / 2]) / 2 : sortedVals[Math.floor(totalN / 2)];
+      // Map value to x position in discrete chart
+      var valToX = function(v) {
+        var minKey = parseFloat(sorted[0].label), maxKey = parseFloat(sorted[sorted.length - 1].label);
+        var idx = (v - minKey) / (maxKey - minKey) * (sorted.length - 1);
+        return pad.left + (idx + 0.5) * bw;
+      };
+      // Mean line (dashed, coral)
+      ctx.strokeStyle = colors.coral || '#E08860';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      var meanX = valToX(meanVal);
+      ctx.beginPath(); ctx.moveTo(meanX, pad.top); ctx.lineTo(meanX, pad.top + ch); ctx.stroke();
+      ctx.setLineDash([]);
+      // Median line (solid, green)
+      ctx.strokeStyle = colors.green || '#3a9a5c';
+      ctx.lineWidth = 1.5;
+      var medX = valToX(medianVal);
+      ctx.beginPath(); ctx.moveTo(medX, pad.top); ctx.lineTo(medX, pad.top + ch); ctx.stroke();
+      // Legend
+      ctx.font = '500 8px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = colors.coral || '#E08860';
+      ctx.fillText('Mean ' + round2(meanVal), meanX + 3, pad.top + 10);
+      ctx.fillStyle = colors.green || '#3a9a5c';
+      ctx.fillText('Median ' + round2(medianVal), medX + 3, pad.top + 20);
     } else {
       // Continuous mode: classic histogram with bins
       if (!numBins) numBins = Math.min(15, Math.max(5, Math.ceil(Math.sqrt(values.length))));
@@ -3864,7 +3894,169 @@
       ctx.textAlign = 'right';
       ctx.fillText(maxCount, pad.left - 8, pad.top + 5);
       ctx.fillText('0', pad.left - 8, pad.top + ch + 4);
+
+      // Mean/Median lines (continuous mode)
+      var meanVal = values.reduce(function(a, b) { return a + b; }, 0) / values.length;
+      var sortedVals = values.slice().sort(function(a, b) { return a - b; });
+      var medianVal = values.length % 2 === 0 ? (sortedVals[values.length / 2 - 1] + sortedVals[values.length / 2]) / 2 : sortedVals[Math.floor(values.length / 2)];
+      function xPosH(v) { return pad.left + ((v - mn) / (range || 1)) * cw; }
+      // Mean line (dashed, coral)
+      ctx.strokeStyle = colors.coral || '#E08860';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(xPosH(meanVal), pad.top); ctx.lineTo(xPosH(meanVal), pad.top + ch); ctx.stroke();
+      ctx.setLineDash([]);
+      // Median line (solid, green)
+      ctx.strokeStyle = colors.green || '#3a9a5c';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(xPosH(medianVal), pad.top); ctx.lineTo(xPosH(medianVal), pad.top + ch); ctx.stroke();
+      // Legend
+      ctx.font = '500 8px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = colors.coral || '#E08860';
+      ctx.fillText('Mean ' + round2(meanVal), xPosH(meanVal) + 3, pad.top + 10);
+      ctx.fillStyle = colors.green || '#3a9a5c';
+      ctx.fillText('Median ' + round2(medianVal), xPosH(medianVal) + 3, pad.top + 20);
     }
+  }
+
+  // --- Boxplot ---
+  function drawBoxPlot(canvasId, values) {
+    var c = initCanvas(canvasId, 500, 120);
+    if (!c) return;
+    var ctx = c.ctx, w = c.w, h = c.h;
+    var colors = getColors();
+    var pad = { left: 55, right: 30, top: 15, bottom: 25 };
+    var cw = w - pad.left - pad.right;
+    var ch = h - pad.top - pad.bottom;
+
+    var sorted = values.slice().sort(function(a, b) { return a - b; });
+    var n = sorted.length;
+    var mn = sorted[0], mx = sorted[n - 1];
+    var q1 = sorted[Math.floor(n * 0.25)];
+    var med = n % 2 === 0 ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2 : sorted[Math.floor(n / 2)];
+    var q3 = sorted[Math.floor(n * 0.75)];
+    var iqr = q3 - q1;
+    var whiskerLow = Math.max(mn, q1 - 1.5 * iqr);
+    var whiskerHigh = Math.min(mx, q3 + 1.5 * iqr);
+
+    // Find actual whisker endpoints (closest data points within range)
+    var wLow = mn, wHigh = mx;
+    for (var i = 0; i < n; i++) { if (sorted[i] >= whiskerLow) { wLow = sorted[i]; break; } }
+    for (var i = n - 1; i >= 0; i--) { if (sorted[i] <= whiskerHigh) { wHigh = sorted[i]; break; } }
+
+    var range = mx - mn || 1;
+    var dataMin = mn - range * 0.05, dataMax = mx + range * 0.05;
+    var dataRange = dataMax - dataMin;
+    function xPos(v) { return pad.left + ((v - dataMin) / dataRange) * cw; }
+
+    var cy = pad.top + ch / 2;
+    var boxH = ch * 0.5;
+
+    // Whisker lines
+    ctx.strokeStyle = colors.subtext;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(xPos(wLow), cy); ctx.lineTo(xPos(q1), cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xPos(q3), cy); ctx.lineTo(xPos(wHigh), cy); ctx.stroke();
+    // Whisker caps
+    ctx.beginPath(); ctx.moveTo(xPos(wLow), cy - boxH * 0.3); ctx.lineTo(xPos(wLow), cy + boxH * 0.3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xPos(wHigh), cy - boxH * 0.3); ctx.lineTo(xPos(wHigh), cy + boxH * 0.3); ctx.stroke();
+
+    // Box (Q1 to Q3)
+    ctx.fillStyle = colors.rose;
+    ctx.globalAlpha = 0.25;
+    ctx.fillRect(xPos(q1), cy - boxH / 2, xPos(q3) - xPos(q1), boxH);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = colors.rose;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(xPos(q1), cy - boxH / 2, xPos(q3) - xPos(q1), boxH);
+
+    // Median line
+    ctx.strokeStyle = colors.text;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(xPos(med), cy - boxH / 2); ctx.lineTo(xPos(med), cy + boxH / 2); ctx.stroke();
+
+    // Mean diamond
+    var meanVal = values.reduce(function(a, b) { return a + b; }, 0) / n;
+    var mx2 = xPos(meanVal);
+    ctx.fillStyle = colors.coral || '#E08860';
+    ctx.beginPath(); ctx.moveTo(mx2, cy - 6); ctx.lineTo(mx2 + 4, cy); ctx.lineTo(mx2, cy + 6); ctx.lineTo(mx2 - 4, cy); ctx.closePath(); ctx.fill();
+
+    // Outliers
+    ctx.fillStyle = colors.rose;
+    ctx.globalAlpha = 0.6;
+    for (var i = 0; i < n; i++) {
+      if (sorted[i] < wLow || sorted[i] > wHigh) {
+        ctx.beginPath(); ctx.arc(xPos(sorted[i]), cy, 3, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    // Labels
+    ctx.fillStyle = colors.subtext;
+    ctx.font = '400 9px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(round2(wLow), xPos(wLow), cy + boxH / 2 + 14);
+    ctx.fillText('Q1: ' + round2(q1), xPos(q1), cy + boxH / 2 + 14);
+    ctx.fillText('Med: ' + round2(med), xPos(med), cy - boxH / 2 - 5);
+    ctx.fillText('Q3: ' + round2(q3), xPos(q3), cy + boxH / 2 + 14);
+    ctx.fillText(round2(wHigh), xPos(wHigh), cy + boxH / 2 + 14);
+
+    // Mean label
+    ctx.fillStyle = colors.coral || '#E08860';
+    ctx.font = '500 9px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText('Mean: ' + round2(meanVal), mx2, cy - boxH / 2 - 5 - 10);
+  }
+
+  // --- Residual Plot for Regression ---
+  function drawResidualPlot(canvasId, predicted, residuals) {
+    var c = initCanvas(canvasId, 500, 250);
+    if (!c) return;
+    var ctx = c.ctx, w = c.w, h = c.h;
+    var colors = getColors();
+    var pad = { left: 55, right: 20, top: 15, bottom: 40 };
+    var cw = w - pad.left - pad.right;
+    var ch = h - pad.top - pad.bottom;
+
+    var pMin = Math.min.apply(null, predicted), pMax = Math.max.apply(null, predicted);
+    var rMin = Math.min.apply(null, residuals), rMax = Math.max.apply(null, residuals);
+    var pRange = pMax - pMin || 1, rRange = rMax - rMin || 1;
+    pMin -= pRange * 0.05; pMax += pRange * 0.05;
+    rMin -= rRange * 0.1; rMax += rRange * 0.1;
+    pRange = pMax - pMin; rRange = rMax - rMin;
+
+    function px(v) { return pad.left + ((v - pMin) / pRange) * cw; }
+    function py(v) { return pad.top + ch - ((v - rMin) / rRange) * ch; }
+
+    // Axes
+    ctx.strokeStyle = colors.border;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.left, pad.top); ctx.lineTo(pad.left, pad.top + ch); ctx.lineTo(pad.left + cw, pad.top + ch); ctx.stroke();
+
+    // Zero line (dashed)
+    if (rMin <= 0 && rMax >= 0) {
+      ctx.strokeStyle = colors.subtext;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(pad.left, py(0)); ctx.lineTo(pad.left + cw, py(0)); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Points
+    ctx.fillStyle = colors.rose;
+    ctx.globalAlpha = 0.5;
+    for (var i = 0; i < predicted.length; i++) {
+      ctx.beginPath(); ctx.arc(px(predicted[i]), py(residuals[i]), 3, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Labels
+    ctx.fillStyle = colors.subtext;
+    ctx.font = '400 10px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Predicted Values', pad.left + cw / 2, h - 8);
+    ctx.save(); ctx.translate(12, pad.top + ch / 2); ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Residuals', 0, 0); ctx.restore();
   }
 
   /* ==================================================================
@@ -4381,8 +4573,10 @@
       html += renderDistTable(distRows, 'Response Distribution');
     }
 
-    // Chart (histogram — now auto-detects discrete)
-    html += renderChart(chartId, 'Distribution', 500, 250);
+    // Chart (histogram + boxplot)
+    html += renderChart(chartId, 'Distribution', 500, 250, 'Dashed line = mean (orange). Solid line = median (green).');
+    var boxId = 'boxPlot_' + Date.now();
+    html += renderChart(boxId, 'Box Plot', 500, 120, 'Box = Q1\u2013Q3 (middle 50%). Whiskers = 1.5\u00d7IQR. Dots = outliers. Diamond = mean.');
 
     // Detailed stats (collapsed for clean look)
     var modeStr = r.mode.length === 0 ? 'none' : r.mode.map(function(v) { return round4(v); }).join(', ');
@@ -4411,6 +4605,7 @@
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     drawHistogram(chartId, vals);
+    drawBoxPlot(boxId, vals);
     showNextSteps('descriptive', r);
   }
 
@@ -6976,6 +7171,10 @@
     // Scatter plot
     html += renderChart(chartId, 'Scatter Plot with Trend Line', 500, 350);
 
+    // Residual plot
+    var residChartId = 'residPlot_' + Date.now();
+    html += renderChart(residChartId, 'Residual Plot', 500, 250, 'Random scatter around zero = good model fit. Patterns = assumption violation.');
+
     // Statistical details (collapsed)
     html += renderCollapsed('Statistical Details',
       renderMetrics([
@@ -7001,6 +7200,14 @@
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     drawScatterPlot(chartId, x, y, descX, descY);
+    // Compute and draw residuals
+    var predicted = [], residuals = [];
+    for (var i = 0; i < n; i++) {
+      var pred = slope * x[i] + intercept;
+      predicted.push(pred);
+      residuals.push(y[i] - pred);
+    }
+    drawResidualPlot(residChartId, predicted, residuals);
     showNextSteps('regression', { n: n, r2: r2 });
   }
 
