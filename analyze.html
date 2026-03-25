@@ -13971,46 +13971,46 @@
   // Contextual next steps based on what the user just ran
   var CONTEXTUAL_NEXT = {
     descriptive: [
-      { label: 'Step 2: Compare across groups', desc: 'Paste a grouping variable to see if groups differ', method: 'frequencies' },
-      { label: 'Step 3: Check correlation', desc: 'Does this variable relate to another?', method: 'spearman' },
-      { label: 'Step 4: Predict an outcome', desc: 'What drives this variable? (regression)', method: 'simple_regression' },
-      { label: 'Check scale reliability', desc: 'Do related items measure the same thing?', method: 'cronbach' }
+      { label: 'Verify: Check distribution shape', desc: 'Is it normal? Should you use parametric or non-parametric tests?', method: 'distribution' },
+      { label: 'Verify: Check scale reliability', desc: 'Do your items consistently measure the same thing?', method: 'cronbach' },
+      { label: 'Next: Compare across groups', desc: 'Add a grouping variable to see if segments differ', method: 'frequencies' },
+      { label: 'Next: Check correlation', desc: 'Does this variable relate to another?', method: 'spearman' }
     ],
     group_comparison: [
-      { label: 'Step 3: Check correlation', desc: 'As one variable goes up, does the other?', method: 'spearman' },
-      { label: 'Step 4: Predict the outcome', desc: 'What drives the difference? (regression)', method: 'linear_regression' },
-      { label: 'Try non-parametric version', desc: 'Better for rating scales / non-normal data', method: 'kruskal_wallis' },
-      { label: 'Find segments', desc: 'Are there natural groups in the data?', method: 'kmeans' }
+      { label: 'Verify: Were assumptions met?', desc: 'Check if your data is normally distributed', method: 'distribution' },
+      { label: 'Next: Check correlation', desc: 'Is there a relationship, not just a difference?', method: 'spearman' },
+      { label: 'Next: Find what drives the outcome', desc: 'Regression to identify key predictors', method: 'linear_regression' },
+      { label: 'Next: Segment respondents', desc: 'Find natural groups in the data', method: 'kmeans' }
     ],
     paired: [
-      { label: 'Try non-parametric version', desc: 'Wilcoxon signed-rank for ordinal data', method: 'wilcoxon' },
-      { label: 'Compare 3+ conditions', desc: 'Friedman or Repeated Measures', method: 'friedman' },
-      { label: 'Check correlation', desc: 'Are the two measures related?', method: 'spearman' },
-      { label: 'Predict the outcome', desc: 'Regression analysis', method: 'linear_regression' }
+      { label: 'Verify: Were assumptions met?', desc: 'Check distribution of differences', method: 'distribution' },
+      { label: 'Alternative: Non-parametric version', desc: 'Wilcoxon signed-rank for ordinal/skewed data', method: 'wilcoxon' },
+      { label: 'Next: Compare 3+ conditions', desc: 'Friedman test for multiple time points', method: 'friedman' },
+      { label: 'Next: Find what drives the change', desc: 'Regression to identify predictors', method: 'linear_regression' }
     ],
     correlation: [
-      { label: 'Step 4: Predict one from the other', desc: 'Regression \u2014 how much does X explain Y?', method: 'simple_regression' },
-      { label: 'Check multiple correlations', desc: 'Correlation matrix for 3+ variables', method: 'corr_matrix' },
-      { label: 'Control for a third variable', desc: 'Partial correlation', method: 'partial_corr' },
-      { label: 'Compare groups instead', desc: 'Do groups differ on this variable?', method: 'frequencies' }
+      { label: 'Next: Predict the outcome', desc: 'Regression \u2014 how much does X explain Y?', method: 'simple_regression' },
+      { label: 'Deeper: Control for a third variable', desc: 'Partial correlation removes confounds', method: 'partial_corr' },
+      { label: 'Broader: Check many correlations at once', desc: 'Correlation matrix for 3+ variables', method: 'corr_matrix' },
+      { label: 'Different angle: Compare groups', desc: 'Do groups differ on this variable?', method: 'frequencies' }
     ],
     regression: [
-      { label: 'Add more predictors', desc: 'Multiple regression for richer model', method: 'linear_regression' },
-      { label: 'Predict a yes/no outcome', desc: 'Logistic regression with odds ratios', method: 'logistic_regression' },
-      { label: 'Check correlations first', desc: 'Which variables are related?', method: 'corr_matrix' },
-      { label: 'Go back to group comparison', desc: 'Compare groups on the outcome', method: 'frequencies' }
+      { label: 'Verify: Check model assumptions', desc: 'Normality, multicollinearity, influential cases', method: 'distribution' },
+      { label: 'Next: Try more predictors', desc: 'Multiple regression for a richer model', method: 'linear_regression' },
+      { label: 'Alternative: Predict yes/no outcome', desc: 'Logistic regression with odds ratios', method: 'logistic_regression' },
+      { label: 'Explore: Factor structure of predictors', desc: 'Are your predictors measuring distinct things?', method: 'factor_analysis' }
     ],
     scale: [
-      { label: 'Explore factor structure', desc: 'How many constructs do your items measure?', method: 'factor_analysis' },
-      { label: 'Reduce to dimensions', desc: 'PCA for variable reduction', method: 'pca' },
-      { label: 'Test a specific structure', desc: 'CFA to confirm your model', method: 'cfa' },
-      { label: 'Summarize each item', desc: 'Distribution of every question', method: 'frequencies' }
+      { label: 'Next: Explore factor structure', desc: 'How many constructs do your items measure?', method: 'factor_analysis' },
+      { label: 'Next: Reduce to key dimensions', desc: 'PCA for variable reduction', method: 'pca' },
+      { label: 'Verify: Test a specific structure', desc: 'CFA to confirm your hypothesized model', method: 'cfa' },
+      { label: 'Next: Summarize each item', desc: 'See the distribution of every question', method: 'frequencies' }
     ],
     clustering: [
-      { label: 'Profile the segments', desc: 'Compare segments on key variables', method: 'frequencies' },
-      { label: 'Try different K', desc: 'Re-run with more or fewer segments', method: 'kmeans' },
-      { label: 'Try hierarchical approach', desc: 'Tree-based segmentation', method: 'hierarchical_clustering' },
-      { label: 'Predict segment membership', desc: 'What variables define each segment?', method: 'logistic_regression' }
+      { label: 'Next: Profile the segments', desc: 'Compare segments on key variables', method: 'frequencies' },
+      { label: 'Verify: Try different K', desc: 'Is 3 the right number? Try 2 or 4', method: 'kmeans' },
+      { label: 'Alternative: Hierarchical approach', desc: 'Tree-based segmentation', method: 'hierarchical_clustering' },
+      { label: 'Next: Predict segment membership', desc: 'What variables define each segment?', method: 'logistic_regression' }
     ]
   };
 
