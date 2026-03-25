@@ -2834,7 +2834,7 @@
       factor_analysis: "<strong>Factor Analysis</strong> discovers the hidden constructs behind your survey items &mdash; which questions measure the same thing? Paste 3 or more columns.",
       distribution: "<strong>Distribution Checker</strong> &mdash; check how your data is distributed. Is it normal? Skewed? Has outliers?",
       summary: "<strong>Summary Statistics</strong> will give you a full descriptive profile of your data: means, medians, standard deviations, confidence intervals, and more.",
-      frequencies: "<strong>Frequencies & Crosstabs</strong> &mdash; paste categorical values one per line (left column). Optionally add a grouping variable (right column, same row count) to get a crosstab with grouped bar charts and row percentages.",
+      frequencies: "<strong>Frequencies & Crosstabs</strong> &mdash; paste your response values one per line (left box). Optionally add a grouping variable (right box, same row count) to compare across groups.<br><small style='color:var(--text-2)'><strong>Typical workflow:</strong> Start here to see your distribution &rarr; then add a grouping variable to compare &rarr; then check correlation or run regression. The tool will suggest next steps after each analysis.</small>",
       phi: "The <strong>Phi Coefficient</strong> measures the association between two binary variables. Enter counts in a 2&times;2 contingency table.",
       kendall: "<strong>Kendall's Tau</strong> measures the ordinal association between two variables. It's robust for small samples and tied ranks. Paste two columns of paired values.",
       simple_regression: "<strong>Simple Linear Regression</strong> predicts a numeric outcome from a single predictor. Paste two columns: X (predictor) and Y (outcome).",
@@ -6794,6 +6794,39 @@
       html += renderTopBottomBox(topPct, botPct, topLabel, botLabel);
     }
 
+    // Distribution shape assessment (Likert only)
+    if (isLikert && mean !== null && median !== null) {
+      var gap = Math.abs(mean - median);
+      var topHeavy = topPct !== null && topPct > 50;
+      var botHeavy = botPct !== null && botPct > 50;
+      var balanced = topPct !== null && Math.abs(topPct - botPct) < 15;
+      var dominant = sorted.reduce(function(a, b) { return a.pct > b.pct ? a : b; });
+      var shapeNote = '';
+      if (dominant.pct > 40) {
+        shapeNote = 'Dominated by response "' + dominant.value + '" (' + dominant.pct.toFixed(1) + '%). ';
+      } else if (balanced) {
+        shapeNote = 'Responses are fairly balanced across the scale. ';
+      } else if (topHeavy) {
+        shapeNote = 'Skewed positive \u2014 most responses are at the high end. ';
+      } else if (botHeavy) {
+        shapeNote = 'Skewed negative \u2014 most responses are at the low end. ';
+      }
+      if (gap > 0.5) {
+        shapeNote += 'Mean (' + mean + ') and median (' + median + ') diverge \u2014 the median is a more reliable summary.';
+      }
+      if (shapeNote) {
+        html += RC('Distribution Shape', '<div style="font-size:0.88rem;color:var(--text-1);line-height:1.5">' + shapeNote + '</div>');
+      }
+    }
+
+    // For categorical (non-Likert), check if one category dominates
+    if (!isLikert && !isMulti && sorted.length > 0) {
+      var topCat = sorted[0]; // already sorted by frequency desc
+      if (topCat.pct > 50) {
+        html += RC('Distribution Shape', '<div style="font-size:0.88rem;color:var(--text-1)">Dominated by "' + escHtml(topCat.value) + '" (' + topCat.pct.toFixed(1) + '%). Other categories are minority responses.</div>');
+      }
+    }
+
     // Distribution table
     html += renderDistTable(sorted, isLikert ? 'Response Distribution' : 'Frequency Table');
 
@@ -6935,6 +6968,27 @@
       }
     }
 
+    // Chi-Square + Cramer's V for categorical (non-Likert) data
+    var chiResult = null;
+    var cramersV = null;
+    if (!isLikertCross && groupLabels.length >= 2 && optionLabels.length >= 2) {
+      // Build observed frequency table: groups (rows) x options (cols)
+      var observed = [];
+      for (var g = 0; g < groupLabels.length; g++) {
+        var row = [];
+        for (var c = 0; c < optionLabels.length; c++) {
+          row.push(countTable[groupLabels[g]][optionLabels[c]]);
+        }
+        observed.push(row);
+      }
+      try {
+        chiResult = StatsEngine.chiSquare(observed);
+        // Cramer's V = sqrt(chi2 / (n * min(r-1, c-1)))
+        var minDim = Math.min(groupLabels.length - 1, optionLabels.length - 1);
+        cramersV = minDim > 0 && n > 0 ? Math.sqrt(chiResult.chiSquare / (n * minDim)) : 0;
+      } catch(e) {}
+    }
+
     // Compute total mean and indexes
     var totalMeanCross = 0;
     if (isLikertCross && groupMeans.length > 0) {
@@ -6974,9 +7028,25 @@
       }
       html += '</div>';
     } else {
-      html += '<div class="result-card"><div class="result-card-title">Summary</div><div class="test-results-grid">' +
-        testStat('Total N', n) + testStat('Groups', groupLabels.length) + testStat('Options', optionLabels.length) +
-      '</div></div>';
+      var catMetrics = [
+        { label: 'Total N', value: n },
+        { label: 'Groups', value: groupLabels.length },
+        { label: 'Options', value: optionLabels.length }
+      ];
+      if (chiResult) {
+        catMetrics.push({ label: '\u03c7\u00b2', value: round4(chiResult.chiSquare) });
+        catMetrics.push({ label: 'Cram\u00e9r\u2019s V', value: round4(cramersV) });
+      }
+      html += RC('Summary', renderMetrics(catMetrics));
+      if (chiResult) {
+        html += renderSigBadge(chiResult.p);
+        var vStrength = cramersV < 0.1 ? 'negligible' : cramersV < 0.3 ? 'weak' : cramersV < 0.5 ? 'moderate' : 'strong';
+        html += RC('Relationship Strength',
+          '<div style="font-size:0.88rem;color:var(--text-1)">Cram\u00e9r\u2019s V = ' + round4(cramersV) + ' (' + vStrength + '). ' +
+          (chiResult.p < getAlpha() ? 'The groups are significantly different in how they respond.' : 'No significant difference between groups.') +
+          '</div>'
+        );
+      }
     }
 
     // Top-box / Bottom-box per group table (Likert only)
@@ -7077,6 +7147,10 @@
       }
       plainText = valDesc + ' by ' + grpDesc + ': ' + n + ' respondents across ' + groupLabels.length + ' groups and ' + optionLabels.length + ' options. ' +
         'Highest: ' + maxPct.toFixed(1) + '% for "' + maxOpt + '" in "' + maxGroup + '".';
+      if (chiResult) {
+        var vStr = cramersV < 0.1 ? 'negligible' : cramersV < 0.3 ? 'weak' : cramersV < 0.5 ? 'moderate' : 'strong';
+        plainText += chiResult.p < getAlpha() ? ' The relationship is statistically significant (' + vStr + ' strength).' : ' The relationship is not statistically significant.';
+      }
     }
     html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
       '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>';
@@ -13387,46 +13461,46 @@
   // Contextual next steps based on what the user just ran
   var CONTEXTUAL_NEXT = {
     descriptive: [
-      { label: 'Compare across groups', desc: 'Split by a segment variable', method: 'frequencies' },
-      { label: 'Check correlation with another variable', desc: 'See if two things are related', method: 'spearman' },
-      { label: 'Check if scale is reliable', desc: 'Cronbach\u2019s Alpha for related items', method: 'cronbach' },
-      { label: 'Find segments in the data', desc: 'K-Means clustering', method: 'kmeans' }
+      { label: 'Step 2: Compare across groups', desc: 'Paste a grouping variable to see if groups differ', method: 'frequencies' },
+      { label: 'Step 3: Check correlation', desc: 'Does this variable relate to another?', method: 'spearman' },
+      { label: 'Step 4: Predict an outcome', desc: 'What drives this variable? (regression)', method: 'simple_regression' },
+      { label: 'Check scale reliability', desc: 'Do related items measure the same thing?', method: 'cronbach' }
     ],
     group_comparison: [
-      { label: 'Try non-parametric version', desc: 'Doesn\u2019t assume normal distribution', method: 'kruskal_wallis' },
-      { label: 'Check if data is normal', desc: 'Shapiro-Wilk test', method: 'shapiro_wilk' },
-      { label: 'Check correlation instead', desc: 'Are these related, not just different?', method: 'spearman' },
-      { label: 'Find what drives the outcome', desc: 'Regression analysis', method: 'linear_regression' }
+      { label: 'Step 3: Check correlation', desc: 'As one variable goes up, does the other?', method: 'spearman' },
+      { label: 'Step 4: Predict the outcome', desc: 'What drives the difference? (regression)', method: 'linear_regression' },
+      { label: 'Try non-parametric version', desc: 'Better for rating scales / non-normal data', method: 'kruskal_wallis' },
+      { label: 'Find segments', desc: 'Are there natural groups in the data?', method: 'kmeans' }
     ],
     paired: [
-      { label: 'Try non-parametric version', desc: 'Wilcoxon signed-rank', method: 'wilcoxon' },
+      { label: 'Try non-parametric version', desc: 'Wilcoxon signed-rank for ordinal data', method: 'wilcoxon' },
       { label: 'Compare 3+ conditions', desc: 'Friedman or Repeated Measures', method: 'friedman' },
-      { label: 'Check the distribution', desc: 'Is my data normally distributed?', method: 'distribution' },
-      { label: 'Summarize each column', desc: 'Full descriptive stats', method: 'summary' }
+      { label: 'Check correlation', desc: 'Are the two measures related?', method: 'spearman' },
+      { label: 'Predict the outcome', desc: 'Regression analysis', method: 'linear_regression' }
     ],
     correlation: [
-      { label: 'Predict one from the other', desc: 'Simple regression', method: 'simple_regression' },
-      { label: 'Check multiple correlations at once', desc: 'Correlation matrix', method: 'corr_matrix' },
+      { label: 'Step 4: Predict one from the other', desc: 'Regression \u2014 how much does X explain Y?', method: 'simple_regression' },
+      { label: 'Check multiple correlations', desc: 'Correlation matrix for 3+ variables', method: 'corr_matrix' },
       { label: 'Control for a third variable', desc: 'Partial correlation', method: 'partial_corr' },
-      { label: 'Compare groups instead', desc: 'Are groups different?', method: 'ttest' }
+      { label: 'Compare groups instead', desc: 'Do groups differ on this variable?', method: 'frequencies' }
     ],
     regression: [
-      { label: 'Check residuals', desc: 'Is the model well-specified?', method: 'distribution' },
-      { label: 'Try multiple predictors', desc: 'Multiple regression', method: 'linear_regression' },
-      { label: 'Predict a category instead', desc: 'Logistic regression', method: 'logistic_regression' },
-      { label: 'Check correlations first', desc: 'Correlation matrix', method: 'corr_matrix' }
+      { label: 'Add more predictors', desc: 'Multiple regression for richer model', method: 'linear_regression' },
+      { label: 'Predict a yes/no outcome', desc: 'Logistic regression with odds ratios', method: 'logistic_regression' },
+      { label: 'Check correlations first', desc: 'Which variables are related?', method: 'corr_matrix' },
+      { label: 'Go back to group comparison', desc: 'Compare groups on the outcome', method: 'frequencies' }
     ],
     scale: [
-      { label: 'Explore the factor structure', desc: 'Factor Analysis', method: 'factor_analysis' },
-      { label: 'Reduce to fewer dimensions', desc: 'PCA', method: 'pca' },
-      { label: 'Test a specific structure', desc: 'Confirmatory Factor Analysis', method: 'cfa' },
-      { label: 'Summarize each item', desc: 'Frequencies for each question', method: 'frequencies' }
+      { label: 'Explore factor structure', desc: 'How many constructs do your items measure?', method: 'factor_analysis' },
+      { label: 'Reduce to dimensions', desc: 'PCA for variable reduction', method: 'pca' },
+      { label: 'Test a specific structure', desc: 'CFA to confirm your model', method: 'cfa' },
+      { label: 'Summarize each item', desc: 'Distribution of every question', method: 'frequencies' }
     ],
     clustering: [
-      { label: 'Try a different number of segments', desc: 'Re-run with more/fewer K', method: 'kmeans' },
-      { label: 'Try hierarchical clustering', desc: 'Tree-based segmentation', method: 'hierarchical_clustering' },
-      { label: 'Find latent classes', desc: 'LCA for binary data', method: 'lca' },
-      { label: 'Profile the segments', desc: 'Compare segments on a variable', method: 'anova' }
+      { label: 'Profile the segments', desc: 'Compare segments on key variables', method: 'frequencies' },
+      { label: 'Try different K', desc: 'Re-run with more or fewer segments', method: 'kmeans' },
+      { label: 'Try hierarchical approach', desc: 'Tree-based segmentation', method: 'hierarchical_clustering' },
+      { label: 'Predict segment membership', desc: 'What variables define each segment?', method: 'logistic_regression' }
     ]
   };
 
