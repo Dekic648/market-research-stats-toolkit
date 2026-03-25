@@ -3107,6 +3107,42 @@
     return { nums: nums, aligned: aligned, bad: bad, excelErrors: excelErrors, percentStripped: percentStripped, total: lines.length, hasMultipleColumns: hasMultipleColumns, rawLineCount: lines.length };
   }
 
+  // Align multiple columns by raw line position.
+  // Takes array of {text, type} where type is 'numeric' or 'categorical'.
+  // Returns array of arrays, only rows where ALL columns have valid values.
+  function alignColumns(columns) {
+    // Split each column into raw lines
+    var allLines = columns.map(function(col) {
+      return col.text.split(/\n/).map(function(s) { return s.trim(); });
+    });
+    var maxRows = Math.max.apply(null, allLines.map(function(l) { return l.length; }));
+
+    var results = columns.map(function() { return []; });
+    for (var r = 0; r < maxRows; r++) {
+      var allValid = true;
+      var rowValues = [];
+      for (var c = 0; c < columns.length; c++) {
+        var raw = r < allLines[c].length ? allLines[c][r] : '';
+        if (raw === '' || isExcelError(raw)) { allValid = false; break; }
+
+        if (columns[c].type === 'numeric') {
+          var cleaned = raw;
+          if (/^-?\d+(\.\d+)?%$/.test(cleaned)) cleaned = cleaned.replace('%', '');
+          var n = parseFloat(cleaned);
+          if (!isNaN(n) && isFinite(n)) { rowValues.push(n); }
+          else { allValid = false; break; } // non-numeric in numeric column = skip row
+        } else {
+          // categorical: any non-empty value is valid
+          rowValues.push(raw);
+        }
+      }
+      if (allValid && rowValues.length === columns.length) {
+        for (var c = 0; c < columns.length; c++) results[c].push(rowValues[c]);
+      }
+    }
+    return results;
+  }
+
   function round2(v) { return Math.round(v * 100) / 100; }
   function round4(v) { return Math.round(v * 10000) / 10000; }
   function round6(v) { return Math.round(v * 1000000) / 1000000; }
@@ -3763,15 +3799,12 @@
     });
 
     runBtn.addEventListener('click', function() {
-      var cols = [];
+      // Use aligned parsing to ensure row matching across all columns
+      var colDefs = [];
       textareas.forEach(function(ta) {
-        var type = ta.getAttribute('data-type');
-        if (type === 'numeric') {
-          cols.push(parseValues(ta.value).nums);
-        } else {
-          cols.push(parseCategorical(ta.value));
-        }
+        colDefs.push({ text: ta.value, type: ta.getAttribute('data-type') || 'numeric' });
       });
+      var cols = alignColumns(colDefs);
       runBtn.disabled = true;
       runBtn.textContent = 'Running...';
       callback(cols);
@@ -5704,23 +5737,17 @@
       });
 
       runBtn.addEventListener('click', function() {
-        var columns = [];
         var labels = [];
         var catFirstCol = isMultinomial || isDiscriminant;
+
+        // Use aligned parsing for row-matched columns
+        var colDefs = [];
         section.querySelectorAll('.multi-data').forEach(function(ta, i) {
-          if (i === 0 && catFirstCol) {
-            columns.push(parseCategorical(ta.value));
-          } else {
-            columns.push(parseValues(ta.value).nums);
-          }
+          colDefs.push({ text: ta.value, type: (i === 0 && catFirstCol) ? 'categorical' : 'numeric' });
           var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
           labels.push(descEl ? (descEl.value || (i === 0 ? 'Outcome' : 'Predictor ' + i)) : (i === 0 ? 'Outcome' : 'Predictor ' + i));
         });
-
-        // Trim all to minimum length
-        var minLen = Infinity;
-        columns.forEach(function(c) { if (c.length < minLen) minLen = c.length; });
-        columns = columns.map(function(c) { return c.slice(0, minLen); });
+        var columns = alignColumns(colDefs);
 
         var y = columns[0];
         var xs = columns.slice(1);
@@ -7481,6 +7508,32 @@
       var grpDesc = section.querySelector('#freqGrpDesc').value.trim() || 'Group';
       runBtn.disabled = true;
       runBtn.textContent = 'Running...';
+
+      // Align rows: if grouping has different length, align by raw line position
+      if (grpLines.length > 0 && grpLines.length !== parsed.rows.length) {
+        // Raw lines from both textareas
+        var valLines = valEl.value.split(/\n/).map(function(s) { return s.trim(); });
+        var grpRawLines = grpEl.value.split(/\n/).map(function(s) { return s.trim(); });
+        var maxLen = Math.max(valLines.length, grpRawLines.length);
+        var alignedVals = [], alignedGrps = [];
+        for (var i = 0; i < maxLen; i++) {
+          var vl = i < valLines.length ? valLines[i] : '';
+          var gl = i < grpRawLines.length ? grpRawLines[i] : '';
+          // Keep row only if BOTH have non-empty, non-error content
+          if (vl !== '' && gl !== '' && !isExcelError(vl) && !isExcelError(gl)) {
+            alignedVals.push(vl);
+            alignedGrps.push(gl);
+          }
+        }
+        // Re-parse with aligned data
+        parsed = parseMultiCols(alignedVals.join('\n'));
+        grpLines = alignedGrps.map(function(g) {
+          var hasTabs = g.indexOf('\t') > -1;
+          if (hasTabs) return g.split('\t').map(function(c) { return c.trim(); }).filter(function(c) { return c !== ''; }).join(' | ');
+          return g;
+        });
+      }
+
       if (grpLines.length > 0 && grpLines.length === parsed.rows.length) {
         runCrosstab(parsed, grpLines, valDesc, grpDesc);
       } else {
@@ -14120,6 +14173,29 @@
       var label = section.querySelector('#mrLabel').value.trim() || (parsed.isScaleData ? 'Scale comparison' : 'Multi-response question');
       var grpLines = grpEl ? parseCategorical(grpEl.value) : [];
       var grpDesc = section.querySelector('#mrGroupDesc') ? section.querySelector('#mrGroupDesc').value.trim() : '';
+
+      // Align grouping with data rows if lengths differ
+      if (grpLines.length > 0 && grpLines.length !== parsed.nRows) {
+        // The data may have had a header row stripped — align by raw line count
+        var dataRawLines = dataEl.value.split(/\n/).filter(function(l) { return l.trim() !== ''; });
+        var grpRawLines = grpEl.value.split(/\n/).filter(function(l) { return l.trim() !== ''; });
+        var alignedGrp = [];
+        var maxLen = Math.max(dataRawLines.length, grpRawLines.length);
+        var dataIdx = 0;
+        for (var i = 0; i < maxLen; i++) {
+          var dl = i < dataRawLines.length ? dataRawLines[i] : '';
+          var gl = i < grpRawLines.length ? grpRawLines[i] : '';
+          if (dl !== '' && gl !== '' && !isExcelError(dl) && !isExcelError(gl)) {
+            // Check if this data line was kept (not a stripped header)
+            if (dataIdx < parsed.nRows) {
+              alignedGrp.push(gl);
+              dataIdx++;
+            }
+          }
+        }
+        grpLines = alignedGrp;
+      }
+
       runBtn.disabled = true;
       runBtn.textContent = 'Running...';
       if (parsed.isScaleData) {
