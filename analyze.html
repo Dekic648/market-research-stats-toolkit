@@ -1047,6 +1047,14 @@
     }
     .next-step-btn.contextual-btn .ns-label { color: var(--rose); }
 
+    .next-step-btn.rerun-btn {
+      border-color: var(--coral-soft, rgba(224,136,96,0.3));
+      background: var(--coral-soft, rgba(224,136,96,0.08));
+      width: 100%;
+    }
+    .next-step-btn.rerun-btn .ns-label { color: var(--coral, #E08860); }
+    .next-step-btn.rerun-btn:hover { border-color: var(--coral, #E08860); }
+
     .next-step-btn.start-over-next {
       border-color: var(--border);
     }
@@ -3149,7 +3157,10 @@
   /* ==================================================================
      Launch Method — central dispatcher
      ================================================================== */
+  var lastMethodId = null;
+
   function launchMethod(methodId) {
+    lastMethodId = methodId;
     var intros = {
       ttest: "An <strong>Independent Samples t-test</strong> will tell you whether two groups are significantly different on a numeric measure. Paste two columns of numbers &mdash; one for each group.<br><small style='color:var(--text-2)'>Tip: If your groups are in one column with a grouping variable (e.g., satisfaction scores + segment codes), try <strong>Frequencies &amp; Crosstabs</strong> or <strong>ANOVA</strong> instead &mdash; they can split the data for you.</small>",
       paired_ttest: "A <strong>Paired Samples t-test</strong> compares two related measurements (e.g., before vs after) on the same subjects. Paste two columns of equal length.",
@@ -13952,6 +13963,14 @@
 
     var html = '<div class="next-steps-card">';
 
+    // Re-run button
+    if (lastMethodId) {
+      html += '<div style="margin-bottom:0.75rem"><button class="next-step-btn rerun-btn" data-action="rerun">' +
+        '<span class="ns-label">\u21bb Re-run with different data</span>' +
+        '<span class="ns-desc">Same analysis, new data \u2014 no need to navigate back</span>' +
+      '</button></div>';
+    }
+
     // Contextual suggestions (if any)
     if (contextual.length > 0) {
       html += '<div class="next-steps-title">Suggested Next Steps</div><div class="next-steps-grid">';
@@ -13986,6 +14005,11 @@
       btn.addEventListener('click', function() {
         var action = btn.getAttribute('data-action');
         if (action === 'reset') { resetChat(); return; }
+        if (action === 'rerun' && lastMethodId) {
+          container.innerHTML = '';
+          launchMethod(lastMethodId);
+          return;
+        }
 
         // Direct method launch
         var methodId = btn.getAttribute('data-method');
