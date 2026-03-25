@@ -3756,8 +3756,8 @@
       runBtn.addEventListener('click', function() {
         var groups = [];
         var labels = [];
-        section.querySelectorAll('.multi-data').forEach(function(ta, i) {
-          if (allowMissing) {
+        if (allowMissing) {
+          section.querySelectorAll('.multi-data').forEach(function(ta, i) {
             // Parse with NaN for missing
             var lines = ta.value.split(/[\n]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
             var vals = [];
@@ -3766,12 +3766,18 @@
               else { var n = parseFloat(l); vals.push(n); }
             });
             groups.push(vals);
-          } else {
-            groups.push(parseValues(ta.value).nums);
-          }
-          var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
-          labels.push(descEl ? (descEl.value || 'Group ' + (i + 1)) : 'Group ' + (i + 1));
-        });
+            var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
+            labels.push(descEl ? (descEl.value || 'Group ' + (i + 1)) : 'Group ' + (i + 1));
+          });
+        } else {
+          var colDefs = [];
+          section.querySelectorAll('.multi-data').forEach(function(ta, i) {
+            colDefs.push({ text: ta.value, type: 'numeric' });
+            var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
+            labels.push(descEl ? (descEl.value || 'Group ' + (i + 1)) : 'Group ' + (i + 1));
+          });
+          groups = alignColumns(colDefs);
+        }
         runBtn.disabled = true;
         runBtn.textContent = 'Running...';
         callback(groups, labels);
@@ -6146,23 +6152,19 @@
       });
 
       runBtn.addEventListener('click', function() {
-        var columns = [];
+        var colDefs = [];
         var labels = [];
         section.querySelectorAll('.multi-data').forEach(function(ta, i) {
-          columns.push(parseValues(ta.value).nums);
+          colDefs.push({ text: ta.value, type: 'numeric' });
           var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
           labels.push(descEl ? (descEl.value || 'Variable ' + (i + 1)) : 'Variable ' + (i + 1));
         });
+        var columns = alignColumns(colDefs);
 
         var k = Math.max(2, Math.min(8, parseInt(section.querySelector('#kInput').value) || 3));
 
-        // Trim to minimum length
-        var minLen = Infinity;
-        columns.forEach(function(c) { if (c.length < minLen) minLen = c.length; });
-        columns = columns.map(function(c) { return c.slice(0, minLen); });
-
-        if (minLen < k) {
-          showError('You need at least as many data points as clusters. You have ' + minLen + ' data points and K = ' + k + '.');
+        if (columns[0].length < k) {
+          showError('You need at least as many data points as clusters. You have ' + columns[0].length + ' data points and K = ' + k + '.');
           return;
         }
 
@@ -7089,20 +7091,16 @@
       });
 
       runBtn.addEventListener('click', function() {
-        var columns = [];
+        var colDefs = [];
         var labels = [];
         section.querySelectorAll('.multi-data').forEach(function(ta, i) {
-          columns.push(parseValues(ta.value).nums);
+          colDefs.push({ text: ta.value, type: 'numeric' });
           var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
           labels.push(descEl ? (descEl.value || 'Item ' + (i + 1)) : 'Item ' + (i + 1));
         });
+        var columns = alignColumns(colDefs);
 
         var nFactors = Math.max(1, Math.min(10, parseInt(section.querySelector('#nFactorsInput').value) || 2));
-
-        // Trim to minimum length
-        var minLen = Infinity;
-        columns.forEach(function(c) { if (c.length < minLen) minLen = c.length; });
-        columns = columns.map(function(c) { return c.slice(0, minLen); });
 
         runBtn.disabled = true;
         runBtn.textContent = 'Running...';
@@ -9822,23 +9820,20 @@
       });
 
       runBtn.addEventListener('click', function() {
-        var columns = [];
+        var colDefs = [];
         var labels = [];
         section.querySelectorAll('.multi-data').forEach(function(ta, i) {
-          columns.push(parseValues(ta.value).nums);
+          colDefs.push({ text: ta.value, type: 'numeric' });
           var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
           labels.push(descEl ? (descEl.value || 'Variable ' + (i + 1)) : 'Variable ' + (i + 1));
         });
+        var columns = alignColumns(colDefs);
 
         var k = Math.max(2, Math.min(8, parseInt(section.querySelector('#kInput').value) || 3));
         var linkage = section.querySelector('#linkageSelect').value;
 
-        var minLen = Infinity;
-        columns.forEach(function(c) { if (c.length < minLen) minLen = c.length; });
-        columns = columns.map(function(c) { return c.slice(0, minLen); });
-
-        if (minLen < k) {
-          showError('You need at least as many data points as clusters. You have ' + minLen + ' data points and K = ' + k + '.');
+        if (columns[0].length < k) {
+          showError('You need at least as many data points as clusters. You have ' + columns[0].length + ' data points and K = ' + k + '.');
           return;
         }
 
@@ -12438,13 +12433,16 @@
 
       runBtn.addEventListener('click', function() {
         var nClasses = parseInt(section.querySelector('#lcaClassesSelect').value) || 2;
-        var cols = [];
+        var colDefs = [];
         var labels = [];
         section.querySelectorAll('.lca-data').forEach(function(ta, i) {
-          cols.push(parseValues(ta.value).nums);
+          colDefs.push({ text: ta.value, type: 'numeric' });
           var desc = section.querySelector('.lca-desc[data-idx="' + i + '"]');
           labels.push(desc && desc.value ? desc.value : 'Item ' + (i + 1));
         });
+        var cols = alignColumns(colDefs);
+        // Convert to binary for LCA
+        cols = cols.map(function(col) { return col.map(function(v) { return v !== 0 ? 1 : 0; }); });
         runBtn.disabled = true;
         runBtn.textContent = 'Running...';
         runLCA(cols, labels, nClasses);
@@ -12799,18 +12797,15 @@
       if (removeBtn) removeBtn.addEventListener('click', function() { if (colCount > 3) { var saved = saveGridData(); colCount--; buildGrid(saved); bindEvents(); scrollToBottom(); } });
 
       runBtn.addEventListener('click', function() {
-        var cols = [];
+        var colDefs = [];
         var labels = [];
         section.querySelectorAll('textarea.cfa-data[data-idx]').forEach(function(ta, i) {
-          cols.push(parseValues(ta.value).nums);
+          colDefs.push({ text: ta.value, type: 'numeric' });
           var desc = section.querySelector('.cfa-desc[data-idx="' + i + '"]');
           labels.push(desc && desc.value ? desc.value : 'Item ' + (i + 1));
         });
+        var cols = alignColumns(colDefs);
         var model = parseCFAModel(section.querySelector('#cfaModelSpec').value);
-        // Trim to min length
-        var minLen = Infinity;
-        cols.forEach(function(c) { if (c.length < minLen) minLen = c.length; });
-        cols = cols.map(function(c) { return c.slice(0, minLen); });
         runBtn.disabled = true;
         runBtn.textContent = 'Running...';
         runCFA(cols, labels, model);
@@ -13223,13 +13218,16 @@
       if (removeBtn) removeBtn.addEventListener('click', function() { if (colCount > 3) { var saved = saveGridData(); colCount--; buildGrid(saved); bindEvents(); scrollToBottom(); } });
 
       runBtn.addEventListener('click', function() {
-        var cols = [];
+        var colDefs = [];
         var labels = [];
         section.querySelectorAll('.irt-data').forEach(function(ta, i) {
-          cols.push(parseValues(ta.value).nums);
+          colDefs.push({ text: ta.value, type: 'numeric' });
           var desc = section.querySelector('.irt-desc[data-idx="' + i + '"]');
           labels.push(desc && desc.value ? desc.value : 'Item ' + (i + 1));
         });
+        var cols = alignColumns(colDefs);
+        // Convert to binary for IRT
+        cols = cols.map(function(col) { return col.map(function(v) { return v !== 0 ? 1 : 0; }); });
         runBtn.disabled = true;
         runBtn.textContent = 'Running...';
         runIRT(cols, labels);
@@ -13568,23 +13566,22 @@
       if (removeBtn) removeBtn.addEventListener('click', function() { if (predCount > 1) { predCount--; buildGrid(); bindEvents(); scrollToBottom(); } });
 
       runBtn.addEventListener('click', function() {
-        var groups = parseCategorical(section.querySelector('.me-data[data-idx="group"]').value);
-        var outcome = parseValues(section.querySelector('.me-data[data-idx="outcome"]').value).nums;
-        var outcomeLabel = (section.querySelector('.me-desc[data-idx="outcome"]') || {}).value || 'Outcome';
-        var preds = [];
+        var colDefs = [];
         var predLabels = [];
+        // Column 0 = group (categorical), Column 1 = outcome (numeric), rest = predictors (numeric)
+        colDefs.push({ text: section.querySelector('.me-data[data-idx="group"]').value, type: 'categorical' });
+        colDefs.push({ text: section.querySelector('.me-data[data-idx="outcome"]').value, type: 'numeric' });
+        var outcomeLabel = (section.querySelector('.me-desc[data-idx="outcome"]') || {}).value || 'Outcome';
         section.querySelectorAll('.me-pred').forEach(function(ta) {
-          preds.push(parseValues(ta.value).nums);
+          colDefs.push({ text: ta.value, type: 'numeric' });
           var idx = ta.getAttribute('data-idx');
           var desc = section.querySelector('.me-desc[data-idx="' + idx + '"]');
           predLabels.push(desc && desc.value ? desc.value : idx);
         });
-        // Trim to min length
-        var minLen = Math.min(groups.length, outcome.length);
-        preds.forEach(function(p) { minLen = Math.min(minLen, p.length); });
-        groups = groups.slice(0, minLen);
-        outcome = outcome.slice(0, minLen);
-        preds = preds.map(function(p) { return p.slice(0, minLen); });
+        var aligned = alignColumns(colDefs);
+        var groups = aligned[0];
+        var outcome = aligned[1];
+        var preds = aligned.slice(2);
 
         runBtn.disabled = true;
         runBtn.textContent = 'Running...';
