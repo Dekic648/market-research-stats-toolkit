@@ -412,7 +412,7 @@
     .group-card textarea {
       width: 100%;
       min-height: 200px;
-      padding: 0.7rem 0.85rem;
+      padding: 0.7rem 0.85rem 0.7rem 2.8rem;
       border-radius: 10px;
       border: 1px solid var(--border);
       background: var(--bg-1);
@@ -423,6 +423,29 @@
       resize: vertical;
       outline: none;
       transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .textarea-wrap {
+      position: relative;
+    }
+    .line-numbers {
+      position: absolute;
+      left: 1px;
+      top: 1px;
+      bottom: 1px;
+      width: 2.2rem;
+      padding: 0.7rem 0.3rem 0.7rem 0;
+      background: var(--bg-2);
+      border-radius: 10px 0 0 10px;
+      overflow: hidden;
+      pointer-events: none;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.72rem;
+      line-height: 1.5;
+      color: var(--text-2);
+      opacity: 0.5;
+      text-align: right;
+      white-space: pre;
+      user-select: none;
     }
 
     .group-card textarea::placeholder {
@@ -14707,6 +14730,45 @@
   }
 
   startConversation();
+
+  // Line numbers for all textareas — auto-applied via MutationObserver
+  function addLineNumbers(textarea) {
+    if (textarea.dataset.hasLineNums) return;
+    textarea.dataset.hasLineNums = '1';
+    var wrap = document.createElement('div');
+    wrap.className = 'textarea-wrap';
+    textarea.parentNode.insertBefore(wrap, textarea);
+    wrap.appendChild(textarea);
+    var gutter = document.createElement('div');
+    gutter.className = 'line-numbers';
+    wrap.appendChild(gutter);
+
+    function updateLines() {
+      var lines = textarea.value.split('\n');
+      var nums = '';
+      for (var i = 1; i <= Math.max(lines.length, 8); i++) nums += i + '\n';
+      gutter.textContent = nums;
+      gutter.scrollTop = textarea.scrollTop;
+    }
+    textarea.addEventListener('input', updateLines);
+    textarea.addEventListener('scroll', function() { gutter.scrollTop = textarea.scrollTop; });
+    updateLines();
+  }
+
+  // Watch for new textareas added to the DOM
+  var lineNumObserver = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      m.addedNodes.forEach(function(node) {
+        if (node.nodeType !== 1) return;
+        var textareas = node.querySelectorAll ? node.querySelectorAll('.group-card textarea, .multi-response-card textarea, .text-input-card textarea') : [];
+        textareas.forEach(addLineNumbers);
+        if (node.matches && node.matches('textarea') && node.closest('.group-card, .multi-response-card, .text-input-card')) {
+          addLineNumbers(node);
+        }
+      });
+    });
+  });
+  lineNumObserver.observe(container, { childList: true, subtree: true });
 
   // Significance Settings Panel handlers
   var sigOverlay = document.getElementById('sigSettingsOverlay');
