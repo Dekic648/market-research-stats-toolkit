@@ -449,6 +449,89 @@
       margin-bottom: 1rem;
     }
 
+    /* Stage badge */
+    .stage-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .stage-badge.stage-1 { background: var(--rose-soft); color: var(--rose); }
+    .stage-badge.stage-2 { background: var(--coral-soft); color: var(--coral); }
+    .stage-badge.stage-3 { background: rgba(76, 175, 80, 0.10); color: #4CAF50; }
+    .stage-badge.stage-4 { background: rgba(66, 133, 244, 0.10); color: #4285F4; }
+    .stage-badge.stage-5 { background: rgba(156, 39, 176, 0.10); color: #9C27B0; }
+
+    @media (prefers-color-scheme: dark) {
+      .stage-badge.stage-3 { background: rgba(102, 187, 106, 0.12); color: #66BB6A; }
+      .stage-badge.stage-4 { background: rgba(100, 160, 255, 0.12); color: #64A0FF; }
+      .stage-badge.stage-5 { background: rgba(186, 104, 200, 0.12); color: #BA68C8; }
+    }
+    :root.dark .stage-badge.stage-3 { background: rgba(102, 187, 106, 0.12); color: #66BB6A; }
+    :root.dark .stage-badge.stage-4 { background: rgba(100, 160, 255, 0.12); color: #64A0FF; }
+    :root.dark .stage-badge.stage-5 { background: rgba(186, 104, 200, 0.12); color: #BA68C8; }
+
+    /* Try-method pill buttons */
+    .try-methods {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 0.75rem;
+    }
+
+    .try-methods-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-2);
+      width: 100%;
+      margin-bottom: 2px;
+    }
+
+    .try-method {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-decoration: none;
+      margin: 3px;
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+    }
+
+    .try-method:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .try-method.color-rose { background: var(--rose-soft); color: var(--rose); }
+    .try-method.color-coral { background: var(--coral-soft); color: var(--coral); }
+    .try-method.color-green { background: rgba(76, 175, 80, 0.10); color: #4CAF50; }
+    .try-method.color-blue { background: rgba(66, 133, 244, 0.10); color: #4285F4; }
+    .try-method.color-purple { background: rgba(156, 39, 176, 0.10); color: #9C27B0; }
+
+    @media (prefers-color-scheme: dark) {
+      .try-method.color-green { background: rgba(102, 187, 106, 0.12); color: #66BB6A; }
+      .try-method.color-blue { background: rgba(100, 160, 255, 0.12); color: #64A0FF; }
+      .try-method.color-purple { background: rgba(186, 104, 200, 0.12); color: #BA68C8; }
+    }
+    :root.dark .try-method.color-green { background: rgba(102, 187, 106, 0.12); color: #66BB6A; }
+    :root.dark .try-method.color-blue { background: rgba(100, 160, 255, 0.12); color: #64A0FF; }
+    :root.dark .try-method.color-purple { background: rgba(186, 104, 200, 0.12); color: #BA68C8; }
+
+    .coming-soon-note {
+      font-size: 0.82rem;
+      color: var(--text-2);
+      font-style: italic;
+      margin-top: 0.5rem;
+    }
+
     /* Method tags */
     .method-tags {
       display: flex;
@@ -663,8 +746,9 @@
     }
 
     .cta-btn:hover {
-      background: var(--rose);
-      color: #fff;
+      background: var(--rose) !important;
+      color: #fff !important;
+      border-color: var(--rose) !important;
       transform: translateY(-2px);
       box-shadow: 0 6px 20px var(--rose-glow);
     }
@@ -851,6 +935,10 @@
   <nav class="breadcrumb">
     <a href="index.html">Home</a>
     <span>/</span>
+    <a href="analyze.html">Analyze</a>
+    <span>/</span>
+    <a href="learn.html">Learn</a>
+    <span>/</span>
     <span class="current">How It Works</span>
   </nav>
 
@@ -873,10 +961,11 @@
     <div class="section-label">Sarah's Journey</div>
     <div class="chapters">
 
-      <!-- Chapter 1 -->
+      <!-- Chapter 1 — Stage 1: Describe -->
       <div class="chapter-card">
         <div class="chapter-number">1</div>
         <div class="chapter-content">
+          <span class="stage-badge stage-1">Stage 1: Describe</span>
           <h3>"What does the data look like?"</h3>
           <p class="story-text">Sarah starts where every good analyst starts &mdash; by getting a feel for the data. How many respondents completed the survey? What are the average satisfaction scores? Are there outliers that could skew her results? She runs descriptive statistics to build a baseline before diving deeper.</p>
           <div class="method-tags">
@@ -886,13 +975,20 @@
             <span class="method-tag">Frequencies</span>
             <span class="method-tag">Confidence Intervals</span>
           </div>
+          <div class="try-methods">
+            <div class="try-methods-label">Try it now</div>
+            <a href="analyze.html?method=frequencies" class="try-method color-rose">Frequencies &amp; Crosstabs</a>
+            <a href="analyze.html?method=summary" class="try-method color-rose">Summary Statistics</a>
+            <a href="analyze.html?method=distribution" class="try-method color-rose">Distribution Checker</a>
+          </div>
         </div>
       </div>
 
-      <!-- Chapter 2 -->
+      <!-- Chapter 2 — Stage 2: Compare -->
       <div class="chapter-card">
         <div class="chapter-number">2</div>
         <div class="chapter-content">
+          <span class="stage-badge stage-2">Stage 2: Compare</span>
           <h3>"Are customers in different regions responding differently?"</h3>
           <p class="story-text">Sarah's boss asks: "Is customer satisfaction the same across all four regions?" She has satisfaction ratings (1&ndash;10) broken down by region. Time to compare groups and see if the differences are real or just noise in the data.</p>
           <div class="method-tags">
@@ -904,6 +1000,12 @@
             <span class="method-tag">Chi-Square</span>
             <span class="method-tag">Welch's ANOVA</span>
           </div>
+          <div class="try-methods">
+            <div class="try-methods-label">Try it now</div>
+            <a href="analyze.html?method=anova" class="try-method color-coral">ANOVA</a>
+            <a href="analyze.html?method=kruskal_wallis" class="try-method color-coral">Kruskal-Wallis</a>
+            <a href="analyze.html?method=ttest" class="try-method color-coral">T-test</a>
+          </div>
           <div class="decision-guide">
             <div class="decision-guide-label">How to decide</div>
             <p>Comparing <code>2 groups</code>? Use a t-test. Comparing <code>3+ groups</code>? Use ANOVA. Data not normally distributed or ordinal? Use the non-parametric alternatives (Mann-Whitney for 2, Kruskal-Wallis for 3+). Comparing proportions? Chi-Square.</p>
@@ -911,12 +1013,14 @@
         </div>
       </div>
 
-      <!-- Chapter 3 -->
+      <!-- Chapter 3 — Stage 3: Correlate + Stage 4: Predict -->
       <div class="chapter-card">
         <div class="chapter-number">3</div>
         <div class="chapter-content">
+          <span class="stage-badge stage-3">Stage 3: Correlate</span>
+          <span class="stage-badge stage-4">Stage 4: Predict</span>
           <h3>"What drives satisfaction?"</h3>
-          <p class="story-text">Now Sarah needs to find what predicts high satisfaction scores. Is it price perception? Brand trust? Ease of use? She starts by looking at how these variables relate to each other, then builds a model to identify which factors matter most.</p>
+          <p class="story-text">Now Sarah needs to find what predicts high satisfaction scores. Is it price perception? Brand trust? Ease of use? She starts by looking at how these variables relate to each other (correlate), then builds a model to identify which factors matter most (predict).</p>
           <div class="method-tags">
             <div class="method-tags-label">Methods for this</div>
             <span class="method-tag">Pearson Correlation</span>
@@ -925,6 +1029,11 @@
             <span class="method-tag">Logistic Regression</span>
             <span class="method-tag">Partial Correlation</span>
           </div>
+          <div class="try-methods">
+            <div class="try-methods-label">Try it now</div>
+            <a href="analyze.html?method=pearson" class="try-method color-green">Pearson Correlation</a>
+            <a href="analyze.html?method=linear_regression" class="try-method color-blue">Multiple Regression</a>
+          </div>
           <div class="decision-guide">
             <div class="decision-guide-label">How to decide</div>
             <p>Exploring relationships? Start with <code>correlation</code>. Predicting a continuous outcome (like a score)? Use <code>linear regression</code>. Predicting a yes/no outcome (like churn)? Use <code>logistic regression</code>. Need to control for confounders? Partial correlation.</p>
@@ -932,10 +1041,11 @@
         </div>
       </div>
 
-      <!-- Chapter 4 -->
+      <!-- Chapter 4 — Stage 5: Segment -->
       <div class="chapter-card">
         <div class="chapter-number">4</div>
         <div class="chapter-content">
+          <span class="stage-badge stage-5">Stage 5: Segment</span>
           <h3>"Are there distinct customer types?"</h3>
           <p class="story-text">Marketing wants to know if there are natural customer segments they can target differently. Sarah looks for clusters &mdash; groups of respondents who answered similarly &mdash; to build data-driven personas for the campaign team.</p>
           <div class="method-tags">
@@ -945,6 +1055,11 @@
             <span class="method-tag">Hierarchical Clustering</span>
             <span class="method-tag">Factor Analysis</span>
           </div>
+          <div class="try-methods">
+            <div class="try-methods-label">Try it now</div>
+            <a href="analyze.html?method=kmeans" class="try-method color-purple">K-Means</a>
+            <a href="analyze.html?method=lca" class="try-method color-purple">LCA</a>
+          </div>
           <div class="decision-guide">
             <div class="decision-guide-label">How to decide</div>
             <p>Numeric data with known cluster count? <code>K-Means</code>. Binary or categorical survey responses? <code>Latent Class Analysis</code>. Want to see the hierarchy of how groups merge? <code>Hierarchical clustering</code>. Want to reduce many variables into a few dimensions first? <code>Factor Analysis</code>.</p>
@@ -952,10 +1067,11 @@
         </div>
       </div>
 
-      <!-- Chapter 5 -->
+      <!-- Chapter 5 — Stage 1: Describe (reliability) -->
       <div class="chapter-card">
         <div class="chapter-number">5</div>
         <div class="chapter-content">
+          <span class="stage-badge stage-1">Stage 1: Describe (Reliability)</span>
           <h3>"Does our scale actually work?"</h3>
           <p class="story-text">Before publishing her findings, Sarah needs to validate that her 8-item satisfaction scale is measuring what it's supposed to measure. Are the items internally consistent? Do they load onto the expected factors? This is about the quality of the instrument itself.</p>
           <div class="method-tags">
@@ -965,6 +1081,11 @@
             <span class="method-tag">Confirmatory Factor Analysis</span>
             <span class="method-tag">Item Response Theory</span>
           </div>
+          <div class="try-methods">
+            <div class="try-methods-label">Try it now</div>
+            <a href="analyze.html?method=cronbach" class="try-method color-rose">Cronbach's Alpha</a>
+            <a href="analyze.html?method=factor_analysis" class="try-method color-rose">Factor Analysis</a>
+          </div>
           <div class="decision-guide">
             <div class="decision-guide-label">How to decide</div>
             <p>Checking if items are consistent? <code>Cronbach's Alpha</code>. Discovering what structure your items have? <code>EFA</code> (exploratory). Confirming a hypothesized structure? <code>CFA</code> (confirmatory). Analyzing item difficulty and discrimination? <code>IRT</code>.</p>
@@ -972,7 +1093,7 @@
         </div>
       </div>
 
-      <!-- Chapter 6 -->
+      <!-- Chapter 6 — Preferences (coming soon) -->
       <div class="chapter-card">
         <div class="chapter-number">6</div>
         <div class="chapter-content">
@@ -984,6 +1105,7 @@
             <span class="method-tag">MaxDiff</span>
             <span class="method-tag">Discrete Choice</span>
           </div>
+          <p class="coming-soon-note">These preference methods are coming soon. In the meantime, <a href="learn.html" style="color:var(--rose);text-decoration:none;font-weight:500">explore the Learn page</a> for interactive tutorials on related techniques.</p>
           <div class="decision-guide">
             <div class="decision-guide-label">How to decide</div>
             <p>Ranking which items are most/least important? <code>MaxDiff</code>. Understanding trade-offs between product features (price vs. quality vs. speed)? <code>Conjoint</code>. Simulating realistic purchase decisions? <code>Discrete Choice</code>.</p>
@@ -991,19 +1113,20 @@
         </div>
       </div>
 
-      <!-- Chapter 7 -->
+      <!-- Chapter 7 — Advanced: Causal Inference -->
       <div class="chapter-card">
         <div class="chapter-number">7</div>
         <div class="chapter-content">
           <h3>"Did the campaign work?"</h3>
           <p class="story-text">Finally, Sarah needs to evaluate whether last month's marketing campaign actually moved the needle. Did the test group buy more than the control? Was it the campaign, or would it have happened anyway? She needs causal evidence, not just correlation.</p>
           <div class="method-tags">
-            <div class="method-tags-label">Methods for this</div>
+            <div class="method-tags-label">Advanced methods</div>
             <span class="method-tag">A/B Test</span>
             <span class="method-tag">Difference-in-Differences</span>
             <span class="method-tag">Propensity Score Matching</span>
             <span class="method-tag">Bayesian Test</span>
           </div>
+          <p class="coming-soon-note">Causal inference methods are advanced territory. Check the <a href="learn.html" style="color:var(--rose);text-decoration:none;font-weight:500">Learn page</a> for guided walkthroughs when available.</p>
           <div class="decision-guide">
             <div class="decision-guide-label">How to decide</div>
             <p>Ran a randomized experiment? <code>A/B test</code>. Observational data with a before/after and treatment/control? <code>Difference-in-Differences</code>. Need to create comparable groups from non-random data? <code>Propensity Score Matching</code>. Want probability of improvement instead of p-values? <code>Bayesian test</code>.</p>
@@ -1107,8 +1230,13 @@
   <section class="cta-section">
     <div class="cta-inner">
       <h2>Ready to start?</h2>
-      <p>Sarah delivered her insights on time. Every method she used is available in this toolkit &mdash; for free, in your browser. Start with the question you need to answer, and the tool will guide you to the right method.</p>
-      <a href="analyze.html" class="cta-btn">Start Analyzing <span class="arrow">&#8594;</span></a>
+      <p>Sarah delivered her insights on time. Every method she used is available in this toolkit &mdash; for free, in your browser. Pick your entry point:</p>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:1.5rem;">
+        <a href="analyze.html" class="cta-btn">Start Analyzing <span class="arrow">&#8594;</span></a>
+        <a href="learn.html" class="cta-btn" style="background:var(--coral-soft);border-color:var(--coral);color:var(--coral);">Learn with Examples <span class="arrow">&#8594;</span></a>
+        <a href="analyze.html" class="cta-btn" style="background:var(--bg-1);border-color:var(--border);color:var(--text-1);">Browse All Methods <span class="arrow">&#8594;</span></a>
+      </div>
+      <p style="font-size:0.85rem;color:var(--text-2);margin-top:0;">Guided conversation &middot; 28 interactive tutorials &middot; 59+ methods</p>
       <div class="mole-wrap"><div class="mole-pixel"></div></div>
     </div>
   </section>
