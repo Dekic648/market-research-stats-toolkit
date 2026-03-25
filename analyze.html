@@ -2795,7 +2795,7 @@
             tab.classList.add('active');
             panels.forEach(function(p) { p.classList.remove('visible'); });
             panel.classList.add('visible');
-            scrollToBottom();
+            outer.scrollIntoView({ behavior: 'smooth', block: 'start' });
           });
         });
 
@@ -2803,7 +2803,7 @@
         panels.forEach(function(p) { outer.appendChild(p); });
 
         container.appendChild(outer);
-        scrollToBottom();
+        outer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         resolve();
       }, 150);
     });
