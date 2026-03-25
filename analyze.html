@@ -6552,13 +6552,17 @@
     section.innerHTML =
       '<div class="input-grid">' +
         '<div class="group-card">' +
-          '<div class="group-card-label">Multi-Response Columns</div>' +
+          '<div class="group-card-label">Response Values</div>' +
           '<textarea id="freqVals" placeholder="Paste from Excel \u2014 tab-separated columns.\nEach row = one respondent.\nNon-empty cells = selected options.\nEmpty cells = not selected.\n\ne.g. (3 respondents, chose from options 1\u20137):\n1\t5\t7\n2\t4\n1\t3\t5\t6"></textarea>' +
+          '<div class="desc-label">Describe this question</div>' +
+          '<input type="text" id="freqDesc" placeholder="e.g., Overall satisfaction rating">' +
           '<div class="value-count" id="freqValsCount">No values detected</div>' +
         '</div>' +
         '<div class="group-card">' +
           '<div class="group-card-label">Grouping Variable (optional)</div>' +
           '<textarea id="freqGrp" placeholder="One value per line (same row count):\n18-24\n25-34\n35-44\n\nTip: paste multiple columns to cross by several variables at once (e.g., Age + Gender)"></textarea>' +
+          '<div class="desc-label">Describe this grouping</div>' +
+          '<input type="text" id="freqGrpDesc" placeholder="e.g., Age group">' +
           '<div class="value-count" id="freqGrpCount">Leave empty for simple frequency</div>' +
         '</div>' +
       '</div>' +
@@ -6699,18 +6703,21 @@
     runBtn.addEventListener('click', function() {
       var parsed = parseMultiCols(valEl.value);
       var grpLines = parseGrouping(grpEl.value);
+      var valDesc = section.querySelector('#freqDesc').value.trim() || 'Responses';
+      var grpDesc = section.querySelector('#freqGrpDesc').value.trim() || 'Group';
       runBtn.disabled = true;
       runBtn.textContent = 'Running...';
       if (grpLines.length > 0 && grpLines.length === parsed.rows.length) {
-        runCrosstab(parsed, grpLines);
+        runCrosstab(parsed, grpLines, valDesc, grpDesc);
       } else {
-        runFrequencies(parsed);
+        runFrequencies(parsed, valDesc);
       }
     });
   }
 
   // --- Simple frequency from multi-response data ---
-  function runFrequencies(parsed) {
+  function runFrequencies(parsed, questionDesc) {
+    questionDesc = questionDesc || 'Responses';
     var nRespondents = parsed.rows.length;
     var freqs = {};
     parsed.rows.forEach(function(selected) {
@@ -6797,11 +6804,11 @@
     // Plain English
     var plainText;
     if (isLikert) {
-      plainText = nRespondents + ' respondents rated on a ' + sorted[0].value + '\u2013' + sorted[sorted.length - 1].value + ' scale. ' +
+      plainText = questionDesc + ': ' + nRespondents + ' respondents rated on a ' + sorted[0].value + '\u2013' + sorted[sorted.length - 1].value + ' scale. ' +
         'Average: ' + mean + ' (median: ' + median + '). Most common response: "' + mode + '" (' + modeEntry.pct.toFixed(1) + '%).';
       if (topPct !== null) plainText += ' Top-2 box (' + topLabel + '): ' + topPct + '%. Bottom-2 box (' + botLabel + '): ' + botPct + '%.';
     } else {
-      plainText = 'Frequency analysis of ' + nRespondents + ' respondents across ' + sorted.length + ' options. ' +
+      plainText = questionDesc + ': ' + nRespondents + ' respondents across ' + sorted.length + ' options. ' +
         'Most selected: "' + mode + '" (' + modeEntry.count + ', ' + modeEntry.pct.toFixed(1) + '%).';
       if (isMulti) plainText += ' Multi-response: percentages based on respondents, may exceed 100%.';
     }
@@ -6818,7 +6825,9 @@
   }
 
   // --- Crosstab: multi-response × grouping variable ---
-  function runCrosstab(parsed, groupLines) {
+  function runCrosstab(parsed, groupLines, valDesc, grpDesc) {
+    valDesc = valDesc || 'Responses';
+    grpDesc = grpDesc || 'Group';
     var n = parsed.rows.length;
     var optionLabels = parsed.uniqueItems.slice();
 
@@ -7050,7 +7059,7 @@
     if (isLikertCross && groupMeans.length > 0) {
       var best = groupMeans.reduce(function(a, b) { return a.mean >= b.mean ? a : b; });
       var worst = groupMeans.reduce(function(a, b) { return a.mean <= b.mean ? a : b; });
-      plainText = n + ' respondents across ' + groupLabels.length + ' groups. ' +
+      plainText = valDesc + ' by ' + grpDesc + ': ' + n + ' respondents across ' + groupLabels.length + ' groups. ' +
         '"' + best.name + '" rates highest (mean ' + best.mean + '), "' + worst.name + '" rates lowest (mean ' + worst.mean + ').';
       if (sigResult) {
         plainText += sigResult.p < 0.05 ? ' The difference between groups is statistically significant (p = ' + round4(sigResult.p) + ').' : ' The difference is not statistically significant (p = ' + round4(sigResult.p) + ').';
@@ -7066,7 +7075,7 @@
           if (pctData[g][c] > maxPct) { maxPct = pctData[g][c]; maxGroup = groupLabels[g]; maxOpt = optionLabels[c]; }
         }
       }
-      plainText = 'Cross-tabulation of ' + n + ' respondents across ' + groupLabels.length + ' groups and ' + optionLabels.length + ' options. ' +
+      plainText = valDesc + ' by ' + grpDesc + ': ' + n + ' respondents across ' + groupLabels.length + ' groups and ' + optionLabels.length + ' options. ' +
         'Highest: ' + maxPct.toFixed(1) + '% for "' + maxOpt + '" in "' + maxGroup + '".';
     }
     html += '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
