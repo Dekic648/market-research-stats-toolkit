@@ -6768,13 +6768,30 @@
       ])
     );
 
-    // 3. Chart
+    // 3. What to do
+    if (!isNormal) {
+      html += RC('What Should I Do?',
+        '<div style="font-size:0.85rem;line-height:1.6;color:var(--text-1)">' +
+          '<ul style="margin:0 0 0 1.2rem">' +
+            '<li><strong>Comparing groups?</strong> Use Kruskal-Wallis or Mann-Whitney instead of ANOVA/t-test</li>' +
+            '<li><strong>Correlations?</strong> Use Spearman instead of Pearson</li>' +
+            '<li><strong>Frequencies/percentages?</strong> No impact</li>' +
+            (r.n >= 30 ? '<li><strong>With n=' + r.n + '</strong>, most tests are robust to non-normality</li>' : '') +
+          '</ul></div>'
+      );
+    } else {
+      html += RC('What This Means',
+        '<div style="font-size:0.85rem;color:var(--text-1)">Parametric tests (t-test, ANOVA, Pearson) are appropriate. No special handling needed.</div>'
+      );
+    }
+
+    // 4. Chart
     html += renderChart(chartId, 'Distribution of ' + escHtml(desc), 500, 250);
 
-    // 4. Plain English last
+    // 5. Plain English last
     var swPlain = isNormal
       ? 'The data for ' + escHtml(desc) + ' appears normally distributed (W = ' + round4(r.W) + ', p = ' + round6(r.p) + '). Parametric tests like t-tests and ANOVA are appropriate.'
-      : 'The data for ' + escHtml(desc) + ' is not normally distributed (W = ' + round4(r.W) + ', p = ' + round6(r.p) + '). Consider non-parametric alternatives like Mann-Whitney U or Kruskal-Wallis instead of t-tests and ANOVA.';
+      : 'The data for ' + escHtml(desc) + ' is not normally distributed (W = ' + round4(r.W) + ', p = ' + round6(r.p) + '). Use non-parametric alternatives: Mann-Whitney (2 groups), Kruskal-Wallis (3+ groups), Spearman (correlations).';
     html += renderPlainEnglish(swPlain);
 
     html += '</div>';
@@ -7253,7 +7270,48 @@
       isNormal ? 'var(--green)' : 'var(--rose)'
     );
 
-    // 2. Key metrics
+    // 2. What to do about it
+    if (!isNormal) {
+      var isLikely = stats.n >= 2 && stats.n <= 15;
+      var isLargeN = stats.n >= 30;
+      var guidance = '<div style="font-size:0.85rem;line-height:1.6;color:var(--text-1)">';
+      guidance += '<strong>What this means for your analysis:</strong><ul style="margin:0.5rem 0 0 1.2rem">';
+      guidance += '<li><strong>Comparing groups?</strong> Use <a href="#" class="hint-link" style="color:var(--rose)" data-method="kruskal_wallis">Kruskal-Wallis</a> (3+ groups) or <a href="#" class="hint-link" style="color:var(--rose)" data-method="mann_whitney">Mann-Whitney</a> (2 groups) instead of ANOVA/t-test \u2014 they don\u2019t assume normality.</li>';
+      guidance += '<li><strong>Checking correlations?</strong> Use <a href="#" class="hint-link" style="color:var(--rose)" data-method="spearman">Spearman</a> instead of Pearson \u2014 works with non-normal and ordinal data.</li>';
+      guidance += '<li><strong>Frequencies and percentages?</strong> No impact \u2014 distribution shape doesn\u2019t matter for counting responses.</li>';
+      if (isLargeN) {
+        guidance += '<li><strong>With n=' + stats.n + '</strong>, most tests are robust enough that non-normality has minimal impact. The large sample size helps.</li>';
+      }
+      guidance += '</ul>';
+      // Check if this looks like Likert data
+      var uniqueVals = {};
+      vals.forEach(function(v) { uniqueVals[v] = true; });
+      var nUnique = Object.keys(uniqueVals).length;
+      if (nUnique <= 11 && vals.every(function(v) { return v === Math.floor(v); })) {
+        guidance += '<div style="margin-top:0.5rem;padding:6px 10px;background:var(--bg-1);border-radius:6px;border-left:3px solid var(--amber)">' +
+          '<strong>This looks like rating scale data</strong> (' + nUnique + ' unique values). Rating scales are almost never normally distributed \u2014 this result is expected and usually not a problem.' +
+        '</div>';
+      }
+      guidance += '</div>';
+      html += RC('What Should I Do?', guidance);
+
+      // Wire up method links after rendering
+      setTimeout(function() {
+        container.querySelectorAll('.hint-link[data-method]').forEach(function(link) {
+          link.addEventListener('click', function(e) {
+            e.preventDefault();
+            container.innerHTML = '';
+            launchMethod(link.getAttribute('data-method'));
+          });
+        });
+      }, 200);
+    } else {
+      html += RC('What This Means',
+        '<div style="font-size:0.85rem;color:var(--text-1)">Your data is approximately normally distributed. Parametric tests (t-test, ANOVA, Pearson correlation) are appropriate. No special handling needed.</div>'
+      );
+    }
+
+    // 3. Key metrics
     html += RC('Distribution Summary',
       renderMetrics([
         { label: 'n', value: stats.n },
