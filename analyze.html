@@ -835,6 +835,94 @@
       gap: 8px;
     }
 
+    /* Workflow Progress Bar */
+    .workflow-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 0.5rem 1rem;
+      background: var(--bg-1);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 52px;
+      z-index: 90;
+    }
+    .wf-step {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .wf-step:hover {
+      background: var(--rose-soft);
+      border-color: var(--border-hover);
+    }
+    .wf-num {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--bg-2);
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-2);
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .wf-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-2);
+      transition: color 0.2s;
+    }
+    .wf-hint {
+      font-size: 0.65rem;
+      color: var(--text-2);
+      opacity: 0.6;
+      display: none;
+    }
+    .wf-arrow {
+      color: var(--text-2);
+      opacity: 0.3;
+      font-size: 0.75rem;
+      margin: 0 2px;
+    }
+
+    /* Active step */
+    .wf-step.active .wf-num {
+      background: var(--rose);
+      border-color: var(--rose);
+      color: #fff;
+    }
+    .wf-step.active .wf-label { color: var(--rose); }
+
+    /* Completed step */
+    .wf-step.completed .wf-num {
+      background: var(--green);
+      border-color: var(--green);
+      color: #fff;
+    }
+    .wf-step.completed .wf-num::after { content: '\2713'; }
+    .wf-step.completed .wf-label { color: var(--green); }
+
+    @media (min-width: 600px) {
+      .wf-hint { display: block; }
+      .wf-step { flex-direction: row; gap: 8px; }
+    }
+    @media (max-width: 480px) {
+      .wf-step { padding: 0.3rem 0.5rem; }
+      .wf-label { font-size: 0.7rem; }
+    }
+
     /* Significance Settings */
     .sig-settings-btn {
       background: none; border: none; cursor: pointer; font-size: 1.2rem;
@@ -1879,6 +1967,33 @@
         <button class="sig-settings-close" id="sigSettingsClose">Done</button>
       </div>
     </div>
+  </div>
+
+  <!-- Workflow Progress Bar -->
+  <div class="workflow-bar" id="workflowBar">
+    <button class="wf-step active" data-step="1" data-method="frequencies">
+      <span class="wf-num">1</span>
+      <span class="wf-label">Describe</span>
+      <span class="wf-hint">% distribution, shape</span>
+    </button>
+    <div class="wf-arrow">&rarr;</div>
+    <button class="wf-step" data-step="2" data-method="frequencies">
+      <span class="wf-num">2</span>
+      <span class="wf-label">Compare</span>
+      <span class="wf-hint">Groups, significance</span>
+    </button>
+    <div class="wf-arrow">&rarr;</div>
+    <button class="wf-step" data-step="3" data-method="spearman">
+      <span class="wf-num">3</span>
+      <span class="wf-label">Correlate</span>
+      <span class="wf-hint">Relationships, strength</span>
+    </button>
+    <div class="wf-arrow">&rarr;</div>
+    <button class="wf-step" data-step="4" data-method="linear_regression">
+      <span class="wf-num">4</span>
+      <span class="wf-label">Predict</span>
+      <span class="wf-hint">Drivers, regression</span>
+    </button>
   </div>
 
   <!-- ====== Chat ====== -->
@@ -13637,6 +13752,48 @@
       SIG_SETTINGS.correction = sigCorrEl.value;
       sigOverlay.classList.remove('active');
     }
+  });
+
+  // Workflow Progress Bar
+  var workflowBar = document.getElementById('workflowBar');
+  var wfSteps = workflowBar.querySelectorAll('.wf-step');
+  var currentWfStep = 0;
+
+  // Map method types to workflow steps
+  var METHOD_TO_STEP = {
+    'descriptive': 1, 'frequencies': 1, 'summary': 1, 'distribution': 1, 'multi_response': 1,
+    'group_comparison': 2, 'paired': 2, 'ttest': 2, 'anova': 2, 'mann_whitney': 2, 'kruskal_wallis': 2, 'chi_square': 2,
+    'correlation': 3, 'pearson': 3, 'spearman': 3, 'kendall': 3,
+    'regression': 4, 'linear_regression': 4, 'logistic_regression': 4, 'simple_regression': 4
+  };
+
+  function setWorkflowStep(step) {
+    wfSteps.forEach(function(el) {
+      var s = parseInt(el.getAttribute('data-step'));
+      el.classList.remove('active');
+      if (s < step) el.classList.add('completed');
+      if (s === step) { el.classList.add('active'); el.classList.remove('completed'); }
+    });
+    currentWfStep = step;
+  }
+
+  // Hook into showNextSteps to update the workflow bar
+  var _origShowNextSteps = showNextSteps;
+  showNextSteps = function(methodType, result) {
+    var step = METHOD_TO_STEP[methodType];
+    if (step) setWorkflowStep(step);
+    _origShowNextSteps(methodType, result);
+  };
+
+  // Click handlers for workflow steps
+  wfSteps.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var method = btn.getAttribute('data-method');
+      var step = parseInt(btn.getAttribute('data-step'));
+      setWorkflowStep(step);
+      container.innerHTML = '';
+      launchMethod(method);
+    });
   });
 
 })();
