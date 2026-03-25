@@ -3478,8 +3478,29 @@
     var countB = section.querySelector('#countB');
     var runBtn = section.querySelector('#runBtn');
 
+    // Row mismatch warning element
+    var mismatchWarn = document.createElement('div');
+    mismatchWarn.className = 'row-mismatch-warning';
+    mismatchWarn.style.cssText = 'display:none;font-size:0.8rem;padding:8px 12px;margin-bottom:0.5rem;border-radius:6px;line-height:1.5;background:var(--rose-soft);border:1px solid var(--rose);color:var(--rose);';
+    runBtn.parentNode.insertBefore(mismatchWarn, runBtn);
+
     function checkReady() {
-      runBtn.disabled = !(parseValues(dataA.value).nums.length >= minVals && parseValues(dataB.value).nums.length >= minVals);
+      var pA = parseValues(dataA.value);
+      var pB = parseValues(dataB.value);
+      var nA = pA.nums.length;
+      var nB = pB.nums.length;
+      runBtn.disabled = !(nA >= minVals && nB >= minVals);
+
+      // Row mismatch warning
+      if (nA > 0 && nB > 0 && nA !== nB) {
+        mismatchWarn.innerHTML = '<strong>\u26A0 Row count mismatch:</strong> Left has ' + nA + ' values, right has ' + nB + '. ' +
+          'Each row must match across columns (row 1 left = row 1 right). ' +
+          'If one column has a header and the other doesn\u2019t, all rows will be misaligned. ' +
+          '<strong>Fix:</strong> make sure both columns have the same number of rows \u2014 remove headers from both or neither.';
+        mismatchWarn.style.display = 'block';
+      } else {
+        mismatchWarn.style.display = 'none';
+      }
     }
     dataA.addEventListener('input', function() { updateCount(dataA, countA); checkReady(); });
     dataB.addEventListener('input', function() { updateCount(dataB, countB); checkReady(); });
@@ -3570,17 +3591,46 @@
         });
       });
 
+      // Row mismatch warning
+      var mismatchEl = section.querySelector('.row-mismatch-warning');
+      if (!mismatchEl) {
+        mismatchEl = document.createElement('div');
+        mismatchEl.className = 'row-mismatch-warning';
+        mismatchEl.style.cssText = 'display:none;font-size:0.8rem;padding:8px 12px;margin:0.5rem 0;border-radius:6px;line-height:1.5;background:var(--rose-soft);border:1px solid var(--rose);color:var(--rose);text-align:center;';
+      }
+
       function checkReady() {
         var allGood = true;
+        var lengths = [];
         section.querySelectorAll('.multi-data').forEach(function(ta) {
           if (allowMissing) {
             var lines = ta.value.split(/[\n]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
             if (lines.length < minVals) allGood = false;
+            if (lines.length > 0) lengths.push(lines.length);
           } else {
-            if (parseValues(ta.value).nums.length < minVals) allGood = false;
+            var n = parseValues(ta.value).nums.length;
+            if (n < minVals) allGood = false;
+            if (n > 0) lengths.push(n);
           }
         });
         runBtn.disabled = !allGood;
+
+        // Show mismatch warning if columns have different lengths
+        if (lengths.length >= 2) {
+          var allSame = lengths.every(function(l) { return l === lengths[0]; });
+          if (!allSame) {
+            mismatchEl.innerHTML = '<strong>\u26A0 Row counts differ (' + lengths.join(', ') + ')</strong>. Each row must match across columns. If one has a header, remove it from all or none.';
+            mismatchEl.style.display = 'block';
+            if (!mismatchEl.parentNode) {
+              var runBtnEl = section.querySelector('#runBtn');
+              if (runBtnEl) runBtnEl.parentNode.insertBefore(mismatchEl, runBtnEl);
+            }
+          } else {
+            mismatchEl.style.display = 'none';
+          }
+        } else {
+          mismatchEl.style.display = 'none';
+        }
       }
 
       var addBtn = section.querySelector('#addColBtn');
