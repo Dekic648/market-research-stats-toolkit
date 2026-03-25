@@ -2369,7 +2369,8 @@
                 { text: "What percentage chose each answer? (e.g., how many rated 1, 2, 3\u2026)", next: { id: 'frequencies_node', method: 'frequencies' } },
                 { text: "Compare answer breakdowns across groups (e.g., satisfaction by age group)", next: { id: 'frequencies_grouped_node', method: 'frequencies' } },
                 { text: "What are the averages, medians, and spread?", next: { id: 'summary', method: 'summary' } },
-                { text: "Analyze a \u2018select all that apply\u2019 question", next: { id: 'multi_response_node', method: 'multi_response' } }
+                { text: "Compare multiple rating questions side by side (e.g., 5 satisfaction items)", next: { id: 'multi_response_scale', method: 'multi_response' } },
+                { text: "Analyze a \u2018select all that apply\u2019 checkbox question", next: { id: 'multi_response_node', method: 'multi_response' } }
               ]
             }
           },
@@ -3166,7 +3167,7 @@
       factor_analysis: "<strong>Factor Analysis</strong> discovers the hidden constructs behind your survey items &mdash; which questions measure the same thing? Paste 3 or more columns.",
       distribution: "<strong>Distribution Checker</strong> &mdash; check how your data is distributed. Is it normal? Skewed? Has outliers?",
       summary: "<strong>Summary Statistics</strong> will give you a full descriptive profile of your data: means, medians, standard deviations, confidence intervals, and more.",
-      frequencies: "<strong>Frequencies & Crosstabs</strong> &mdash; paste your response values one per line (left box). Optionally add a grouping variable (right box, same row count) to compare across groups.<br><small style='color:var(--text-2)'><strong>Typical workflow:</strong> Start here to see your distribution &rarr; then add a grouping variable to compare &rarr; then check correlation or run regression. The tool will suggest next steps after each analysis.</small>",
+      frequencies: "<strong>Frequencies & Crosstabs</strong> &mdash; paste your response values one per line (left box). Optionally add a grouping variable (right box, same row count) to compare across groups.<br><small style='color:var(--text-2)'><strong>Typical workflow:</strong> Start here to see your distribution &rarr; add a grouping variable to compare &rarr; then check correlation or run regression.<br><strong>Multiple Likert questions?</strong> To compare several rating scales side by side (e.g., 5 satisfaction items), use <strong>Multi-Response / Checkbox Analysis</strong> instead &mdash; paste all columns together and it auto-detects scale data.</small>",
       phi: "The <strong>Phi Coefficient</strong> measures the association between two binary variables. Enter counts in a 2&times;2 contingency table.",
       kendall: "<strong>Kendall's Tau</strong> measures the ordinal association between two variables. It's robust for small samples and tied ranks. Paste two columns of paired values.",
       simple_regression: "<strong>Simple Linear Regression</strong> predicts a numeric outcome from a single predictor. Paste two columns: X (predictor) and Y (outcome).",
@@ -6889,6 +6890,7 @@
           '<div class="desc-label">Describe this question</div>' +
           '<input type="text" id="freqDesc" placeholder="e.g., Overall satisfaction rating">' +
           '<div class="value-count" id="freqValsCount">No values detected</div>' +
+          '<div style="font-size:0.72rem;color:var(--text-2);margin-top:4px;line-height:1.4">This box is for <strong>one question</strong>. To compare multiple rating questions side by side, use <a href="#" class="freq-scale-link" style="color:var(--rose)">Multi-Response / Checkbox Analysis</a> instead.</div>' +
         '</div>' +
         '<div class="group-card">' +
           '<div class="group-card-label">Grouping Variable (optional)</div>' +
@@ -6907,6 +6909,16 @@
     var valCountEl = section.querySelector('#freqValsCount');
     var grpCountEl = section.querySelector('#freqGrpCount');
     var runBtn = section.querySelector('#freqRunBtn');
+
+    // Link to Multi-Response for scale comparison
+    var scaleLink = section.querySelector('.freq-scale-link');
+    if (scaleLink) {
+      scaleLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        container.innerHTML = '';
+        launchMethod('multi_response');
+      });
+    }
 
     // Parse multi-response textarea: each line → array of non-empty values
     function parseMultiCols(text) {
