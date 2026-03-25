@@ -3290,7 +3290,7 @@
       conjoint: "<strong>Conjoint Analysis</strong> reveals how people trade off different features &mdash; which attributes matter most and how much each level is worth. Paste a ratings column and one or more attribute columns (categorical values per profile).<br><small style='color:var(--text-2)'>\u26A0 This requires conjoint study data (respondents rating product profiles with varied attributes). Standard survey responses won&rsquo;t work here. Example: 8 profiles rated 1&ndash;7, with attributes like Price ($10/$20/$30) and Color (Red/Blue).</small>",
       maxdiff: "<strong>MaxDiff (Best-Worst Scaling)</strong> reveals which items are most and least important &mdash; more discriminating than simple rating scales. Enter your item names and their best/worst counts.<br><small style='color:var(--text-2)'>\u26A0 This requires MaxDiff/Best-Worst study data where respondents chose the best and worst item from sets. Standard survey responses won&rsquo;t work here.</small>",
       discrete_choice: "<strong>Discrete Choice Modeling</strong> predicts which option people will choose based on its attributes &mdash; the foundation of market simulation. Enter choice sets with attributes and chosen alternatives.<br><small style='color:var(--text-2)'>\u26A0 This requires discrete choice experiment data (choice sets with alternatives and attributes). Standard survey responses won&rsquo;t work here. Each row = one alternative within a choice set.</small>",
-      lca: "<strong>Latent Class Analysis</strong> &mdash; find hidden groups based on yes/no response patterns.<br><small style='color:var(--text-2)'><strong>When to use:</strong> You have checkbox-style data (selected/not selected) and want to find groups of people who respond similarly.<br><strong>What to paste:</strong> One box per item with binary values (0/1, Yes/No). Each row = one respondent.<br><strong>Example:</strong> 5 feature adoption columns (uses/doesn\u2019t use) for 300 respondents. LCA might find \u201cpower users\u201d (use everything) vs \u201cbasic users\u201d (use 1\u20132 features).<br><strong>What you\u2019ll learn:</strong> How many distinct response patterns exist and what characterizes each class.</small>",
+      lca: "<strong>Latent Class Analysis</strong> &mdash; find hidden groups based on response patterns.<br><small style='color:var(--text-2)'><strong>When to use:</strong> You have checkbox-style data (selected/not selected) and want to find groups of people who respond similarly.<br><strong>What to paste:</strong> One box per item. Empty = not selected. Any value (1, 3, 7, Yes) = selected. Works with Alchemer exports where the option number appears when selected.<br><strong>Example:</strong> 5 feature adoption columns for 300 respondents. LCA might find \u201cpower users\u201d (use everything) vs \u201cbasic users\u201d (use 1\u20132 features).<br><strong>What you\u2019ll learn:</strong> How many distinct response patterns exist and what characterizes each class.</small>",
       cfa: "<strong>Confirmatory Factor Analysis</strong> &mdash; does your data fit the structure you expect?<br><small style='color:var(--text-2)'><strong>When to use:</strong> You have a theory (e.g., \u201citems 1\u20133 measure satisfaction, items 4\u20136 measure loyalty\u201d) and want to test if the data supports it.<br><strong>What to paste:</strong> One box per survey item. After pasting, you\u2019ll assign items to factors.<br><strong>Example:</strong> 6 survey questions, assigned to 2 factors. CFA checks if the model fits.<br><strong>What you\u2019ll learn:</strong> Whether your hypothesized structure fits the data (CFI, RMSEA, SRMR fit indices).</small>",
       irt: "<strong>IRT Rasch Model</strong> estimates how difficult each item is and how able each respondent is &mdash; on the same scale. Useful for test development and item calibration. (1PL Rasch model)<br><strong style='color:var(--amber)'>\u26A0 Requires binary (0/1) data</strong> &mdash; e.g., correct/incorrect or selected/not-selected. Rating scales (1&ndash;5, 1&ndash;7) will be silently converted to binary and produce misleading results. Use <strong>Cronbach&rsquo;s Alpha</strong> or <strong>Factor Analysis</strong> for rating scales instead.",
       mixed_effects: "<strong>Mixed-Effects Model</strong> handles nested data &mdash; respondents within teams, stores within regions. This random-intercept model accounts for group-level variation. (Simplified: random intercept only)",
@@ -12147,15 +12147,10 @@
             countEl.textContent = 'No values detected';
             countEl.className = 'value-count';
           } else {
-            var nonBinary = 0;
-            parsed.nums.forEach(function(v) { if (v !== 0 && v !== 1) nonBinary++; });
-            if (nonBinary > 0) {
-              countEl.textContent = parsed.nums.length + ' values, ' + nonBinary + ' not 0/1';
-              countEl.className = 'value-count warning';
-            } else {
-              countEl.textContent = parsed.nums.length + ' binary values';
-              countEl.className = 'value-count valid';
-            }
+            var zeros = 0, nonZeros = 0;
+            parsed.nums.forEach(function(v) { if (v === 0) zeros++; else nonZeros++; });
+            countEl.textContent = parsed.nums.length + ' values (' + nonZeros + ' selected, ' + zeros + ' not selected)';
+            countEl.className = 'value-count valid';
           }
           checkReady();
         });
@@ -12212,10 +12207,11 @@
     var n = cols[0].length;
 
     // Build data matrix: rows = observations, cols = items
+    // Convert to binary: 0 stays 0, any non-zero value becomes 1
     var data = [];
     for (var i = 0; i < n; i++) {
       var row = [];
-      for (var j = 0; j < nItems; j++) row.push(cols[j][i]);
+      for (var j = 0; j < nItems; j++) row.push(cols[j][i] !== 0 ? 1 : 0);
       data.push(row);
     }
 
@@ -12880,7 +12876,7 @@
         gridHtml +=
           '<div class="group-card" data-col="' + i + '">' +
             '<div class="group-card-label">Item ' + (i + 1) + '</div>' +
-            '<textarea class="irt-data" data-idx="' + i + '" placeholder="Binary values (0 or 1), one per line..."></textarea>' +
+            '<textarea class="irt-data" data-idx="' + i + '" placeholder="Paste values, one per line...\n0 = not selected/incorrect. Any other value = selected/correct."></textarea>' +
             '<div class="desc-label">Label</div>' +
             '<input type="text" class="irt-desc" data-idx="' + i + '" placeholder="e.g., Item ' + (i + 1) + '">' +
             '<div class="value-count irt-count" data-idx="' + i + '">No values detected</div>' +
@@ -12907,13 +12903,11 @@
         var allGood = true;
         var firstLen = -1;
         section.querySelectorAll('.irt-data').forEach(function(ta) {
-          var vals = parseValues(ta.value).nums;
-          if (vals.length < 5) { allGood = false; return; }
-          if (firstLen === -1) firstLen = vals.length;
-          else if (vals.length !== firstLen) allGood = false;
-          for (var i = 0; i < vals.length; i++) {
-            if (vals[i] !== 0 && vals[i] !== 1) { allGood = false; return; }
-          }
+          // Accept any values — will be converted to binary (0 = 0, non-zero = 1) at run time
+          var lines = ta.value.split(/\n/).filter(function(l) { return l.trim() !== ''; });
+          if (lines.length < 5) { allGood = false; return; }
+          if (firstLen === -1) firstLen = lines.length;
+          else if (lines.length !== firstLen) allGood = false;
         });
         runBtn.disabled = !allGood;
       }
@@ -12927,15 +12921,10 @@
             countEl.textContent = 'No values detected';
             countEl.className = 'value-count';
           } else {
-            var nonBinary = 0;
-            parsed.nums.forEach(function(v) { if (v !== 0 && v !== 1) nonBinary++; });
-            if (nonBinary > 0) {
-              countEl.textContent = parsed.nums.length + ' values, ' + nonBinary + ' not 0/1';
-              countEl.className = 'value-count warning';
-            } else {
-              countEl.textContent = parsed.nums.length + ' binary values';
-              countEl.className = 'value-count valid';
-            }
+            var zeros = 0, nonZeros = 0;
+            parsed.nums.forEach(function(v) { if (v === 0) zeros++; else nonZeros++; });
+            countEl.textContent = parsed.nums.length + ' values (' + nonZeros + ' selected, ' + zeros + ' not selected)';
+            countEl.className = 'value-count valid';
           }
           checkReady();
         });
@@ -12967,10 +12956,11 @@
     var n = cols[0].length;
 
     // Build data matrix (rows = persons, cols = items)
+    // Convert to binary: 0 stays 0, any non-zero value becomes 1
     var data = [];
     for (var i = 0; i < n; i++) {
       var row = [];
-      for (var j = 0; j < nItems; j++) row.push(cols[j][i]);
+      for (var j = 0; j < nItems; j++) row.push(cols[j][i] !== 0 ? 1 : 0);
       data.push(row);
     }
 
