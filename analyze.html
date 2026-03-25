@@ -437,11 +437,19 @@
     }
 
     .desc-label {
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: var(--text-1);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--rose);
       margin-top: 0.7rem;
       margin-bottom: 0.3rem;
+      letter-spacing: 0.02em;
+    }
+    .desc-hint {
+      font-size: 0.68rem;
+      color: var(--text-2);
+      margin-top: 2px;
+      line-height: 1.4;
+      font-style: italic;
     }
 
     .group-card input[type="text"] {
@@ -3315,8 +3323,9 @@
         '<div class="group-card">' +
           '<div class="group-card-label">' + escHtml(label) + '</div>' +
           '<textarea id="dataCol" placeholder="' + escHtml(placeholder) + '"></textarea>' +
-          '<div class="desc-label">Describe this data</div>' +
+          '<div class="desc-label">Name this variable</div>' +
           '<input type="text" id="descCol" placeholder="e.g., Customer satisfaction scores">' +
+          '<div class="desc-hint">Used in charts and plain English output. Leave blank for default.</div>' +
           '<div class="value-count" id="countCol">No values detected</div>' +
         '</div>' +
       '</div>' +
@@ -3350,15 +3359,16 @@
         '<div class="group-card">' +
           '<div class="group-card-label">' + escHtml(labelA) + '</div>' +
           '<textarea id="dataA" placeholder="Paste your values here, one per line..."></textarea>' +
-          '<div class="desc-label">Tell us about this column</div>' +
-          '<input type="text" id="descA" placeholder="e.g., Monthly revenue for existing customers">' +
+          '<div class="desc-label">Name this column</div>' +
+          '<input type="text" id="descA" placeholder="e.g., Satisfaction scores \u2014 existing customers">' +
+          '<div class="desc-hint">This name appears in your chart and results summary.</div>' +
           '<div class="value-count" id="countA">No values detected</div>' +
         '</div>' +
         '<div class="group-card">' +
           '<div class="group-card-label">' + escHtml(labelB) + '</div>' +
           '<textarea id="dataB" placeholder="Paste your values here, one per line..."></textarea>' +
-          '<div class="desc-label">Tell us about this column</div>' +
-          '<input type="text" id="descB" placeholder="e.g., Monthly revenue for new customers">' +
+          '<div class="desc-label">Name this column</div>' +
+          '<input type="text" id="descB" placeholder="e.g., Satisfaction scores \u2014 new customers">' +
           '<div class="value-count" id="countB">No values detected</div>' +
         '</div>' +
       '</div>' +
@@ -3403,8 +3413,9 @@
           '<div class="group-card" data-col="' + i + '">' +
             '<div class="group-card-label">' + label + ' ' + (i + 1) + '</div>' +
             '<textarea class="multi-data" data-idx="' + i + '" placeholder="Paste values, one per line..."></textarea>' +
-            '<div class="desc-label">Label</div>' +
+            '<div class="desc-label">Name this ' + label.toLowerCase() + '</div>' +
             '<input type="text" class="multi-desc" data-idx="' + i + '" placeholder="e.g., ' + label + ' ' + (i + 1) + '">' +
+            '<div class="desc-hint">Appears in charts and results.</div>' +
             '<div class="value-count multi-count" data-idx="' + i + '">No values detected</div>' +
           '</div>';
       }
@@ -6887,16 +6898,18 @@
         '<div class="group-card">' +
           '<div class="group-card-label">Response Values</div>' +
           '<textarea id="freqVals" placeholder="Paste from Excel \u2014 tab-separated columns.\nEach row = one respondent.\nNon-empty cells = selected options.\nEmpty cells = not selected.\n\ne.g. (3 respondents, chose from options 1\u20137):\n1\t5\t7\n2\t4\n1\t3\t5\t6"></textarea>' +
-          '<div class="desc-label">Describe this question</div>' +
+          '<div class="desc-label">Name this question</div>' +
           '<input type="text" id="freqDesc" placeholder="e.g., Overall satisfaction rating">' +
+          '<div class="desc-hint">Used in your results: \u201cOverall satisfaction rating: 2400 respondents\u2026\u201d</div>' +
           '<div class="value-count" id="freqValsCount">No values detected</div>' +
           '<div style="font-size:0.72rem;color:var(--text-2);margin-top:4px;line-height:1.4">This box is for <strong>one question</strong>. To compare multiple rating questions side by side, use <a href="#" class="freq-scale-link" style="color:var(--rose)">Multi-Response / Checkbox Analysis</a> instead.</div>' +
         '</div>' +
         '<div class="group-card">' +
           '<div class="group-card-label">Grouping Variable (optional)</div>' +
           '<textarea id="freqGrp" placeholder="One value per line (same row count):\n18-24\n25-34\n35-44\n\nTip: paste multiple columns to cross by several variables at once (e.g., Age + Gender)"></textarea>' +
-          '<div class="desc-label">Describe this grouping</div>' +
+          '<div class="desc-label">Name this grouping</div>' +
           '<input type="text" id="freqGrpDesc" placeholder="e.g., Age group">' +
+          '<div class="desc-hint">Used in your results: \u201cSatisfaction by Age group\u201d</div>' +
           '<div class="value-count" id="freqGrpCount">Leave empty for simple frequency</div>' +
         '</div>' +
       '</div>' +
