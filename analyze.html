@@ -4889,18 +4889,59 @@
 
     var warningHtml = r.warning ? '<div class="effect-interpretation" style="color:var(--amber)">Warning: ' + r.warning + '</div>' : '';
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Test Results</div><div class="test-results-grid">' +
-        testStat('Chi-Square', round4(r.chiSquare)) + testStat('p-value', round6(r.p), pc) +
-        testStat('df', r.df) + testStat("Cramer's V", round4(r.cramersV)) +
-      '</div>' + warningHtml + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Expected Frequencies</div>' + expHtml + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Observed vs Expected</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, bars.length * 30 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    var vStrength = r.cramersV < 0.1 ? 'negligible' : r.cramersV < 0.3 ? 'weak' : r.cramersV < 0.5 ? 'moderate' : 'strong';
+
+    // Observed table
+    var obsHtml = '<table class="expected-table"><tr><th></th>';
+    for (var c2 = 0; c2 < observed[0].length; c2++) obsHtml += '<th>Col ' + (c2 + 1) + '</th>';
+    obsHtml += '</tr>';
+    for (var rr2 = 0; rr2 < observed.length; rr2++) {
+      obsHtml += '<tr><th>Row ' + (rr2 + 1) + '</th>';
+      for (var c2 = 0; c2 < observed[rr2].length; c2++) obsHtml += '<td>' + observed[rr2][c2] + '</td>';
+      obsHtml += '</tr>';
+    }
+    obsHtml += '</table>';
+
+    var totalN = 0;
+    for (var rr2 = 0; rr2 < observed.length; rr2++) for (var c2 = 0; c2 < observed[rr2].length; c2++) totalN += observed[rr2][c2];
+
+    var html = '<div class="results-section">';
+
+    // 1. Key metrics
+    html += RC('Chi-Square Test Results',
+      renderMetrics([
+        { label: 'Chi-Square (\u03C7\u00B2)', value: round4(r.chiSquare) },
+        { label: "Cramer's V", value: round4(r.cramersV) + ' (' + vStrength + ')' },
+        { label: 'df', value: r.df },
+        { label: 'N', value: totalN }
+      ]) + warningHtml
+    );
+
+    // 2. Significance badge
+    html += renderSigBadge(r.p);
+
+    // 3. Chart
+    html += renderChart(chartId, 'Observed vs Expected', 500, Math.max(180, bars.length * 30 + 30));
+
+    // 4. Observed & Expected tables collapsed
+    html += renderCollapsed('Observed Frequencies', obsHtml);
+    html += renderCollapsed('Expected Frequencies', expHtml);
+
+    // 5. Statistical details collapsed
+    html += renderCollapsed('Statistical Details',
+      renderMetrics([
+        { label: 'Chi-Square', value: round4(r.chiSquare) },
+        { label: 'p-value', value: round6(r.p), cls: pc },
+        { label: 'df', value: r.df },
+        { label: "Cramer's V", value: round4(r.cramersV) },
+        { label: 'Effect Strength', value: vStrength }
+      ])
+    );
+
+    // 6. Plain English last
+    html += renderPlainEnglish(plainText);
+
+    html += '</div>';
 
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
@@ -6214,18 +6255,36 @@
     var plainText = interp.summary + ' ' + interp.details;
     var chartId = 'fisherChart_' + Date.now();
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Test Results</div><div class="test-results-grid">' +
-        testStat('p-value', round6(r.p), pc) +
-        testStat('Odds Ratio', isFinite(r.oddsRatio) ? round4(r.oddsRatio) : 'Inf') +
-        testStat('N', r.N) +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Cell Counts</div>' +
-        '<canvas id="' + chartId + '" width="500" height="240" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    var cellTable = '<table class="expected-table">' +
+      '<tr><th></th><th>Outcome +</th><th>Outcome &minus;</th></tr>' +
+      '<tr><th>Group 1</th><td>' + a + '</td><td>' + b + '</td></tr>' +
+      '<tr><th>Group 2</th><td>' + c + '</td><td>' + d + '</td></tr>' +
+      '</table>';
+
+    var html = '<div class="results-section">';
+
+    // 1. Key metrics
+    html += RC('Fisher Exact Test Results',
+      renderMetrics([
+        { label: 'p-value', value: round6(r.p), cls: pc },
+        { label: 'Odds Ratio', value: isFinite(r.oddsRatio) ? round4(r.oddsRatio) : 'Inf' },
+        { label: 'N', value: r.N }
+      ])
+    );
+
+    // 2. Significance badge
+    html += renderSigBadge(r.p);
+
+    // 3. Chart
+    html += renderChart(chartId, 'Cell Counts', 500, 240);
+
+    // 4. Cell counts collapsed
+    html += renderCollapsed('Cell Count Table', cellTable);
+
+    // 5. Plain English last
+    html += renderPlainEnglish(plainText);
+
+    html += '</div>';
 
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
@@ -6390,17 +6449,36 @@
 
     var plainText = interp.summary + ' ' + interp.details;
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Test Results</div><div class="test-results-grid">' +
-        testStat('W statistic', round4(r.W)) + testStat('p-value', round6(r.p), pc) +
-        testStat('n', r.n) +
-      '</div><div class="effect-interpretation">' + normalityConclusion + '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Distribution of ' + escHtml(desc) + '</div>' +
-        '<canvas id="' + chartId + '" width="500" height="250" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    var isNormal = r.p > getAlpha();
+
+    var html = '<div class="results-section">';
+
+    // 1. Big answer
+    html += renderBigAnswer(
+      isNormal ? 'Normal' : 'Not Normal',
+      isNormal ? 'Shapiro-Wilk p = ' + round6(r.p) + ' — data appears normally distributed' : 'Shapiro-Wilk p = ' + round6(r.p) + ' — significant departure from normality',
+      isNormal ? 'var(--green)' : 'var(--rose)'
+    );
+
+    // 2. Key metrics
+    html += RC('Shapiro-Wilk Test',
+      renderMetrics([
+        { label: 'W Statistic', value: round4(r.W) },
+        { label: 'p-value', value: round6(r.p), cls: pc },
+        { label: 'n', value: r.n }
+      ])
+    );
+
+    // 3. Chart
+    html += renderChart(chartId, 'Distribution of ' + escHtml(desc), 500, 250);
+
+    // 4. Plain English last
+    var swPlain = isNormal
+      ? 'The data for ' + escHtml(desc) + ' appears normally distributed (W = ' + round4(r.W) + ', p = ' + round6(r.p) + '). Parametric tests like t-tests and ANOVA are appropriate.'
+      : 'The data for ' + escHtml(desc) + ' is not normally distributed (W = ' + round4(r.W) + ', p = ' + round6(r.p) + '). Consider non-parametric alternatives like Mann-Whitney U or Kruskal-Wallis instead of t-tests and ANOVA.';
+    html += renderPlainEnglish(swPlain);
+
+    html += '</div>';
 
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
@@ -6423,19 +6501,40 @@
     var sds = [];
     for (var i = 0; i < groups.length; i++) sds.push(StatsEngine._helpers.sd(groups[i], 1));
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Test Results</div><div class="test-results-grid">' +
-        testStat('F statistic', round4(r.F)) + testStat('p-value', round6(r.p), pc) +
-        testStat('df (between)', r.dfBetween) + testStat('df (within)', r.dfWithin) +
-      '</div><div class="effect-interpretation">' +
-        (r.p < 0.05 ? 'Variances are significantly unequal. Use Welch\'s correction or non-parametric tests.' : 'Equal-variance assumption holds.') +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Group Standard Deviations</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, groups.length * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    var isEqual = r.p >= getAlpha();
+
+    var html = '<div class="results-section">';
+
+    // 1. Big answer
+    html += renderBigAnswer(
+      isEqual ? 'Equal' : 'Unequal',
+      isEqual ? 'Variances are homogeneous (p = ' + round6(r.p) + ')' : 'Variances differ significantly (p = ' + round6(r.p) + ')',
+      isEqual ? 'var(--green)' : 'var(--rose)'
+    );
+
+    // 2. Key metrics
+    html += RC("Levene's Test",
+      renderMetrics([
+        { label: 'F Statistic', value: round4(r.F) },
+        { label: 'p-value', value: round6(r.p), cls: pc },
+        { label: 'df (between)', value: r.dfBetween },
+        { label: 'df (within)', value: r.dfWithin }
+      ])
+    );
+
+    // 3. Significance badge
+    html += renderSigBadge(r.p);
+
+    // 4. Chart
+    html += renderChart(chartId, 'Group Standard Deviations', 500, Math.max(180, groups.length * 55 + 30));
+
+    // 5. Plain English last
+    var levenePlain = isEqual
+      ? 'The groups have roughly equal variances (F = ' + round4(r.F) + ', p = ' + round6(r.p) + '). The equal-variance assumption holds — standard ANOVA and t-tests are appropriate.'
+      : 'The groups have significantly unequal variances (F = ' + round4(r.F) + ', p = ' + round6(r.p) + '). Use Welch\'s ANOVA or Welch\'s t-test instead of their standard counterparts to account for this.';
+    html += renderPlainEnglish(levenePlain);
+
+    html += '</div>';
 
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
@@ -6500,14 +6599,42 @@
       'Weakest correlation: ' + weakest.pair + ' (r = ' + round4(weakest.val) + ').';
     var plainText = 'Correlation matrix across ' + k + ' variables. ' + interpText;
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Correlation Matrix</div>' +
-        '<div style="overflow-x:auto">' + tableHtml + '</div>' +
-        '<div class="effect-interpretation">Hover over cells to see p-values. Colors: <span style="color:var(--green)">green = positive</span>, <span style="color:var(--red)">red = negative</span>, gray = weak.</div>' +
-      '</div></div>';
+    var html = '<div class="results-section">';
+
+    // 1. Key metrics
+    html += RC('Correlation Matrix Overview',
+      renderMetrics([
+        { label: 'Variables', value: k },
+        { label: 'n (per pair)', value: minLen },
+        { label: 'Strongest Pair', value: strongest.pair },
+        { label: 'Strongest r', value: round4(strongest.val) }
+      ])
+    );
+
+    // 2. Correlation matrix table (visible)
+    html += RC('Correlation Matrix',
+      '<div style="overflow-x:auto">' + tableHtml + '</div>' +
+      '<div class="effect-interpretation">Hover over cells to see p-values. Colors: <span style="color:var(--green)">green = positive</span>, <span style="color:var(--red)">red = negative</span>, gray = weak.</div>'
+    );
+
+    // 3. Technical details collapsed
+    var pTableHtml = '<table class="corr-matrix-table"><tr><th></th>';
+    for (var j2 = 0; j2 < k; j2++) pTableHtml += '<th>' + escHtml(labels[j2]) + '</th>';
+    pTableHtml += '</tr>';
+    for (var i2 = 0; i2 < k; i2++) {
+      pTableHtml += '<tr><th>' + escHtml(labels[i2]) + '</th>';
+      for (var j2 = 0; j2 < k; j2++) {
+        pTableHtml += '<td>' + (i2 === j2 ? '—' : round6(r.p[i2][j2])) + '</td>';
+      }
+      pTableHtml += '</tr>';
+    }
+    pTableHtml += '</table>';
+    html += renderCollapsed('p-value Matrix', '<div style="overflow-x:auto">' + pTableHtml + '</div>');
+
+    // 4. Plain English last
+    html += renderPlainEnglish(plainText);
+
+    html += '</div>';
 
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
@@ -6785,34 +6912,86 @@
 
     var swPc = pClass(sw.p);
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Distribution Analysis</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Normality Test (Shapiro-Wilk)</div><div class="test-results-grid">' +
-        testStat('W statistic', round4(sw.W)) + testStat('p-value', round6(sw.p), swPc) +
-        testStat('n', sw.n) +
-      '</div><div class="effect-interpretation">' + normalityConclusion + '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Shape & Outliers</div>' +
-        statRow('Skewness', round4(stats.skewness) + ' (' + skewInterp + ')') +
-        statRow('Excess Kurtosis', round4(stats.kurtosis) + ' (' + kurtInterp + ')') +
-        statRow('IQR', round4(iqr)) +
-        statRow('Lower Fence', round4(lowerFence)) +
-        statRow('Upper Fence', round4(upperFence)) +
-        statRow('Outliers', outliers.length + (outliers.length > 0 && outliers.length <= 10 ? ' (' + outliers.map(function(v) { return round4(v); }).join(', ') + ')' : '')) +
-      '</div>' +
-      '<div class="result-card"><div class="result-card-title">Key Descriptives</div>' +
-        statRow('n', stats.n) + statRow('Mean', round4(stats.mean)) + statRow('Median', round4(stats.median)) +
-        statRow('Std Dev', round4(stats.sd)) + statRow('Min', round4(stats.min)) + statRow('Max', round4(stats.max)) +
-      '</div>' +
-      '<div class="result-card"><div class="result-card-title">Histogram</div>' +
-        '<canvas id="' + chartId + '" width="500" height="250" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    var isNormal = sw.p > getAlpha();
+    var boxChartId = 'distBoxChart_' + Date.now();
+
+    // Health flags
+    var flags = [];
+    if (!isNormal) flags.push('Non-normal distribution');
+    if (Math.abs(stats.skewness) >= 1) flags.push('High skewness (' + round4(stats.skewness) + ')');
+    if (Math.abs(stats.kurtosis) >= 2) flags.push('High kurtosis (' + round4(stats.kurtosis) + ')');
+    if (outliers.length > 0) flags.push(outliers.length + ' outlier(s) detected');
+    var flagsHtml = '';
+    if (flags.length > 0) {
+      flagsHtml = '<div style="margin-top:0.5rem">';
+      flags.forEach(function(f) {
+        flagsHtml += '<span style="display:inline-block;padding:0.2rem 0.6rem;border-radius:4px;font-size:0.78rem;font-weight:600;background:var(--rose-soft);color:var(--rose);border:1px solid rgba(212,88,122,0.2);margin:0.15rem 0.2rem">' + f + '</span>';
+      });
+      flagsHtml += '</div>';
+    }
+
+    var html = '<div class="results-section">';
+
+    // 1. Big answer — normal or not
+    html += renderBigAnswer(
+      isNormal ? 'Normal' : 'Not Normal',
+      'Shapiro-Wilk p = ' + round6(sw.p) + ' \u2014 ' + (isNormal ? 'parametric tests OK' : 'consider non-parametric tests'),
+      isNormal ? 'var(--green)' : 'var(--rose)'
+    );
+
+    // 2. Key metrics
+    html += RC('Distribution Summary',
+      renderMetrics([
+        { label: 'n', value: stats.n },
+        { label: 'Mean', value: round4(stats.mean) },
+        { label: 'Median', value: round4(stats.median) },
+        { label: 'Std Dev', value: round4(stats.sd) },
+        { label: 'Skewness', value: round4(stats.skewness) },
+        { label: 'Kurtosis', value: round4(stats.kurtosis) }
+      ]) + flagsHtml
+    );
+
+    // 3. Histogram
+    html += renderChart(chartId, 'Histogram', 500, 250);
+
+    // 4. Box Plot
+    html += renderChart(boxChartId, 'Box Plot', 500, 180);
+
+    // 5. Shape, outliers, and descriptives collapsed
+    html += renderCollapsed('Shape & Outlier Details',
+      renderMetrics([
+        { label: 'Skewness', value: round4(stats.skewness) + ' (' + skewInterp + ')' },
+        { label: 'Kurtosis', value: round4(stats.kurtosis) + ' (' + kurtInterp + ')' },
+        { label: 'IQR', value: round4(iqr) },
+        { label: 'Lower Fence', value: round4(lowerFence) },
+        { label: 'Upper Fence', value: round4(upperFence) },
+        { label: 'Outliers', value: outliers.length + (outliers.length > 0 && outliers.length <= 10 ? ' (' + outliers.map(function(v) { return round4(v); }).join(', ') + ')' : '') }
+      ])
+    );
+
+    html += renderCollapsed('Full Descriptives',
+      renderMetrics([
+        { label: 'n', value: stats.n },
+        { label: 'Mean', value: round4(stats.mean) },
+        { label: 'Median', value: round4(stats.median) },
+        { label: 'Std Dev', value: round4(stats.sd) },
+        { label: 'Min', value: round4(stats.min) },
+        { label: 'Max', value: round4(stats.max) },
+        { label: 'W Statistic', value: round4(sw.W) },
+        { label: 'SW p-value', value: round6(sw.p), cls: swPc }
+      ])
+    );
+
+    // 6. Plain English last
+    html += renderPlainEnglish(plainText);
+
+    html += '</div>';
 
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     drawHistogram(chartId, vals);
-    showNextSteps('descriptive', r);
+    drawBoxPlot(boxChartId, vals);
+    showNextSteps('descriptive', stats);
   }
 
   /* ==================================================================
@@ -7702,17 +7881,29 @@
 
     var chartId = 'phiChart_' + Date.now();
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Test Results</div><div class="test-results-grid">' +
-        testStat('Phi Coefficient', round4(phi)) + testStat('Chi-Square', round4(chi2)) +
-        testStat('p-value', round6(p), pc) + testStat('N', n) +
-      '</div><div class="effect-interpretation">Strength: <strong>' + strength + '</strong> (|phi| < 0.1 = negligible, 0.1\u20130.3 = weak, 0.3\u20130.5 = moderate, > 0.5 = strong)</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Cell Counts</div>' +
-        '<canvas id="' + chartId + '" width="500" height="240" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    var html = '<div class="results-section">';
+
+    // 1. Key metrics
+    html += RC('Phi Coefficient',
+      renderMetrics([
+        { label: 'Phi (\u03C6)', value: round4(phi) },
+        { label: 'Strength', value: strength },
+        { label: 'Chi-Square', value: round4(chi2) },
+        { label: 'p-value', value: round6(p), cls: pc },
+        { label: 'N', value: n }
+      ])
+    );
+
+    // 2. Significance badge
+    html += renderSigBadge(p);
+
+    // 3. Chart
+    html += renderChart(chartId, 'Cell Counts', 500, 240);
+
+    // 4. Plain English last
+    html += renderPlainEnglish(plainText);
+
+    html += '</div>';
 
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
@@ -8628,19 +8819,62 @@
       return { label: am.group + ' (adj)', value: am.adjustedMean, color: CHART_COLORS[i % CHART_COLORS.length] };
     });
 
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Test Results</div><div class="test-results-grid">' +
-        testStat('F (group)', round4(r.F)) + testStat('p-value', round6(r.p), pc) +
-        testStat('df', r.df1 + ', ' + r.df2) + testStat('R-squared', round4(r.rSquared)) +
-        testStat('Covariate B', round4(r.covariateEffect.B)) + testStat('Covariate p', round6(r.covariateEffect.p), pClass(r.covariateEffect.p)) +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Adjusted Means</div>' + adjHtml + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Adjusted Means Chart</div>' +
-        '<canvas id="' + chartId + '" width="500" height="' + Math.max(180, bars.length * 55 + 30) + '" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    // Build adjusted means group cards
+    var adjGroups = r.adjustedMeans.map(function(am) {
+      // Find matching group stats for that group
+      var gs = r.groupStats.filter(function(g) { return g.group === am.group; })[0];
+      return gs ? gs.values || [] : [];
+    });
+    var adjLabels = r.adjustedMeans.map(function(am) { return am.group; });
+
+    // Comparison table: raw vs adjusted
+    var compHtml = '<table class="posthoc-table"><tr><th>Group</th><th>Raw Mean</th><th>Adjusted Mean</th><th>Difference</th><th>n</th></tr>';
+    for (var i = 0; i < r.groupStats.length; i++) {
+      var diff = r.adjustedMeans[i].adjustedMean - r.groupStats[i].rawMean;
+      compHtml += '<tr><td>' + escHtml(r.groupStats[i].group) + '</td><td>' + round4(r.groupStats[i].rawMean) + '</td>' +
+        '<td><strong>' + round4(r.adjustedMeans[i].adjustedMean) + '</strong></td>' +
+        '<td>' + (diff >= 0 ? '+' : '') + round4(diff) + '</td><td>' + r.groupStats[i].n + '</td></tr>';
+    }
+    compHtml += '</table>';
+
+    var html = '<div class="results-section">';
+
+    // 1. Key metrics
+    html += RC('ANCOVA Results',
+      renderMetrics([
+        { label: 'F (group)', value: round4(r.F) },
+        { label: 'p-value', value: round6(r.p), cls: pc },
+        { label: 'R\u00B2', value: round4(r.rSquared) },
+        { label: 'df', value: r.df1 + ', ' + r.df2 }
+      ])
+    );
+
+    // 2. Significance badge
+    html += renderSigBadge(r.p);
+
+    // 3. Adjusted vs Raw means comparison
+    html += RC('Adjusted vs Raw Means', compHtml);
+
+    // 4. Chart
+    html += renderChart(chartId, 'Adjusted Group Means', 500, Math.max(180, bars.length * 55 + 30));
+
+    // 5. Full ANOVA table collapsed
+    html += renderCollapsed('Full ANCOVA Details',
+      renderMetrics([
+        { label: 'F (group)', value: round4(r.F) },
+        { label: 'Group p', value: round6(r.p), cls: pc },
+        { label: 'df1', value: r.df1 },
+        { label: 'df2', value: r.df2 },
+        { label: 'R-squared', value: round4(r.rSquared) },
+        { label: 'Covariate B', value: round4(r.covariateEffect.B) },
+        { label: 'Covariate p', value: round6(r.covariateEffect.p), cls: pClass(r.covariateEffect.p) }
+      ]) + adjHtml
+    );
+
+    // 6. Plain English last
+    html += renderPlainEnglish(plainText);
+
+    html += '</div>';
 
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
@@ -8686,24 +8920,53 @@
       ' The zero-order (uncontrolled) correlation was r = ' + round4(zeroOrder.r) + ' (p = ' + round6(zeroOrder.p) + ').';
 
     var chartId = 'partialCorrChart_' + Date.now();
-    var html =
-      '<div class="results-section">' +
-      '<div class="result-card plain-english"><div class="result-card-title">Plain English Interpretation</div>' +
-        '<div class="plain-english-text">' + plainText + '</div>' + makeCopyBtn(plainText) + '</div>' +
-      '<div class="result-card"><div class="result-card-title">Test Results</div><div class="test-results-grid">' +
-        testStat('Partial r', round4(r.r)) + testStat('p-value', round6(r.p), pc) +
-        testStat('df', r.df) + testStat('t', round4(r.t)) +
-        testStat('95% CI', '[' + round4(r.ci95.lower) + ', ' + round4(r.ci95.upper) + ']') +
-        testStat('n', r.n) +
-      '</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Comparison: Zero-Order vs Partial</div><div class="test-results-grid">' +
-        testStat('Zero-Order r', round4(zeroOrder.r)) + testStat('Partial r', round4(r.r)) +
-        testStat('Change', round4(r.r - zeroOrder.r)) +
-      '</div><div class="effect-interpretation">After controlling for ' + controls.length + ' variable' + (controls.length > 1 ? 's' : '') +
-        ', the correlation ' + (Math.abs(r.r) < Math.abs(zeroOrder.r) ? 'decreased' : 'increased') + ' from ' + round4(zeroOrder.r) + ' to ' + round4(r.r) + '.</div></div>' +
-      '<div class="result-card"><div class="result-card-title">Zero-Order vs Partial Correlation</div>' +
-        '<canvas id="' + chartId + '" width="500" height="180" style="width:100%;max-width:500px;display:block;margin:0 auto;"></canvas></div>' +
-      '</div>';
+    var changeDir = Math.abs(r.r) < Math.abs(zeroOrder.r) ? 'decreased' : 'increased';
+
+    var html = '<div class="results-section">';
+
+    // 1. Key metrics
+    html += RC('Partial Correlation',
+      renderMetrics([
+        { label: 'Partial r', value: round4(r.r) },
+        { label: 'Strength', value: strength },
+        { label: 'p-value', value: round6(r.p), cls: pc },
+        { label: 'n', value: r.n },
+        { label: 'Controls', value: labels.slice(2).join(', ') }
+      ])
+    );
+
+    // 2. Significance badge
+    html += renderSigBadge(r.p);
+
+    // 3. Before vs After comparison
+    html += RC('Zero-Order vs Partial',
+      renderMetrics([
+        { label: 'Zero-Order r', value: round4(zeroOrder.r) },
+        { label: 'Partial r', value: round4(r.r) },
+        { label: 'Change', value: round4(r.r - zeroOrder.r) }
+      ]) +
+      '<div class="effect-interpretation">After controlling for ' + controls.length + ' variable' + (controls.length > 1 ? 's' : '') +
+        ', the correlation ' + changeDir + ' from ' + round4(zeroOrder.r) + ' to ' + round4(r.r) + '.</div>'
+    );
+
+    // 4. Chart
+    html += renderChart(chartId, 'Zero-Order vs Partial Correlation', 500, 180);
+
+    // 5. Statistical details collapsed
+    html += renderCollapsed('Statistical Details',
+      renderMetrics([
+        { label: 'Partial r', value: round4(r.r) },
+        { label: 't', value: round4(r.t) },
+        { label: 'df', value: r.df },
+        { label: 'p-value', value: round6(r.p), cls: pc },
+        { label: '95% CI', value: '[' + round4(r.ci95.lower) + ', ' + round4(r.ci95.upper) + ']' }
+      ])
+    );
+
+    // 6. Plain English last
+    html += renderPlainEnglish(plainText);
+
+    html += '</div>';
 
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
