@@ -2739,6 +2739,18 @@
     }, 100);
   }
 
+  function scrollToResults() {
+    setTimeout(function() {
+      var results = container.querySelectorAll('.results-section');
+      var lastResult = results[results.length - 1];
+      if (lastResult) {
+        lastResult.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }
+    }, 150);
+  }
+
   function addAssistantMessage(text, delay) {
     return new Promise(function(resolve) {
       setTimeout(function() {
@@ -14051,7 +14063,7 @@
     html += '</div></div>';
 
     container.insertAdjacentHTML('beforeend', html);
-    scrollToBottom();
+    scrollToResults();
 
     // Bind click handlers
     var cards = container.querySelectorAll('.next-steps-card');
