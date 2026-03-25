@@ -3501,7 +3501,25 @@
     section.className = 'data-input-section';
     var colCount = startCols;
 
-    function buildGrid() {
+    // Save existing data before rebuilding grid
+    function saveGridData() {
+      var saved = [];
+      section.querySelectorAll('.multi-data').forEach(function(ta, i) {
+        var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
+        saved.push({ data: ta.value, desc: descEl ? descEl.value : '' });
+      });
+      return saved;
+    }
+    function restoreGridData(saved) {
+      saved.forEach(function(s, i) {
+        var ta = section.querySelector('.multi-data[data-idx="' + i + '"]');
+        var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
+        if (ta && s.data) ta.value = s.data;
+        if (descEl && s.desc) descEl.value = s.desc;
+      });
+    }
+
+    function buildGrid(savedData) {
       var gridHtml = '<div class="input-grid multi-col">';
       for (var i = 0; i < colCount; i++) {
         gridHtml +=
@@ -3524,6 +3542,7 @@
       gridHtml += '</div>';
       gridHtml += '<button class="run-btn" id="runBtn" disabled>Run Analysis</button>';
       section.innerHTML = gridHtml;
+      if (savedData) restoreGridData(savedData);
     }
 
     buildGrid();
@@ -3565,14 +3584,15 @@
 
       var addBtn = section.querySelector('#addColBtn');
       if (addBtn) addBtn.addEventListener('click', function() {
+        var saved = saveGridData();
         colCount++;
-        buildGrid();
+        buildGrid(saved);
         bindEvents();
         scrollToBottom();
       });
       var removeBtn = section.querySelector('#removeColBtn');
       if (removeBtn) removeBtn.addEventListener('click', function() {
-        if (colCount > startCols) { colCount--; buildGrid(); bindEvents(); scrollToBottom(); }
+        if (colCount > startCols) { var saved = saveGridData(); colCount--; buildGrid(saved); bindEvents(); scrollToBottom(); }
       });
 
       runBtn.addEventListener('click', function() {
@@ -12082,7 +12102,7 @@
         gridHtml +=
           '<div class="group-card" data-col="' + i + '">' +
             '<div class="group-card-label">Item ' + (i + 1) + '</div>' +
-            '<textarea class="lca-data" data-idx="' + i + '" placeholder="Binary values (0 or 1), one per line..."></textarea>' +
+            '<textarea class="lca-data" data-idx="' + i + '" placeholder="Paste values, one per line...\nEmpty = not selected. Any value (1, 3, Yes) = selected."></textarea>' +
             '<div class="desc-label">Label</div>' +
             '<input type="text" class="lca-desc" data-idx="' + i + '" placeholder="e.g., Item ' + (i + 1) + '">' +
             '<div class="value-count lca-count" data-idx="' + i + '">No values detected</div>' +
@@ -12109,14 +12129,11 @@
         var allGood = true;
         var firstLen = -1;
         section.querySelectorAll('.lca-data').forEach(function(ta) {
-          var vals = parseValues(ta.value).nums;
-          if (vals.length < 5) { allGood = false; return; }
-          if (firstLen === -1) firstLen = vals.length;
-          else if (vals.length !== firstLen) allGood = false;
-          // Check binary
-          for (var i = 0; i < vals.length; i++) {
-            if (vals[i] !== 0 && vals[i] !== 1) { allGood = false; return; }
-          }
+          // Accept any values — will be converted to binary (0 = falsy, non-zero = 1) at run time
+          var lines = ta.value.split(/\n/).filter(function(l) { return l.trim() !== ''; });
+          if (lines.length < 5) { allGood = false; return; }
+          if (firstLen === -1) firstLen = lines.length;
+          else if (lines.length !== firstLen) allGood = false;
         });
         runBtn.disabled = !allGood;
       }
@@ -12144,15 +12161,33 @@
         });
       });
 
+      function saveLCAData() {
+        var saved = [];
+        section.querySelectorAll('.lca-data').forEach(function(ta, i) {
+          var descEl = section.querySelector('.lca-desc[data-idx="' + i + '"]');
+          saved.push({ data: ta.value, desc: descEl ? descEl.value : '' });
+        });
+        return saved;
+      }
+      function restoreLCAData(saved) {
+        saved.forEach(function(s, i) {
+          var ta = section.querySelector('.lca-data[data-idx="' + i + '"]');
+          var descEl = section.querySelector('.lca-desc[data-idx="' + i + '"]');
+          if (ta && s.data) ta.value = s.data;
+          if (descEl && s.desc) descEl.value = s.desc;
+        });
+      }
       var addBtn = section.querySelector('#addLCAColBtn');
       if (addBtn) addBtn.addEventListener('click', function() {
+        var saved = saveLCAData();
         colCount++;
         buildGrid();
+        restoreLCAData(saved);
         bindEvents();
       });
       var removeBtn = section.querySelector('#removeLCAColBtn');
       if (removeBtn) removeBtn.addEventListener('click', function() {
-        if (colCount > 3) { colCount--; buildGrid(); bindEvents(); }
+        if (colCount > 3) { var saved = saveLCAData(); colCount--; buildGrid(); restoreLCAData(saved); bindEvents(); }
       });
 
       runBtn.addEventListener('click', function() {
