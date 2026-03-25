@@ -3088,21 +3088,23 @@
     var tabLines = rawLines.filter(function(l) { return l.indexOf('\t') > -1; });
     var hasMultipleColumns = tabLines.length > 2;
 
-    var lines = text.split(/[\n,\t]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
-    var nums = [];
+    var lines = text.split(/[\n]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
+    var nums = [];       // filtered: only valid numbers (for stats computation)
+    var aligned = [];    // row-aligned: preserves position, null for non-numeric rows
     var bad = 0;
     var excelErrors = 0;
     var percentStripped = 0;
     if (!hasMultipleColumns) {
       lines.forEach(function(l) {
-        if (isExcelError(l)) { excelErrors++; return; }
-        if (/^-?\d+(\.\d+)?%$/.test(l)) { percentStripped++; l = l.replace('%', ''); }
-        var n = parseFloat(l);
-        if (!isNaN(n) && isFinite(n)) nums.push(n);
-        else bad++;
+        if (isExcelError(l)) { excelErrors++; aligned.push(null); return; }
+        var cleaned = l;
+        if (/^-?\d+(\.\d+)?%$/.test(cleaned)) { percentStripped++; cleaned = cleaned.replace('%', ''); }
+        var n = parseFloat(cleaned);
+        if (!isNaN(n) && isFinite(n)) { nums.push(n); aligned.push(n); }
+        else { bad++; aligned.push(null); }
       });
     }
-    return { nums: nums, bad: bad, excelErrors: excelErrors, percentStripped: percentStripped, total: lines.length, hasMultipleColumns: hasMultipleColumns };
+    return { nums: nums, aligned: aligned, bad: bad, excelErrors: excelErrors, percentStripped: percentStripped, total: lines.length, hasMultipleColumns: hasMultipleColumns, rawLineCount: lines.length };
   }
 
   function round2(v) { return Math.round(v * 100) / 100; }
@@ -3506,8 +3508,18 @@
     dataB.addEventListener('input', function() { updateCount(dataB, countB); checkReady(); });
 
     runBtn.addEventListener('click', function() {
-      var a = parseValues(dataA.value).nums;
-      var b = parseValues(dataB.value).nums;
+      var pA = parseValues(dataA.value);
+      var pB = parseValues(dataB.value);
+      // Use aligned arrays for row-matched pairing
+      var alignA = pA.aligned, alignB = pB.aligned;
+      var a = [], b = [];
+      var maxLen = Math.max(alignA.length, alignB.length);
+      for (var i = 0; i < maxLen; i++) {
+        var va = i < alignA.length ? alignA[i] : null;
+        var vb = i < alignB.length ? alignB[i] : null;
+        // Only include rows where BOTH columns have valid values
+        if (va !== null && vb !== null) { a.push(va); b.push(vb); }
+      }
       var dA = section.querySelector('#descA').value || labelA;
       var dB = section.querySelector('#descB').value || labelB;
       runBtn.disabled = true;
