@@ -13446,14 +13446,23 @@
     var section = document.createElement('div');
     section.className = 'data-input-section';
     section.innerHTML =
-      '<div class="single-col-grid" style="max-width:100%">' +
+      '<div class="input-grid" style="grid-template-columns:2fr 1fr">' +
         '<div class="group-card multi-response-card">' +
           '<div class="group-card-label">Multi-Response Data</div>' +
-          '<textarea id="mrData" placeholder="Paste one or more columns from your spreadsheet.\nIf pasting multiple columns (e.g., a checkbox question), they\u2019ll be detected automatically.\n\nExpected format: each column = one option.\nValues can be 1/0, Yes/No, True/False, text, or any number \u2014 non-empty and non-zero = selected.\nColumns separated by tabs (paste directly from a spreadsheet)."></textarea>' +
+          '<textarea id="mrData" placeholder="Paste one or more columns from your spreadsheet.\nIf pasting multiple columns (e.g., a checkbox question), they\u2019ll be detected automatically.\n\nEmpty cells = not selected. Any value = selected.\nColumns separated by tabs (paste directly from a spreadsheet)."></textarea>' +
           '<div class="value-count" id="mrCount">No data detected</div>' +
           '<div id="mrColNames" class="col-name-inputs" style="display:none"></div>' +
-          '<div class="desc-label" style="margin-top:0.75rem">What does this question represent?</div>' +
-          '<input type="text" id="mrLabel" placeholder="e.g., Which features do you use? (select all that apply)">' +
+          '<div class="desc-label" style="margin-top:0.75rem">Name this question</div>' +
+          '<input type="text" id="mrLabel" placeholder="e.g., Which features do you use?">' +
+          '<div class="desc-hint">Used in charts and plain English output.</div>' +
+        '</div>' +
+        '<div class="group-card">' +
+          '<div class="group-card-label">Grouping Variable (optional)</div>' +
+          '<textarea id="mrGroup" placeholder="One value per line (same row count):\nMale\nFemale\nMale\n\nLeave empty for overall analysis."></textarea>' +
+          '<div class="desc-label">Name this grouping</div>' +
+          '<input type="text" id="mrGroupDesc" placeholder="e.g., Gender">' +
+          '<div class="desc-hint">Split results by this variable.</div>' +
+          '<div class="value-count" id="mrGroupCount">Leave empty for overall analysis</div>' +
         '</div>' +
       '</div>' +
       '<button class="run-btn" id="runBtn" disabled>Run Analysis</button>';
@@ -13464,7 +13473,25 @@
     var countEl = section.querySelector('#mrCount');
     var colNamesDiv = section.querySelector('#mrColNames');
     var runBtn = section.querySelector('#runBtn');
+    var grpEl = section.querySelector('#mrGroup');
+    var grpCountEl = section.querySelector('#mrGroupCount');
     var detectedCols = 0;
+
+    // Grouping variable handler
+    if (grpEl) {
+      grpEl.addEventListener('input', function() {
+        var grpLines = parseCategorical(grpEl.value);
+        if (grpLines.length === 0) {
+          grpCountEl.textContent = 'Leave empty for overall analysis';
+          grpCountEl.className = 'value-count';
+        } else {
+          var unique = {};
+          grpLines.forEach(function(v) { unique[v] = true; });
+          grpCountEl.textContent = grpLines.length + ' values, ' + Object.keys(unique).length + ' groups';
+          grpCountEl.className = 'value-count valid';
+        }
+      });
+    }
 
     dataEl.addEventListener('input', function() {
       var parsed = parseMultiResponse(dataEl.value);
@@ -13530,18 +13557,22 @@
         colNames.push(colNameInputs[i].value.trim() || (parsed.isScaleData ? 'Item ' + (i + 1) : 'Option ' + (i + 1)));
       }
       var label = section.querySelector('#mrLabel').value.trim() || (parsed.isScaleData ? 'Scale comparison' : 'Multi-response question');
+      var grpLines = grpEl ? parseCategorical(grpEl.value) : [];
+      var grpDesc = section.querySelector('#mrGroupDesc') ? section.querySelector('#mrGroupDesc').value.trim() : '';
       runBtn.disabled = true;
       runBtn.textContent = 'Running...';
       if (parsed.isScaleData) {
-        runScaleComparison(parsed, colNames, label);
+        runScaleComparison(parsed, colNames, label, grpLines, grpDesc);
       } else {
-        runMultiResponse(parsed, colNames, label);
+        runMultiResponse(parsed, colNames, label, grpLines, grpDesc);
       }
     });
   }
 
   // --- Scale Comparison (diverging Likert chart) ---
-  function runScaleComparison(data, columnNames, questionLabel) {
+  function runScaleComparison(data, columnNames, questionLabel, grpLines, grpDesc) {
+    grpLines = grpLines || [];
+    grpDesc = grpDesc || 'Group';
     var nRows = data.nRows;
     var nCols = data.nColumns;
     var columns = data.columns;
@@ -13627,7 +13658,9 @@
     showNextSteps('descriptive', { n: nRows });
   }
 
-  function runMultiResponse(data, columnNames, questionLabel) {
+  function runMultiResponse(data, columnNames, questionLabel, grpLines, grpDesc) {
+    grpLines = grpLines || [];
+    grpDesc = grpDesc || 'Group';
     var nRows = data.nRows;
     var nCols = data.nColumns;
     var columns = data.columns;
@@ -13807,6 +13840,48 @@
       });
       otHtml += '</div>';
       container.insertAdjacentHTML('beforeend', otHtml);
+    }
+
+    // Grouped multi-response: selection rates per group
+    if (grpLines.length === nRows && grpLines.length > 0) {
+      var grpSet = {};
+      grpLines.forEach(function(g) { grpSet[g] = true; });
+      var grpLabels = Object.keys(grpSet).sort();
+      if (grpLabels.length >= 2 && grpLabels.length <= 20) {
+        var grpN = {};
+        grpLabels.forEach(function(g) { grpN[g] = 0; });
+        grpLines.forEach(function(g) { grpN[g]++; });
+
+        // Count selections per group per option
+        var grpCounts = {};
+        grpLabels.forEach(function(g) {
+          grpCounts[g] = {};
+          columnNames.forEach(function(cn) { grpCounts[g][cn] = 0; });
+        });
+        for (var r = 0; r < nRows; r++) {
+          var grp = grpLines[r];
+          for (var c = 0; c < nCols; c++) {
+            if (numCols[c][r] === 1) grpCounts[grp][columnNames[c]]++;
+          }
+        }
+
+        // Build grouped table
+        var gtHtml = '<div style="overflow-x:auto"><table class="freq-table"><tr><th>Option</th>';
+        grpLabels.forEach(function(g) { gtHtml += '<th>' + escHtml(g) + ' (n=' + grpN[g] + ')</th>'; });
+        gtHtml += '</tr>';
+        columnNames.forEach(function(cn) {
+          gtHtml += '<tr><td><strong>' + escHtml(cn) + '</strong></td>';
+          grpLabels.forEach(function(g) {
+            var pct = grpN[g] > 0 ? round2(grpCounts[g][cn] / grpN[g] * 100) : 0;
+            gtHtml += '<td>' + pct + '%</td>';
+          });
+          gtHtml += '</tr>';
+        });
+        gtHtml += '</table></div>';
+        gtHtml += '<div style="font-size:0.75rem;color:var(--text-2);margin-top:6px">% of respondents within each ' + escHtml(grpDesc) + ' who selected each option</div>';
+
+        container.insertAdjacentHTML('beforeend', RC('Selection Rates by ' + escHtml(grpDesc), gtHtml));
+      }
     }
 
     showNextSteps('descriptive', { n: nRows });
