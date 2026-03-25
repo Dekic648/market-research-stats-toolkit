@@ -3930,9 +3930,12 @@
     });
 
     runBtn.addEventListener('click', function() {
-      var time = parseValues(textareas[0].value).nums;
-      var ev = parseValues(textareas[1].value).nums;
-      var grp = parseCategorical(textareas[2].value);
+      var aligned = alignColumns([
+        { text: textareas[0].value, type: 'numeric' },
+        { text: textareas[1].value, type: 'numeric' },
+        { text: textareas[2].value, type: 'categorical' }
+      ]);
+      var time = aligned[0], ev = aligned[1], grp = aligned[2];
       runBtn.disabled = true;
       runBtn.textContent = 'Running...';
       runSurvival(time, ev, grp);
@@ -4034,9 +4037,12 @@
         rawB.addEventListener('input', updateRawCounts);
 
         runBtn.addEventListener('click', function() {
-          var a = parseCategorical(rawA.value);
-          var b = parseCategorical(rawB.value);
-          var len = Math.min(a.length, b.length);
+          var aligned = alignColumns([
+            { text: rawA.value, type: 'categorical' },
+            { text: rawB.value, type: 'categorical' }
+          ]);
+          var a = aligned[0], b = aligned[1];
+          var len = a.length;
           // Build contingency table from raw data
           var rowLabels = []; var colLabels = [];
           var rowSet = {}; var colSet = {};
@@ -5588,8 +5594,13 @@
     dataCont.addEventListener('input', function() { updateCount(dataCont, countCont); checkReady(); });
 
     runBtn.addEventListener('click', function() {
-      var binLines = parseBinaryValues(dataBin.value);
-      var contNums = parseValues(dataCont.value).nums;
+      // Align binary and numeric columns by row position
+      var aligned = alignColumns([
+        { text: dataBin.value, type: 'categorical' },
+        { text: dataCont.value, type: 'numeric' }
+      ]);
+      var binLines = aligned[0];
+      var contNums = aligned[1];
       var descBin = section.querySelector('#descBinary').value || 'Binary variable';
       var descC = section.querySelector('#descCont').value || 'Numeric variable';
 
@@ -6505,8 +6516,12 @@
         rawA.addEventListener('input', updateFERaw);
         rawB.addEventListener('input', updateFERaw);
         runBtn.addEventListener('click', function() {
-          var a = parseCategorical(rawA.value), b = parseCategorical(rawB.value);
-          var len = Math.min(a.length, b.length);
+          var aligned = alignColumns([
+            { text: rawA.value, type: 'categorical' },
+            { text: rawB.value, type: 'categorical' }
+          ]);
+          var a = aligned[0], b = aligned[1];
+          var len = a.length;
           var rL = Array.from(new Set(a)), cL = Array.from(new Set(b));
           var counts = [0, 0, 0, 0]; // a=r0c0, b=r0c1, c=r1c0, d=r1c1
           for (var i = 0; i < len; i++) {
@@ -8493,8 +8508,11 @@
     dataB.addEventListener('input', function() { updateCatCount(dataB, countB); checkReady(); });
 
     runBtn.addEventListener('click', function() {
-      var a = parseCategorical(dataA.value);
-      var b = parseCategorical(dataB.value);
+      var aligned = alignColumns([
+        { text: dataA.value, type: 'categorical' },
+        { text: dataB.value, type: 'categorical' }
+      ]);
+      var a = aligned[0], b = aligned[1];
       if (a.length !== b.length) {
         showError('Both raters must have the same number of judgments. Rater 1 has ' + a.length + ', Rater 2 has ' + b.length + '.');
         return;
@@ -8626,8 +8644,11 @@
     dataB.addEventListener('input', function() { updateCount(dataB, countB); checkReady(); });
 
     runBtn.addEventListener('click', function() {
-      var control = parseValues(dataA.value).nums;
-      var variant = parseValues(dataB.value).nums;
+      var aligned = alignColumns([
+        { text: dataA.value, type: 'numeric' },
+        { text: dataB.value, type: 'numeric' }
+      ]);
+      var control = aligned[0], variant = aligned[1];
       var descC = section.querySelector('#abControlDesc').value || 'Control';
       var descV = section.querySelector('#abVariantDesc').value || 'Variant';
       var abType = section.querySelector('#abType').value;
