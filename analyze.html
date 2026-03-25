@@ -451,6 +451,16 @@
       line-height: 1.4;
       font-style: italic;
     }
+    .data-type-guide {
+      font-size: 0.7rem;
+      color: var(--text-2);
+      margin-top: 4px;
+      padding: 4px 8px;
+      background: var(--bg-1);
+      border-radius: 4px;
+      line-height: 1.4;
+      border-left: 2px solid var(--border);
+    }
 
     .group-card input[type="text"] {
       width: 100%;
@@ -3129,18 +3139,23 @@
       var seen = {};
       parsed.nums.forEach(function(n) { if (!seen[n]) { seen[n] = true; uniqueVals.push(n); }});
       uniqueVals.sort(function(a, b) { return a - b; });
-      var hasNegatives = uniqueVals.some(function(n) { return n < 0; });
       if (uniqueVals.length <= 7) {
         var hint = document.createElement('div');
         hint.className = 'type-hint';
-        hint.style.cssText = 'font-size:0.82rem;color:var(--text-2);margin-top:4px;line-height:1.4;';
+        hint.style.cssText = 'font-size:0.8rem;color:var(--text-2);margin-top:6px;line-height:1.5;padding:8px 10px;background:var(--bg-1);border-radius:6px;border-left:3px solid var(--amber);';
         var valList = uniqueVals.join(', ');
-        if (hasNegatives) {
-          hint.textContent = 'These values include negatives (' + valList + '). If these represent categories (e.g., segments), consider using Frequencies or Chi-Square instead. If this is a numeric scale, the current analysis is appropriate.';
-        } else {
-          hint.textContent = 'Only ' + uniqueVals.length + ' unique values detected (' + valList + '). If these represent categories (e.g., seniority levels, segments), consider using Frequencies or Chi-Square. If this is a rating scale, the current analysis is appropriate.';
-        }
+        hint.innerHTML = '<strong style="color:var(--amber)">\u26A0 Only ' + uniqueVals.length + ' unique values (' + valList + ')</strong><br>' +
+          '<strong>Is this a rating scale?</strong> (e.g., 1\u20135 satisfaction, 1\u20137 agreement where higher = more) \u2192 This analysis is appropriate.<br>' +
+          '<strong>Or are these category codes?</strong> (e.g., 1=North 2=South 3=East 4=West, or 1=Brand A 2=Brand B) \u2192 Use <a href="#" class="hint-link" style="color:var(--rose)" data-method="frequencies">Frequencies</a> or <a href="#" class="hint-link" style="color:var(--rose)" data-method="chi_square">Chi-Square</a> instead \u2014 these are designed for categories.';
         countEl.parentNode.insertBefore(hint, countEl.nextSibling);
+        // Wire up hint links
+        hint.querySelectorAll('.hint-link').forEach(function(link) {
+          link.addEventListener('click', function(e) {
+            e.preventDefault();
+            container.innerHTML = '';
+            launchMethod(link.getAttribute('data-method'));
+          });
+        });
       }
     }
 
@@ -3346,6 +3361,7 @@
         '<div class="group-card">' +
           '<div class="group-card-label">' + escHtml(label) + '</div>' +
           '<textarea id="dataCol" placeholder="' + escHtml(placeholder) + '"></textarea>' +
+          '<div class="data-type-guide">Numeric values: scores, ratings, amounts, times. One value per line.</div>' +
           '<div class="desc-label">Name this variable</div>' +
           '<input type="text" id="descCol" placeholder="e.g., Customer satisfaction scores">' +
           '<div class="desc-hint">Used in charts and plain English output. Leave blank for default.</div>' +
@@ -3382,6 +3398,7 @@
         '<div class="group-card">' +
           '<div class="group-card-label">' + escHtml(labelA) + '</div>' +
           '<textarea id="dataA" placeholder="Paste your values here, one per line..."></textarea>' +
+          '<div class="data-type-guide">Numeric values: scores, ratings, amounts, counts. One value per line.</div>' +
           '<div class="desc-label">Name this column</div>' +
           '<input type="text" id="descA" placeholder="e.g., Satisfaction scores \u2014 existing customers">' +
           '<div class="desc-hint">This name appears in your chart and results summary.</div>' +
@@ -3390,6 +3407,7 @@
         '<div class="group-card">' +
           '<div class="group-card-label">' + escHtml(labelB) + '</div>' +
           '<textarea id="dataB" placeholder="Paste your values here, one per line..."></textarea>' +
+          '<div class="data-type-guide">Numeric values: scores, ratings, amounts, counts. One value per line.</div>' +
           '<div class="desc-label">Name this column</div>' +
           '<input type="text" id="descB" placeholder="e.g., Satisfaction scores \u2014 new customers">' +
           '<div class="value-count" id="countB">No values detected</div>' +
@@ -3436,6 +3454,7 @@
           '<div class="group-card" data-col="' + i + '">' +
             '<div class="group-card-label">' + label + ' ' + (i + 1) + '</div>' +
             '<textarea class="multi-data" data-idx="' + i + '" placeholder="Paste values, one per line..."></textarea>' +
+            '<div class="data-type-guide">Numeric values: one per line. Each row = one respondent.</div>' +
             '<div class="desc-label">Name this ' + label.toLowerCase() + '</div>' +
             '<input type="text" class="multi-desc" data-idx="' + i + '" placeholder="e.g., ' + label + ' ' + (i + 1) + '">' +
             '<div class="desc-hint">Appears in charts and results.</div>' +
