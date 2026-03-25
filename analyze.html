@@ -452,15 +452,17 @@
       font-style: italic;
     }
     .data-type-guide {
-      font-size: 0.7rem;
+      font-size: 0.72rem;
       color: var(--text-2);
-      margin-top: 4px;
-      padding: 4px 8px;
+      margin-top: 6px;
+      padding: 6px 10px;
       background: var(--bg-1);
-      border-radius: 4px;
-      line-height: 1.4;
-      border-left: 2px solid var(--border);
+      border-radius: 6px;
+      line-height: 1.5;
+      border-left: 3px solid var(--green);
     }
+    .data-type-guide strong { color: var(--text-1); }
+    .data-type-guide .dtg-examples { color: var(--text-2); font-style: italic; }
 
     .group-card input[type="text"] {
       width: 100%;
@@ -3131,6 +3133,50 @@
       countEl.className = 'value-count valid';
     }
 
+    // Pre-run data quality check
+    var qualEl = countEl.parentNode.querySelector('.data-quality-check');
+    if (qualEl) qualEl.remove();
+    if (parsed.nums.length >= 5) {
+      var qc = document.createElement('div');
+      qc.className = 'data-quality-check';
+      qc.style.cssText = 'font-size:0.75rem;margin-top:6px;padding:8px 10px;background:var(--bg-1);border-radius:6px;line-height:1.6;';
+      var checks = [];
+      var nums = parsed.nums;
+      var n = nums.length;
+
+      // Sample size
+      if (n >= 30) {
+        checks.push('\u2705 <strong>Sample size:</strong> ' + n + ' (good for most analyses)');
+      } else if (n >= 10) {
+        checks.push('\u26A0\uFE0F <strong>Small sample:</strong> ' + n + ' values. Results may be less reliable. Aim for 30+ if possible.');
+      } else {
+        checks.push('\u274C <strong>Very small sample:</strong> only ' + n + ' values. Most tests need at least 10\u201330 per group. Collect more data if you can.');
+      }
+
+      // Missing / bad values
+      if (parsed.bad === 0 && parsed.excelErrors === 0) {
+        checks.push('\u2705 <strong>No issues:</strong> all values are clean numbers');
+      } else {
+        if (parsed.bad > 0) checks.push('\u26A0\uFE0F <strong>' + parsed.bad + ' non-numeric value' + (parsed.bad > 1 ? 's' : '') + '</strong> skipped. Check you pasted the right column \u2014 text labels and headers are excluded automatically.');
+        if (parsed.excelErrors > 0) checks.push('\u26A0\uFE0F <strong>' + parsed.excelErrors + ' spreadsheet error' + (parsed.excelErrors > 1 ? 's' : '') + '</strong> (#N/A, #REF!) removed. Clean these in your spreadsheet to avoid data loss.');
+      }
+
+      // Outlier check (>3 SD from mean)
+      var mean = nums.reduce(function(a, b) { return a + b; }, 0) / n;
+      var sd = Math.sqrt(nums.reduce(function(a, b) { return a + (b - mean) * (b - mean); }, 0) / (n - 1));
+      if (sd > 0) {
+        var outliers = nums.filter(function(v) { return Math.abs(v - mean) > 3 * sd; }).length;
+        if (outliers === 0) {
+          checks.push('\u2705 <strong>No outliers</strong> detected (within 3 SD)');
+        } else {
+          checks.push('\u26A0\uFE0F <strong>' + outliers + ' potential outlier' + (outliers > 1 ? 's' : '') + '</strong> (beyond 3 SD from mean). These may pull your results. Check if they\u2019re real data or errors.');
+        }
+      }
+
+      qc.innerHTML = checks.join('<br>');
+      countEl.parentNode.insertBefore(qc, countEl.nextSibling);
+    }
+
     // Type disambiguation hint for low-cardinality numeric data
     var hintEl = countEl.parentNode.querySelector('.type-hint');
     if (hintEl) hintEl.remove();
@@ -3361,7 +3407,10 @@
         '<div class="group-card">' +
           '<div class="group-card-label">' + escHtml(label) + '</div>' +
           '<textarea id="dataCol" placeholder="' + escHtml(placeholder) + '"></textarea>' +
-          '<div class="data-type-guide">Numeric values: scores, ratings, amounts, times. One value per line.</div>' +
+          '<div class="data-type-guide">' +
+            '<strong>Paste numeric values</strong> \u2014 one per line. Copy a single column from your spreadsheet.<br>' +
+            '<span class="dtg-examples">Works with: satisfaction scores (1\u20137), response times (12.3s), revenue ($450), NPS (0\u201310), any numbers.</span>' +
+          '</div>' +
           '<div class="desc-label">Name this variable</div>' +
           '<input type="text" id="descCol" placeholder="e.g., Customer satisfaction scores">' +
           '<div class="desc-hint">Used in charts and plain English output. Leave blank for default.</div>' +
@@ -3398,7 +3447,10 @@
         '<div class="group-card">' +
           '<div class="group-card-label">' + escHtml(labelA) + '</div>' +
           '<textarea id="dataA" placeholder="Paste your values here, one per line..."></textarea>' +
-          '<div class="data-type-guide">Numeric values: scores, ratings, amounts, counts. One value per line.</div>' +
+          '<div class="data-type-guide">' +
+            '<strong>Numeric values</strong> \u2014 one per line. Paste one column from your spreadsheet.<br>' +
+            '<span class="dtg-examples">Rating scales (1\u20137), scores, amounts, counts, times \u2014 must be numbers, not text labels.</span>' +
+          '</div>' +
           '<div class="desc-label">Name this column</div>' +
           '<input type="text" id="descA" placeholder="e.g., Satisfaction scores \u2014 existing customers">' +
           '<div class="desc-hint">This name appears in your chart and results summary.</div>' +
@@ -3407,7 +3459,9 @@
         '<div class="group-card">' +
           '<div class="group-card-label">' + escHtml(labelB) + '</div>' +
           '<textarea id="dataB" placeholder="Paste your values here, one per line..."></textarea>' +
-          '<div class="data-type-guide">Numeric values: scores, ratings, amounts, counts. One value per line.</div>' +
+          '<div class="data-type-guide">' +
+            '<strong>Numeric values</strong> \u2014 same type as the left column. Same format, different group or time point.' +
+          '</div>' +
           '<div class="desc-label">Name this column</div>' +
           '<input type="text" id="descB" placeholder="e.g., Satisfaction scores \u2014 new customers">' +
           '<div class="value-count" id="countB">No values detected</div>' +
@@ -3454,7 +3508,9 @@
           '<div class="group-card" data-col="' + i + '">' +
             '<div class="group-card-label">' + label + ' ' + (i + 1) + '</div>' +
             '<textarea class="multi-data" data-idx="' + i + '" placeholder="Paste values, one per line..."></textarea>' +
-            '<div class="data-type-guide">Numeric values: one per line. Each row = one respondent.</div>' +
+            '<div class="data-type-guide">' +
+              '<strong>Numeric values</strong> \u2014 one per line. Each row = one respondent or observation.' +
+            '</div>' +
             '<div class="desc-label">Name this ' + label.toLowerCase() + '</div>' +
             '<input type="text" class="multi-desc" data-idx="' + i + '" placeholder="e.g., ' + label + ' ' + (i + 1) + '">' +
             '<div class="desc-hint">Appears in charts and results.</div>' +
