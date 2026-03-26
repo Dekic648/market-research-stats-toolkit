@@ -8250,10 +8250,162 @@
   }
 
   // --- Crosstab: multi-response × grouping variable ---
+  // Scale data + grouping variable: show mean per item per group (not selection rates)
+  function runScaleCrosstab(parsed, groupLines, valDesc, grpDesc) {
+    valDesc = valDesc || 'Scale Items';
+    grpDesc = grpDesc || 'Group';
+    var n = parsed.nRows;
+    var nCols = parsed.columns.length;
+    var itemLabels = parsed.columnLabels || [];
+    for (var c = itemLabels.length; c < nCols; c++) itemLabels.push('Item ' + (c + 1));
+
+    // Build group info
+    var groupSet = {};
+    groupLines.forEach(function(g) { groupSet[g] = true; });
+    var groupLabels = Object.keys(groupSet);
+    groupLabels.sort();
+    var groupN = {};
+    groupLabels.forEach(function(g) { groupN[g] = 0; });
+    groupLines.forEach(function(g) { groupN[g]++; });
+
+    // Compute mean per item per group
+    // meanData[groupIdx][itemIdx] = mean
+    var meanData = [];
+    for (var g = 0; g < groupLabels.length; g++) {
+      meanData.push([]);
+      for (var c = 0; c < nCols; c++) {
+        var vals = [];
+        for (var r = 0; r < n; r++) {
+          if (groupLines[r] === groupLabels[g]) {
+            var v = parseFloat(parsed.columns[c][r]);
+            if (!isNaN(v)) vals.push(v);
+          }
+        }
+        var mean = vals.length > 0 ? vals.reduce(function(a, b) { return a + b; }, 0) / vals.length : 0;
+        meanData[g].push(round2(mean));
+      }
+    }
+
+    // Overall mean per item
+    var overallMeans = [];
+    for (var c = 0; c < nCols; c++) {
+      var vals = [];
+      for (var r = 0; r < n; r++) {
+        var v = parseFloat(parsed.columns[c][r]);
+        if (!isNaN(v)) vals.push(v);
+      }
+      overallMeans.push(vals.length > 0 ? round2(vals.reduce(function(a, b) { return a + b; }, 0) / vals.length) : 0);
+    }
+
+    // Significance: for each item, run KW or MW across groups
+    var sigResults = [];
+    for (var c = 0; c < nCols; c++) {
+      var groupArrays = [];
+      for (var g = 0; g < groupLabels.length; g++) {
+        var vals = [];
+        for (var r = 0; r < n; r++) {
+          if (groupLines[r] === groupLabels[g]) {
+            var v = parseFloat(parsed.columns[c][r]);
+            if (!isNaN(v)) vals.push(v);
+          }
+        }
+        groupArrays.push(vals);
+      }
+      try {
+        var validGroups = groupArrays.filter(function(a) { return a.length >= 2; });
+        if (validGroups.length >= 2) {
+          var sig = validGroups.length === 2 ? StatsEngine.mannWhitney(validGroups[0], validGroups[1]) : StatsEngine.kruskalWallis(validGroups);
+          sigResults.push(sig.p);
+        } else {
+          sigResults.push(null);
+        }
+      } catch(e) { sigResults.push(null); }
+    }
+
+    // === BUILD HTML ===
+    var html = '<div class="results-section">';
+
+    // Summary
+    html += RC('Scale Comparison by ' + escHtml(grpDesc), renderMetrics([
+      { label: 'Respondents', value: n },
+      { label: 'Groups', value: groupLabels.length },
+      { label: 'Items', value: nCols },
+      { label: 'Scale', value: parsed.scaleMin + '\u2013' + parsed.scaleMax }
+    ]));
+
+    // Mean comparison table
+    html += '<div class="result-card"><div class="result-card-title">Mean by Group</div>';
+    html += '<div style="overflow-x:auto"><table class="coeff-table"><tr><th>Item</th><th>Overall</th>';
+    groupLabels.forEach(function(g) { html += '<th>' + escHtml(g) + '<br><span style="font-weight:400;font-size:0.72rem">n=' + groupN[g] + '</span></th>'; });
+    html += '<th>Sig.</th></tr>';
+    for (var c = 0; c < nCols; c++) {
+      html += '<tr><td>' + escHtml(itemLabels[c]) + '</td><td><strong>' + overallMeans[c] + '</strong></td>';
+      // Find highest and lowest group for this item
+      var maxG = 0, minG = 0;
+      for (var g = 1; g < groupLabels.length; g++) {
+        if (meanData[g][c] > meanData[maxG][c]) maxG = g;
+        if (meanData[g][c] < meanData[minG][c]) minG = g;
+      }
+      for (var g = 0; g < groupLabels.length; g++) {
+        var style = '';
+        if (groupLabels.length > 2) {
+          if (g === maxG && meanData[maxG][c] > overallMeans[c]) style = ' style="color:var(--green);font-weight:600"';
+          if (g === minG && meanData[minG][c] < overallMeans[c]) style = ' style="color:var(--rose);font-weight:600"';
+        }
+        html += '<td' + style + '>' + meanData[g][c] + '</td>';
+      }
+      var pVal = sigResults[c];
+      if (pVal !== null) {
+        var sigCls = pVal < 0.05 ? ' style="color:var(--green);font-weight:600"' : '';
+        html += '<td' + sigCls + '>' + (pVal < 0.001 ? '<0.001' : round4(pVal)) + '</td>';
+      } else {
+        html += '<td>\u2014</td>';
+      }
+      html += '</tr>';
+    }
+    html += '</table></div></div>';
+
+    // Grouped bar chart of means
+    var chartId = 'scaleCross_' + Date.now();
+    var chartW = Math.min(800, Math.max(500, groupLabels.length * nCols * 25 + 200));
+    var chartH = 320;
+    html += '<div class="result-card"><div class="result-card-title">Mean Scores by ' + escHtml(grpDesc) + '</div>' +
+      '<canvas id="' + chartId + '" width="' + chartW + '" height="' + chartH + '" style="width:100%;max-width:' + chartW + 'px;display:block;margin:0 auto"></canvas></div>';
+
+    // Plain English
+    var sigItems = [];
+    for (var c = 0; c < nCols; c++) {
+      if (sigResults[c] !== null && sigResults[c] < 0.05) sigItems.push(itemLabels[c]);
+    }
+    var plainText = n + ' respondents rated ' + nCols + ' items on a ' + parsed.scaleMin + '\u2013' + parsed.scaleMax + ' scale, compared across ' + groupLabels.length + ' groups (' + grpDesc + '). ';
+    if (sigItems.length > 0) {
+      plainText += 'Significant differences found for: ' + sigItems.join(', ') + '. ';
+    } else {
+      plainText += 'No significant differences between groups on any item. ';
+    }
+    html += renderPlainEnglish(plainText);
+    html += '</div>';
+
+    container.insertAdjacentHTML('beforeend', html);
+    scrollToResults();
+    drawVerticalGroupedBarChart(chartId, chartW, chartH, groupLabels, itemLabels, meanData);
+    showNextSteps('group_comparison', { n: n });
+  }
+
   function runCrosstab(parsed, groupLines, valDesc, grpDesc) {
     valDesc = valDesc || 'Responses';
     grpDesc = grpDesc || 'Group';
     var n = parsed.rows.length;
+
+    // === SCALE DATA WITH GROUPING → redirect to scale comparison by group ===
+    // When data is Likert/scale (every cell has a value), the crosstab "selection rate"
+    // logic doesn't apply — it would show >100% because each respondent has one value per column.
+    // Instead, show mean per item per group.
+    if (parsed.isScaleData && parsed.columns && parsed.columns.length > 1) {
+      runScaleCrosstab(parsed, groupLines, valDesc, grpDesc);
+      return;
+    }
+
     var optionLabels = parsed.uniqueItems.slice();
 
     // Sort numerically if all option labels are numbers (Likert/scale data)
