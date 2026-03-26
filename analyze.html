@@ -2021,7 +2021,7 @@
       <a href="index.html" class="back-link">&#8592; <span>Home</span></a>
       <a href="learn.html" class="sister-link">Learn</a>
       <a href="guide.html" class="sister-link">Guide</a>
-      <span style="font-size:0.6rem;color:var(--text-2);opacity:0.4;margin-left:0.5rem">v3.26</span>
+      <span style="font-size:0.6rem;color:var(--text-2);opacity:0.4;margin-left:0.5rem">v3.27</span>
     </div>
     <div class="header-right">
       <button class="start-over-link" id="startOverLink">Start over</button>
@@ -8447,6 +8447,20 @@
       parsed.rows[i].forEach(function(opt) {
         if (countTable[grp][opt] !== undefined) countTable[grp][opt]++;
       });
+    }
+
+    // DEFINITIVE CHECK: if total value count per group > group size,
+    // each respondent contributed multiple values → this is matrix/rating grid data, not checkbox.
+    // Redirect to scale comparison which shows mean per item per group.
+    if (groupLabels.length > 0 && parsed.columns && parsed.columns.length > 1) {
+      var firstGroup = groupLabels[0];
+      var firstGroupTotal = 0;
+      optionLabels.forEach(function(opt) { firstGroupTotal += countTable[firstGroup][opt]; });
+      if (firstGroupTotal > groupN[firstGroup] * 1.1) {
+        // Each respondent averaged more than 1.1 values → multi-item data
+        runScaleCrosstab(parsed, groupLines, valDesc, grpDesc);
+        return;
+      }
     }
 
     // Row %: pctData[groupIdx][optionIdx] = % of that group who selected that option
