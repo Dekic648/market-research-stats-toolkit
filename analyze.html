@@ -4319,7 +4319,7 @@
     rows.forEach(function(row) {
       var barW = Math.min(row.pct, 100);
       html += '<tr><td>' + escHtml(String(row.value)) + '</td><td style="font-variant-numeric:tabular-nums">' + row.count + '</td>' +
-        '<td class="pct-bar-cell"><span class="pct-bar" style="width:' + barW.toFixed(1) + '%"></span><span>' + row.pct.toFixed(1) + '%</span></td></tr>';
+        '<td class="pct-bar-cell"><span class="pct-bar" style="width:' + barW.toFixed(1) + '%"></span><span>' + Math.round(row.pct) + '%</span></td></tr>';
     });
     html += '</table>';
     return RC(title || 'Response Distribution', html);
@@ -4465,7 +4465,12 @@
       ctx.fillStyle = colors.subtext;
       ctx.font = '600 12px -apple-system, BlinkMacSystemFont, sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(typeof bar.value === 'number' ? bar.value.toFixed(2) : bar.value, barEnd + 8, y + barHeight / 2);
+      var valText;
+      if (typeof bar.value !== 'number') { valText = bar.value; }
+      else if (bar.isPct) { valText = Math.round(bar.value) + '%'; }
+      else if (Number.isInteger(bar.value)) { valText = String(bar.value); }
+      else { var rounded = bar.value.toFixed(1); valText = rounded.replace(/\.0$/, ''); }
+      ctx.fillText(valText, barEnd + 8, y + barHeight / 2);
     });
   }
 
@@ -4582,7 +4587,7 @@
       for (var i = 0; i < sorted.length; i++) {
         var bh = maxPct > 0 ? (sorted[i].pct / maxPct) * ch : 0;
         if (sorted[i].pct > 0) {
-          ctx.fillText(sorted[i].pct.toFixed(1) + '%', pad.left + i * bw + bw / 2, pad.top + ch - bh - 4);
+          ctx.fillText(Math.round(sorted[i].pct) + '%', pad.left + i * bw + bw / 2, pad.top + ch - bh - 4);
         }
       }
 
@@ -8479,7 +8484,7 @@
           ctx.font = '600 ' + Math.max(8, Math.min(10, barW - 2)) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'bottom';
-          ctx.fillText(val.toFixed(1), bx + (barW - 1) / 2, by - 2);
+          ctx.fillText(Math.round(val) + '%', bx + (barW - 1) / 2, by - 2);
         }
       }
 
