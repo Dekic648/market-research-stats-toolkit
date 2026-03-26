@@ -4401,6 +4401,16 @@
     var ctx = c.ctx, w = c.w, h = c.h;
     var colors = getColors();
 
+    // Auto-detect percentage data: all values 0-100, sum ≈ 100 (±5), no bar flagged isPct=false
+    var valSum = 0, allInRange = true, anyFlaggedNonPct = false;
+    bars.forEach(function(b) {
+      valSum += b.value;
+      if (b.value < 0 || b.value > 100) allInRange = false;
+      if (b.isPct === false) anyFlaggedNonPct = true;
+    });
+    var looksLikePct = allInRange && !anyFlaggedNonPct && bars.length >= 2 &&
+      ((valSum > 95 && valSum < 105) || bars.some(function(b) { return b.isPct; }));
+
     var allVals = [];
     bars.forEach(function(b) {
       var halfCI = b.sd ? (b.n ? 1.96 * b.sd / Math.sqrt(b.n) : b.sd) : 0;
@@ -4497,7 +4507,7 @@
       // Value (right of bar or inside if wide enough)
       var valText;
       if (typeof bar.value !== 'number') { valText = bar.value; }
-      else if (bar.isPct) { valText = Math.round(bar.value) + '%'; }
+      else if (bar.isPct || looksLikePct) { valText = Math.round(bar.value) + '%'; }
       else if (Number.isInteger(bar.value)) { valText = String(bar.value); }
       else { var rounded = bar.value.toFixed(1); valText = rounded.replace(/\.0$/, ''); }
 
