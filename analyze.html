@@ -2021,7 +2021,7 @@
       <a href="index.html" class="back-link">&#8592; <span>Home</span></a>
       <a href="learn.html" class="sister-link">Learn</a>
       <a href="guide.html" class="sister-link">Guide</a>
-      <span style="font-size:0.6rem;color:var(--text-2);opacity:0.4;margin-left:0.5rem">v3.27</span>
+      <span style="font-size:0.6rem;color:var(--text-2);opacity:0.4;margin-left:0.5rem">v3.28</span>
     </div>
     <div class="header-right">
       <button class="start-over-link" id="startOverLink">Start over</button>
@@ -8403,11 +8403,20 @@
     grpDesc = grpDesc || 'Group';
     var n = parsed.rows.length;
 
-    // === SCALE DATA WITH GROUPING → redirect to scale comparison by group ===
-    // When data is Likert/scale (every cell has a value), the crosstab "selection rate"
-    // logic doesn't apply — it would show >100% because each respondent has one value per column.
-    // Instead, show mean per item per group.
-    if (parsed.isScaleData && parsed.columns && parsed.columns.length > 1) {
+    // === DETECT MATRIX/SCALE DATA: each respondent contributed multiple values ===
+    // For checkbox data, each row has 1-2 selections. For matrix/rating grid, each row
+    // has one value PER ITEM (4 items = 4 values per row). If average > 2, it's matrix data.
+    var totalRowValues = 0;
+    for (var ri = 0; ri < n; ri++) totalRowValues += parsed.rows[ri].length;
+    var avgPerRow = n > 0 ? totalRowValues / n : 0;
+
+    var hasMultiColumns = (parsed.columns && parsed.columns.length > 1) || (parsed.nColumns && parsed.nColumns > 1);
+    if (avgPerRow > 2 && hasMultiColumns) {
+      // Matrix/rating grid — redirect to scale comparison by group
+      runScaleCrosstab(parsed, groupLines, valDesc, grpDesc);
+      return;
+    }
+    if (parsed.isScaleData && hasMultiColumns) {
       runScaleCrosstab(parsed, groupLines, valDesc, grpDesc);
       return;
     }
