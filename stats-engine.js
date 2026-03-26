@@ -2665,8 +2665,8 @@
       ssCells += cellNs[key] * Math.pow(cellMeans[key] - grandMean, 2);
     }
 
-    // SS_AB (interaction)
-    var ssAB = ssCells - ssA - ssB;
+    // SS_AB (interaction) — clamp to 0 for unbalanced designs where Type I decomposition can go negative
+    var ssAB = Math.max(0, ssCells - ssA - ssB);
 
     // SS_error
     var ssError = 0;
