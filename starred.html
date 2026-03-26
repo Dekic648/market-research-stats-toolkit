@@ -714,6 +714,211 @@
     };
   }
 
+  /* ==================================================================
+     Executive Summary Data Store
+     ================================================================== */
+  var execSummaryData = [];
+
+  /* ==================================================================
+     ADDITION 1: Diverging Stacked Bar Chart
+     ================================================================== */
+  function drawDivergingStackedBar(canvasId, items) {
+    if (!items || items.length === 0) return;
+    var rowH = 36, rowGap = 6, topPad = 30, bottomPad = 40;
+    var leftPad = 140, rightPad = 90;
+    var totalH = items.length * (rowH + rowGap) + topPad + bottomPad;
+    var c = initCanvas(canvasId, 600, totalH);
+    if (!c) return;
+    var ctx = c.ctx, w = c.w;
+    var colors = getColors();
+    var barColors = {
+      1: '#c0392b', 2: '#e07060', 3: '#999999', 4: '#6db87a', 5: '#2d8a4e'
+    };
+
+    var chartW = w - leftPad - rightPad;
+    var centerX = leftPad + chartW / 2;
+
+    // Header labels
+    ctx.font = '600 10px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = colors.subtext;
+    ctx.fillText('Bottom-2 Box', leftPad + chartW * 0.2, 12);
+    ctx.fillText('Neutral', centerX, 12);
+    ctx.fillText('Top-2 Box', leftPad + chartW * 0.8, 12);
+
+    // Center line
+    ctx.strokeStyle = colors.text;
+    ctx.globalAlpha = 0.15;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(centerX, topPad - 4);
+    ctx.lineTo(centerX, topPad + items.length * (rowH + rowGap));
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    items.forEach(function(item, idx) {
+      var y = topPad + idx * (rowH + rowGap);
+      var dist = item.distPct || {};
+      var keys = Object.keys(dist).map(Number).sort(function(a, b) { return a - b; });
+      if (keys.length === 0) return;
+
+      // Find midpoint key
+      var midKey = keys[Math.floor(keys.length / 2)];
+
+      // Calculate neutral half-width
+      var neutralPct = dist[midKey] || 0;
+      var neutralW = (neutralPct / 100) * chartW;
+
+      // Negative bars (extend left from center - neutral/2)
+      var negStart = centerX - neutralW / 2;
+      for (var ki = keys.indexOf(midKey) - 1; ki >= 0; ki--) {
+        var k = keys[ki];
+        var pct = dist[k] || 0;
+        var bw = (pct / 100) * chartW;
+        negStart -= bw;
+        ctx.fillStyle = barColors[k] || barColors[1];
+        ctx.globalAlpha = 0.85;
+        ctx.fillRect(negStart, y, bw, rowH);
+        // Label inside bar if wide enough
+        if (bw > 22) {
+          ctx.fillStyle = '#fff';
+          ctx.font = '600 10px -apple-system, BlinkMacSystemFont, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.globalAlpha = 1;
+          ctx.fillText(Math.round(pct) + '%', negStart + bw / 2, y + rowH / 2);
+        }
+      }
+
+      // Neutral (centered)
+      ctx.fillStyle = barColors[midKey] || '#999';
+      ctx.globalAlpha = 0.6;
+      ctx.fillRect(centerX - neutralW / 2, y, neutralW, rowH);
+      if (neutralW > 22) {
+        ctx.fillStyle = '#fff';
+        ctx.font = '600 10px -apple-system, BlinkMacSystemFont, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.globalAlpha = 1;
+        ctx.fillText(Math.round(neutralPct) + '%', centerX, y + rowH / 2);
+      }
+
+      // Positive bars (extend right from center + neutral/2)
+      var posStart = centerX + neutralW / 2;
+      for (var ki = keys.indexOf(midKey) + 1; ki < keys.length; ki++) {
+        var k = keys[ki];
+        var pct = dist[k] || 0;
+        var bw = (pct / 100) * chartW;
+        ctx.fillStyle = barColors[k] || barColors[5];
+        ctx.globalAlpha = 0.85;
+        ctx.fillRect(posStart, y, bw, rowH);
+        if (bw > 22) {
+          ctx.fillStyle = '#fff';
+          ctx.font = '600 10px -apple-system, BlinkMacSystemFont, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.globalAlpha = 1;
+          ctx.fillText(Math.round(pct) + '%', posStart + bw / 2, y + rowH / 2);
+        }
+        posStart += bw;
+      }
+      ctx.globalAlpha = 1;
+
+      // Row label (left)
+      var labelText = item.name.length > 20 ? item.name.substring(0, 18) + '..' : item.name;
+      ctx.font = '600 11px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.fillStyle = colors.text;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(labelText, leftPad - 8, y + rowH / 2);
+
+      // Net score (right)
+      var net = item.netScore;
+      var netColor = net > 0 ? colors.green : net < 0 ? '#c0392b' : colors.subtext;
+      ctx.font = '700 11px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.fillStyle = netColor;
+      ctx.textAlign = 'left';
+      ctx.fillText('Net ' + (net > 0 ? '+' : '') + net, w - rightPad + 8, y + rowH / 2);
+    });
+
+    // Legend at bottom
+    var legendY = topPad + items.length * (rowH + rowGap) + 12;
+    var legendKeys = [1, 2, 3, 4, 5];
+    var legendLabels = { 1: 'Strongly Neg', 2: 'Negative', 3: 'Neutral', 4: 'Positive', 5: 'Strongly Pos' };
+    var legendX = leftPad;
+    ctx.font = '500 9px -apple-system, BlinkMacSystemFont, sans-serif';
+    legendKeys.forEach(function(k) {
+      ctx.fillStyle = barColors[k];
+      ctx.globalAlpha = k === 3 ? 0.6 : 0.85;
+      ctx.fillRect(legendX, legendY, 10, 10);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = colors.subtext;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(legendLabels[k], legendX + 13, legendY + 5);
+      legendX += ctx.measureText(legendLabels[k]).width + 24;
+    });
+  }
+
+  /* ==================================================================
+     ADDITION 6: Standardized Coefficient (Beta) Chart
+     ================================================================== */
+  function drawStandardizedCoeffChart(canvasId, betaItems) {
+    if (!betaItems || betaItems.length === 0) return;
+    // Sort by absolute beta descending
+    betaItems.sort(function(a, b) { return Math.abs(b.beta) - Math.abs(a.beta); });
+    var bars = betaItems.map(function(item) {
+      return {
+        label: item.label,
+        value: item.beta,
+        color: item.beta >= 0 ? '#3a9a5c' : '#c0392b'
+      };
+    });
+    drawBarChart(canvasId, bars);
+  }
+
+  /* ==================================================================
+     Helper: compute Top-2 Box, Bottom-2 Box, Net Score
+     ================================================================== */
+  function computeBoxScores(col) {
+    var freq = StatsEngine.frequencies(col);
+    var keys = freq.uniqueValues.map(Number).filter(function(n) { return !isNaN(n); }).sort(function(a, b) { return a - b; });
+    if (keys.length < 2) return { top2: 0, bot2: 0, net: 0 };
+    var topKeys = keys.slice(-2);
+    var botKeys = keys.slice(0, 2);
+    var top2 = 0, bot2 = 0;
+    topKeys.forEach(function(k) { top2 += (freq.percentages[k] || 0); });
+    botKeys.forEach(function(k) { bot2 += (freq.percentages[k] || 0); });
+    return { top2: Math.round(top2), bot2: Math.round(bot2), net: Math.round(top2 - bot2) };
+  }
+
+  /* ==================================================================
+     Helper: compute distribution percentages for diverging chart
+     ================================================================== */
+  function computeDistPct(col) {
+    var freq = StatsEngine.frequencies(col);
+    var dist = {};
+    freq.uniqueValues.forEach(function(v) {
+      var n = Number(v);
+      if (!isNaN(n)) dist[n] = round2(freq.percentages[v]);
+    });
+    return dist;
+  }
+
+  /* ==================================================================
+     Helper: epsilon-squared effect size for KW
+     ================================================================== */
+  function computeEpsilonSquared(H, k, N) {
+    if (N <= k) return 0;
+    return (H - k + 1) / (N - k);
+  }
+  function interpretEpsilon(e2) {
+    if (e2 < 0.01) return 'negligible';
+    if (e2 < 0.06) return 'small';
+    if (e2 < 0.14) return 'medium';
+    return 'large';
+  }
+
   function drawBarChart(canvasId, bars) {
     bars = bars.filter(function(b) { return typeof b.value === 'number' && isFinite(b.value); });
     if (bars.length === 0) return;
@@ -1390,7 +1595,8 @@
           { id: 'rc_freq', title: 'Frequencies', desc: 'Distribution of each rating column', run: runRatingFrequencies },
           { id: 'rc_crosstab', title: 'Crosstab', desc: 'Percentage breakdown by segment for each rating', run: runRatingCrosstab },
           { id: 'rc_sig', title: 'Significance', desc: 'Kruskal-Wallis test per rating column across segments', run: runRatingSignificance },
-          { id: 'rc_posthoc', title: 'Post-hoc', desc: 'Which segments differ from each other?', run: runPostHoc }
+          { id: 'rc_posthoc', title: 'Post-hoc', desc: 'Which segments differ from each other?', run: runPostHoc },
+          { id: 'rc_profiles', title: 'Segment Profiles', desc: 'How does each segment rate across all items?', run: runSegmentProfiles }
         ]
       });
     }
@@ -1406,7 +1612,8 @@
           { id: 'cc_sig', title: 'Significance', desc: 'Kruskal-Wallis or chi-square per item across segments', run: runCheckboxSignificance },
           { id: 'cc_alpha', title: 'Reliability', desc: "Cronbach's alpha on the items", run: runCheckboxReliability },
           { id: 'cc_factor', title: 'Factor Analysis', desc: 'Do these items group into underlying themes?', run: runCheckboxFactorAnalysis },
-          { id: 'cc_reg', title: 'What Predicts?', desc: 'Regression with items as predictors', run: runCheckboxRegression }
+          { id: 'cc_reg', title: 'What Predicts?', desc: 'Regression with items as predictors', run: runCheckboxRegression },
+          { id: 'cc_profiles', title: 'Segment Profiles', desc: 'How does each segment rate across all items?', run: runSegmentProfiles }
         ]
       });
     }
@@ -1433,7 +1640,8 @@
           { id: 'bc_summary', title: 'Summary Stats', desc: 'Mean, median, SD per behavioral variable', run: runBehavioralSummary },
           { id: 'bc_segment', title: 'Compare by Segment', desc: 'Means per segment for each variable', run: runBehavioralBySegment },
           { id: 'bc_sig', title: 'Significance', desc: 'ANOVA / Kruskal-Wallis across segments', run: runBehavioralSignificance },
-          { id: 'bc_corr', title: 'Correlation', desc: 'Between behavioral variables', run: runBehavioralCorrelation }
+          { id: 'bc_corr', title: 'Correlation', desc: 'Between behavioral variables', run: runBehavioralCorrelation },
+          { id: 'bc_profiles', title: 'Segment Profiles', desc: 'How does each segment rate across all items?', run: runSegmentProfiles }
         ]
       });
     }
@@ -1495,22 +1703,32 @@
   // --- Ratings + Category ---
   function runRatingFrequencies(session, container) {
     var html = '';
+    var divergingItems = [];
+
     session.ratings.columns.forEach(function(col, i) {
       var label = session.ratings.labels[i] || ('Rating ' + (i + 1));
       var freq = StatsEngine.frequencies(col);
       var desc = StatsEngine.describe(col);
       var chartId = 'freq_chart_' + i;
+      var boxScores = computeBoxScores(col);
+      var distPct = computeDistPct(col);
 
-      // Metrics
+      // Collect for diverging chart
+      divergingItems.push({ name: label, distPct: distPct, mean: desc.mean, netScore: boxScores.net });
+
+      // Metrics (now includes Top-2 Box, Bottom-2 Box, Net)
       html += RC(label + ' — Summary', renderMetrics([
         { label: 'n', value: desc.n },
         { label: 'Mean', value: round2(desc.mean) },
         { label: 'Median', value: round2(desc.median) },
-        { label: 'Spread (SD)', value: round2(desc.sd) }
+        { label: 'Spread (SD)', value: round2(desc.sd) },
+        { label: 'Top-2 Box', value: boxScores.top2 + '%' },
+        { label: 'Bottom-2 Box', value: boxScores.bot2 + '%' },
+        { label: 'Net Score', value: (boxScores.net > 0 ? '+' : '') + boxScores.net, cls: boxScores.net > 0 ? 'p-sig' : boxScores.net < -20 ? 'p-nonsig' : '' }
       ]));
 
       if (i === 0) {
-        html += '<div style="font-size:0.74rem;color:var(--text-2);margin:-0.5rem 0 0.75rem;padding:0 0.25rem;line-height:1.5">SD = Standard Deviation — how spread out the responses are. Lower = more agreement, higher = more varied.</div>';
+        html += '<div style="font-size:0.74rem;color:var(--text-2);margin:-0.5rem 0 0.75rem;padding:0 0.25rem;line-height:1.5">SD = Standard Deviation — how spread out the responses are. Lower = more agreement, higher = more varied. Top-2 Box = % who rated top 2 values. Net = Top-2 Box minus Bottom-2 Box.</div>';
       }
 
       // Distribution table
@@ -1521,13 +1739,20 @@
 
       // Chart
       html += renderChart(chartId, label + ' — Bar Chart', 500, Math.max(120, rows.length * 46 + 28));
-      // Store bars to draw after render
       setTimeout(function() {
         drawBarChart(chartId, rows.map(function(r) {
           return { label: String(r.value), value: r.pct, isPct: true };
         }));
       }, 50);
     });
+
+    // ADDITION 1: Diverging stacked bar chart (above mean comparison)
+    if (divergingItems.length > 0) {
+      var divChartId = 'freq_diverging_stacked';
+      var divH = divergingItems.length * 42 + 70;
+      html = renderChart(divChartId, 'Diverging Stacked Bar — Response Sentiment', 600, divH) + html;
+      setTimeout(function() { drawDivergingStackedBar(divChartId, divergingItems); }, 40);
+    }
 
     // Mean comparison chart across all items (with CI)
     if (session.ratings.columns.length > 1) {
@@ -1546,7 +1771,8 @@
     var summaries = session.ratings.columns.map(function(col, i) {
       var d = StatsEngine.describe(col);
       var lbl = session.ratings.labels[i] || ('Rating ' + (i + 1));
-      return lbl + ': mean ' + round2(d.mean) + ' (SD ' + round2(d.sd) + ', n=' + d.n + ')';
+      var bs = computeBoxScores(col);
+      return lbl + ': mean ' + round2(d.mean) + ' (SD ' + round2(d.sd) + ', n=' + d.n + ', Net ' + (bs.net > 0 ? '+' : '') + bs.net + ')';
     });
     html += renderPlainEnglish('Rating distributions: ' + summaries.join('. ') + '.');
 
@@ -1554,7 +1780,8 @@
     session.ratings.columns.forEach(function(col, i) {
       var d = StatsEngine.describe(col);
       var lbl = session.ratings.labels[i] || ('Rating ' + (i + 1));
-      session.findings.push({ step: 'Frequencies', finding: lbl + ': mean ' + round2(d.mean) + ' (SD ' + round2(d.sd) + ', n=' + d.n + ')', detail: '', important: false });
+      var bs = computeBoxScores(col);
+      session.findings.push({ step: 'Frequencies', finding: lbl + ': mean ' + round2(d.mean) + ' (SD ' + round2(d.sd) + ', n=' + d.n + ', Top-2: ' + bs.top2 + '%, Net: ' + (bs.net > 0 ? '+' : '') + bs.net + ')', detail: '', important: false });
     });
 
     container.innerHTML = html;
@@ -1578,7 +1805,11 @@
         }
       }
 
-      var meanTableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>95% CI</th><th>Median</th><th>Spread (SD)</th></tr>';
+      // Compute overall mean for index calculation
+      var overallDesc = StatsEngine.describe(col);
+      var overallMean = overallDesc.mean;
+
+      var meanTableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>Index</th><th>95% CI</th><th>Median</th><th>Spread (SD)</th></tr>';
       var bars = [];
       session.category.groups.forEach(function(g) {
         var vals = segmentMeans[g] || [];
@@ -1587,10 +1818,19 @@
         var margin = 1.96 * (d.sd / Math.sqrt(d.n));
         var ciLo = round2(d.mean - margin);
         var ciHi = round2(d.mean + margin);
-        meanTableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + ciLo + '\u2013' + ciHi + '</td><td>' + round2(d.median) + '</td><td>' + round2(d.sd) + '</td></tr>';
+        var idx = overallMean !== 0 ? Math.round((d.mean / overallMean) * 100) : 100;
+        // Heatmap: deviation from overall mean
+        var deviation = overallMean !== 0 ? (d.mean - overallMean) / overallMean : 0;
+        var heatBg = '';
+        if (deviation > 0) heatBg = 'background:rgba(58,154,92,' + Math.min(0.25, Math.abs(deviation) * 1.5) + ')';
+        else if (deviation < 0) heatBg = 'background:rgba(192,57,43,' + Math.min(0.25, Math.abs(deviation) * 1.5) + ')';
+        // Index styling
+        var idxStyle = idx >= 110 ? 'color:var(--green);font-weight:700' : idx <= 90 ? 'color:var(--red);font-weight:700' : '';
+        meanTableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td style="' + heatBg + '">' + round2(d.mean) + '</td><td style="' + idxStyle + '">' + idx + '</td><td>' + ciLo + '\u2013' + ciHi + '</td><td>' + round2(d.median) + '</td><td>' + round2(d.sd) + '</td></tr>';
         bars.push({ label: g, value: d.mean, sd: d.sd, n: d.n });
       });
       meanTableHtml += '</table>';
+      meanTableHtml += '<div style="font-size:0.72rem;color:var(--text-2);margin-top:0.3rem">Index = (segment mean / overall mean) x 100. Values 110+ highlighted green, 90 or below highlighted red.</div>';
 
       var distHtml = renderStackedDistribution(col, catVals, session.category.groups, label, session.category.label);
       var toggleId = 'rc_xtab_' + ci;
@@ -1663,13 +1903,56 @@
       }
 
       var result = StatsEngine.kruskalWallis(groupArr);
+      // ADDITION 3: Epsilon-squared effect size
+      var totalN = 0;
+      groupArr.forEach(function(g) { totalN += g.length; });
+      var eps2 = computeEpsilonSquared(result.H, groupArr.length, totalN);
+      var eps2Interp = interpretEpsilon(eps2);
+      var eps2Pct = Math.round(eps2 * 100);
+
       html += renderPlainLang(plainP(result.p, label, session.category.label || 'segments'), result.p < ALPHA);
       html += RC(label + ' — Kruskal-Wallis Test', renderMetrics([
         { label: 'H', value: round2(result.H) },
         { label: 'df', value: result.df },
         { label: 'p-value', value: round4(result.p), cls: pClass(result.p) },
-        { label: 'Groups', value: groupArr.length }
-      ]) + renderSigBadge(result.p));
+        { label: 'Groups', value: groupArr.length },
+        { label: '\u03B5\u00B2 (effect)', value: round4(eps2) }
+      ]) + renderSigBadge(result.p) +
+      '<div style="font-size:0.82rem;color:var(--text-1);margin-top:0.6rem;padding:0.5rem 0.75rem;background:var(--bg-1);border-radius:8px">Effect size: \u03B5\u00B2 = ' + round4(eps2) + ' (' + eps2Interp + ') \u2014 the difference between segments explains ' + eps2Pct + '% of the variation in ratings.</div>');
+
+      // Store exec summary data
+      execSummaryData.push({
+        item: label,
+        mean: round2(StatsEngine.describe(col).mean),
+        top2: computeBoxScores(col).top2 + '%',
+        net: computeBoxScores(col).net,
+        bestSeg: null, worstSeg: null,
+        significant: result.p < ALPHA,
+        pVal: result.p
+      });
+    });
+
+    // Fill in best/worst segment for exec summary
+    execSummaryData.forEach(function(row) {
+      var col = null;
+      session.ratings.columns.forEach(function(c, ci) {
+        if ((session.ratings.labels[ci] || ('Rating ' + (ci + 1))) === row.item) col = c;
+      });
+      if (!col || !session.category) return;
+      var bestSeg = '', worstSeg = '', bestMean = -Infinity, worstMean = Infinity;
+      session.category.groups.forEach(function(g) {
+        var vals = [];
+        var catVals = session.category.values;
+        var minLen = Math.min(col.length, catVals.length);
+        for (var i = 0; i < minLen; i++) { if (catVals[i] === g && !isNaN(col[i])) vals.push(col[i]); }
+        if (vals.length > 0) {
+          var m = StatsEngine.describe(vals).mean;
+          if (m > bestMean) { bestMean = m; bestSeg = g + ' (' + round2(m) + ')'; }
+          if (m < worstMean) { worstMean = m; worstSeg = g + ' (' + round2(m) + ')'; }
+        }
+      });
+      row.bestSeg = bestSeg;
+      row.worstSeg = worstSeg;
     });
 
     var summaries = [];
@@ -1771,10 +2054,23 @@
     if (cb.isScale) {
       // Show mean per item
       var bars = [];
+      var divergingItems = [];
       cb.numericColumns.forEach(function(col, i) {
         var d = StatsEngine.describe(col);
         bars.push({ label: cb.labels[i], value: d.mean, sd: d.sd, n: d.n });
+        var bs = computeBoxScores(col);
+        var distPct = computeDistPct(col);
+        divergingItems.push({ name: cb.labels[i], distPct: distPct, mean: d.mean, netScore: bs.net });
       });
+
+      // Diverging stacked bar chart at top
+      if (divergingItems.length > 0) {
+        var divChartId = 'cb_diverging_stacked';
+        var divH = divergingItems.length * 42 + 70;
+        html += renderChart(divChartId, 'Diverging Stacked Bar — Response Sentiment', 600, divH);
+        setTimeout(function() { drawDivergingStackedBar(divChartId, divergingItems); }, 40);
+      }
+
       var chartId = 'cb_rates_chart';
       html += RC('Scale Comparison — Mean per Item', renderMetrics([
         { label: 'Items', value: cb.numericColumns.length },
@@ -1783,11 +2079,13 @@
       html += renderChart(chartId, 'Mean per Item', 500, Math.max(120, bars.length * 46 + 28));
       setTimeout(function() { drawBarChart(chartId, bars); }, 50);
 
-      // Table
-      var tableHtml = '<table class="freq-table"><tr><th>Item</th><th>n</th><th>Mean</th><th>Spread (SD)</th></tr>';
+      // Table with Top-2 Box, Bottom-2 Box, Net
+      var tableHtml = '<table class="freq-table"><tr><th>Item</th><th>n</th><th>Mean</th><th>Spread (SD)</th><th>Top-2 Box</th><th>Bottom-2 Box</th><th>Net Score</th></tr>';
       cb.numericColumns.forEach(function(col, i) {
         var d = StatsEngine.describe(col);
-        tableHtml += '<tr><td>' + escHtml(cb.labels[i]) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.sd) + '</td></tr>';
+        var bs = computeBoxScores(col);
+        var netColor = bs.net > 0 ? 'color:var(--green);font-weight:700' : bs.net < -20 ? 'color:var(--red);font-weight:700' : '';
+        tableHtml += '<tr><td>' + escHtml(cb.labels[i]) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.sd) + '</td><td>' + bs.top2 + '%</td><td>' + bs.bot2 + '%</td><td style="' + netColor + '">' + (bs.net > 0 ? '+' : '') + bs.net + '</td></tr>';
       });
       tableHtml += '</table>';
       html += RC('Item-Level Statistics', tableHtml);
@@ -1839,7 +2137,11 @@
         if (!isNaN(col[i])) segData[seg].push(col[i]);
       }
 
-      var meanTableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>95% CI</th><th>Spread (SD)</th></tr>';
+      // Overall mean for index
+      var cbOverallDesc = StatsEngine.describe(col);
+      var cbOverallMean = cbOverallDesc.mean;
+
+      var meanTableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>Index</th><th>95% CI</th><th>Spread (SD)</th></tr>';
       session.category.groups.forEach(function(g) {
         var vals = segData[g] || [];
         if (vals.length === 0) return;
@@ -1847,9 +2149,16 @@
         var margin = 1.96 * (d.sd / Math.sqrt(d.n));
         var ciLo = round2(d.mean - margin);
         var ciHi = round2(d.mean + margin);
-        meanTableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + ciLo + '\u2013' + ciHi + '</td><td>' + round2(d.sd) + '</td></tr>';
+        var idx = cbOverallMean !== 0 ? Math.round((d.mean / cbOverallMean) * 100) : 100;
+        var deviation = cbOverallMean !== 0 ? (d.mean - cbOverallMean) / cbOverallMean : 0;
+        var heatBg = '';
+        if (deviation > 0) heatBg = 'background:rgba(58,154,92,' + Math.min(0.25, Math.abs(deviation) * 1.5) + ')';
+        else if (deviation < 0) heatBg = 'background:rgba(192,57,43,' + Math.min(0.25, Math.abs(deviation) * 1.5) + ')';
+        var idxStyle = idx >= 110 ? 'color:var(--green);font-weight:700' : idx <= 90 ? 'color:var(--red);font-weight:700' : '';
+        meanTableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td style="' + heatBg + '">' + round2(d.mean) + '</td><td style="' + idxStyle + '">' + idx + '</td><td>' + ciLo + '\u2013' + ciHi + '</td><td>' + round2(d.sd) + '</td></tr>';
       });
       meanTableHtml += '</table>';
+      meanTableHtml += '<div style="font-size:0.72rem;color:var(--text-2);margin-top:0.3rem">Index = (segment mean / overall mean) x 100. Values 110+ highlighted green, 90 or below highlighted red.</div>';
 
       var distHtml = renderStackedDistribution(col, catVals, session.category.groups, label, session.category.label);
       var toggleId = 'cc_seg_' + ci;
@@ -1917,12 +2226,21 @@
         return;
       }
       var result = StatsEngine.kruskalWallis(groupArr);
+      // ADDITION 3: Epsilon-squared
+      var cbTotalN = 0;
+      groupArr.forEach(function(g) { cbTotalN += g.length; });
+      var cbEps2 = computeEpsilonSquared(result.H, groupArr.length, cbTotalN);
+      var cbEps2Interp = interpretEpsilon(cbEps2);
+      var cbEps2Pct = Math.round(cbEps2 * 100);
+
       html += renderPlainLang(label + ': ' + plainP(result.p, label, session.category.label || 'segments'), result.p < ALPHA);
       html += RC(label + ' — Kruskal-Wallis', renderMetrics([
         { label: 'H', value: round2(result.H) },
         { label: 'df', value: result.df },
-        { label: 'p-value', value: round4(result.p), cls: pClass(result.p) }
-      ]) + renderSigBadge(result.p));
+        { label: 'p-value', value: round4(result.p), cls: pClass(result.p) },
+        { label: '\u03B5\u00B2 (effect)', value: round4(cbEps2) }
+      ]) + renderSigBadge(result.p) +
+      '<div style="font-size:0.82rem;color:var(--text-1);margin-top:0.6rem;padding:0.5rem 0.75rem;background:var(--bg-1);border-radius:8px">Effect size: \u03B5\u00B2 = ' + round4(cbEps2) + ' (' + cbEps2Interp + ') \u2014 the difference between segments explains ' + cbEps2Pct + '% of the variation in ratings.</div>');
     });
 
     // Significance map: -log10(p) per checkbox item
@@ -2205,12 +2523,21 @@
         return;
       }
       var result = StatsEngine.kruskalWallis(groupArr);
+      // ADDITION 3: Epsilon-squared
+      var behTotalN = 0;
+      groupArr.forEach(function(g) { behTotalN += g.length; });
+      var behEps2 = computeEpsilonSquared(result.H, groupArr.length, behTotalN);
+      var behEps2Interp = interpretEpsilon(behEps2);
+      var behEps2Pct = Math.round(behEps2 * 100);
+
       html += renderPlainLang(label + ': ' + plainP(result.p, label, session.category.label || 'segments'), result.p < ALPHA);
       html += RC(label + ' — Kruskal-Wallis', renderMetrics([
         { label: 'H', value: round2(result.H) },
         { label: 'df', value: result.df },
-        { label: 'p-value', value: round4(result.p), cls: pClass(result.p) }
-      ]) + renderSigBadge(result.p));
+        { label: 'p-value', value: round4(result.p), cls: pClass(result.p) },
+        { label: '\u03B5\u00B2 (effect)', value: round4(behEps2) }
+      ]) + renderSigBadge(result.p) +
+      '<div style="font-size:0.82rem;color:var(--text-1);margin-top:0.6rem;padding:0.5rem 0.75rem;background:var(--bg-1);border-radius:8px">Effect size: \u03B5\u00B2 = ' + round4(behEps2) + ' (' + behEps2Interp + ') \u2014 the difference between segments explains ' + behEps2Pct + '% of the variation.</div>');
     });
 
     // Significance map for behavioral variables
@@ -2605,6 +2932,25 @@
       coefHtml += '</table>';
       html += RC('Coefficient Table', coefHtml);
 
+      // ADDITION 6: Standardized coefficients (betas) chart
+      var sdY = StatsEngine.describe(y).sd;
+      var betaItems = [];
+      for (var c = 1; c < predLabels.length; c++) {
+        if (coeffs[c] !== undefined) {
+          var predVals = predictors[c - 1];
+          var sdX = StatsEngine.describe(predVals).sd;
+          var beta = sdY !== 0 && sdX !== 0 ? coeffs[c] * (sdX / sdY) : 0;
+          betaItems.push({ label: predLabels[c], beta: round4(beta) });
+        }
+      }
+      if (betaItems.length > 0) {
+        var betaChartId = 'cb_reg_beta_chart';
+        betaItems.sort(function(a, b) { return Math.abs(b.beta) - Math.abs(a.beta); });
+        html += renderChart(betaChartId, 'Variable Importance \u2014 Standardized Coefficients (\u03B2)', 500, Math.max(120, betaItems.length * 46 + 28));
+        setTimeout(function() { drawStandardizedCoeffChart(betaChartId, betaItems); }, 70);
+        html += '<div style="font-size:0.74rem;color:var(--text-2);margin:-0.5rem 0 0.75rem;padding:0 0.25rem;line-height:1.5">Standardized coefficients (\u03B2) show the relative importance of each predictor. Larger bars = stronger influence. Green = positive, Red = negative.</div>';
+      }
+
       // Find strongest predictor
       var maxT = 0, maxIdx = -1;
       for (var c = 1; c < predLabels.length; c++) {
@@ -2683,6 +3029,25 @@
       }
       coefHtml += '</table>';
       html += RC('Coefficient Table', coefHtml);
+
+      // ADDITION 6: Standardized coefficients (betas) chart
+      var rbSdY = StatsEngine.describe(y).sd;
+      var rbBetaItems = [];
+      for (var c = 1; c < predLabels.length; c++) {
+        if (coeffs[c] !== undefined) {
+          var rbPredVals = predictors[c - 1];
+          var rbSdX = StatsEngine.describe(rbPredVals).sd;
+          var rbBeta = rbSdY !== 0 && rbSdX !== 0 ? coeffs[c] * (rbSdX / rbSdY) : 0;
+          rbBetaItems.push({ label: predLabels[c], beta: round4(rbBeta) });
+        }
+      }
+      if (rbBetaItems.length > 0) {
+        var rbBetaChartId = 'rb_reg_beta_chart';
+        rbBetaItems.sort(function(a, b) { return Math.abs(b.beta) - Math.abs(a.beta); });
+        html += renderChart(rbBetaChartId, 'Variable Importance \u2014 Which Predictor Matters Most? (\u03B2)', 500, Math.max(120, rbBetaItems.length * 46 + 28));
+        setTimeout(function() { drawStandardizedCoeffChart(rbBetaChartId, rbBetaItems); }, 70);
+        html += '<div style="font-size:0.74rem;color:var(--text-2);margin:-0.5rem 0 0.75rem;padding:0 0.25rem;line-height:1.5">Standardized coefficients (\u03B2) show relative importance. Larger bars = stronger influence. Green = positive, Red = negative.</div>';
+      }
 
       var maxT = 0, maxIdx = -1;
       for (var c = 1; c < predLabels.length; c++) {
@@ -2801,6 +3166,110 @@
   }
 
   /* ==================================================================
+     ADDITION 5: Segment Profile Cards
+     ================================================================== */
+  function runSegmentProfiles(session, container) {
+    if (!session.category) { container.innerHTML = RC('No Segment Data', '<p>Paste category data to see segment profiles.</p>'); return; }
+    var html = '';
+    var catVals = session.category.values;
+    var groups = session.category.groups;
+
+    // Collect all numeric columns + labels
+    var allCols = [];
+    var allLabels = [];
+    if (session.ratings) {
+      session.ratings.columns.forEach(function(col, i) {
+        allCols.push(col);
+        allLabels.push(session.ratings.labels[i] || ('Rating ' + (i + 1)));
+      });
+    }
+    if (session.checkbox && session.checkbox.isScale) {
+      session.checkbox.numericColumns.forEach(function(col, i) {
+        allCols.push(col);
+        allLabels.push(session.checkbox.labels[i]);
+      });
+    }
+    if (session.behavioral) {
+      session.behavioral.columns.forEach(function(col, i) {
+        allCols.push(col);
+        allLabels.push(session.behavioral.labels[i]);
+      });
+    }
+
+    if (allCols.length === 0) {
+      container.innerHTML = RC('Segment Profiles', '<p style="color:var(--text-2)">No numeric data to build profiles from.</p>');
+      return;
+    }
+
+    // Compute overall means per item
+    var overallMeans = allCols.map(function(col) { return StatsEngine.describe(col).mean; });
+
+    groups.forEach(function(g, gi) {
+      // Compute segment means per item
+      var segItems = [];
+      var segN = 0;
+      allCols.forEach(function(col, ci) {
+        var vals = [];
+        var minLen = Math.min(col.length, catVals.length);
+        for (var i = 0; i < minLen; i++) {
+          if (catVals[i] === g && !isNaN(col[i])) vals.push(col[i]);
+        }
+        if (vals.length > 0) {
+          var d = StatsEngine.describe(vals);
+          segN = Math.max(segN, d.n);
+          segItems.push({ label: allLabels[ci], mean: d.mean, overallMean: overallMeans[ci], n: d.n });
+        }
+      });
+      if (segItems.length === 0) return;
+
+      // Sort by mean descending
+      segItems.sort(function(a, b) { return b.mean - a.mean; });
+
+      var strongest = segItems[0];
+      var weakest = segItems[segItems.length - 1];
+
+      // Card HTML
+      var cardHtml = '<div style="padding:0.85rem 1.1rem;border-radius:10px;margin-bottom:0.75rem;background:var(--bg-1);border:1px solid var(--border)">';
+      cardHtml += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem">';
+      cardHtml += '<span style="font-size:1rem;font-weight:700;color:var(--text-0)">' + escHtml(g) + '</span>';
+      cardHtml += '<span style="font-size:0.78rem;color:var(--text-2)">n = ' + segN + '</span>';
+      cardHtml += '</div>';
+
+      // Strongest / Weakest
+      cardHtml += '<div style="display:flex;gap:1rem;margin-bottom:0.5rem;flex-wrap:wrap">';
+      cardHtml += '<span style="font-size:0.82rem;color:var(--green);font-weight:600">Strongest: ' + escHtml(strongest.label) + ' (' + round2(strongest.mean) + ')</span>';
+      cardHtml += '<span style="font-size:0.82rem;color:var(--red);font-weight:600">Weakest: ' + escHtml(weakest.label) + ' (' + round2(weakest.mean) + ')</span>';
+      cardHtml += '</div>';
+
+      // Comparison to overall
+      var compItems = [];
+      segItems.forEach(function(item) {
+        if (item.overallMean !== 0) {
+          var pctDiff = Math.round(((item.mean - item.overallMean) / item.overallMean) * 100);
+          if (Math.abs(pctDiff) >= 5) {
+            compItems.push(escHtml(item.label) + ': ' + (pctDiff > 0 ? '+' : '') + pctDiff + '% vs avg');
+          }
+        }
+      });
+      if (compItems.length > 0) {
+        cardHtml += '<div style="font-size:0.78rem;color:var(--text-2);line-height:1.5">' + compItems.join(' | ') + '</div>';
+      }
+      cardHtml += '</div>';
+      html += cardHtml;
+
+      // Horizontal bar chart for this segment
+      var segChartId = 'seg_profile_' + gi;
+      var bars = segItems.map(function(item) {
+        return { label: item.label, value: item.mean };
+      });
+      html += renderChart(segChartId, g + ' — Rating Profile (ranked)', 500, Math.max(120, bars.length * 46 + 28));
+      setTimeout(function() { drawBarChart(segChartId, bars); }, 50 + gi * 30);
+    });
+
+    container.innerHTML = html;
+  }
+
+  /* ==================================================================
      Flow Rendering
      ================================================================== */
   var currentSession = null;
@@ -2809,6 +3278,7 @@
   var activeStepIdx = 0;
 
   startBtn.addEventListener('click', function() {
+    execSummaryData = []; // Reset executive summary data
     currentSession = buildSession();
     currentFlows = determineFlows(currentSession);
 
@@ -2992,6 +3462,20 @@
     if (s.behavioral) itemCount += s.behavioral.columns.length;
     var itemInfo = itemCount > 0 ? ', ' + itemCount + ' variables analyzed' : '';
 
+    // ADDITION 4: Build executive summary table from exec data
+    var execTableHtml = '';
+    if (execSummaryData.length > 0) {
+      execTableHtml = '<h3>Executive Summary</h3>';
+      execTableHtml += '<table class="freq-table"><tr><th>Item</th><th>Mean</th><th>Top-2 Box</th><th>Net Score</th><th>Best Segment</th><th>Worst Segment</th><th>Significant?</th></tr>';
+      execSummaryData.forEach(function(row) {
+        var netColor = row.net > 0 ? 'color:var(--green);font-weight:700' : row.net < -20 ? 'color:var(--red);font-weight:700' : '';
+        var sigColor = row.significant ? 'color:var(--green);font-weight:700' : 'color:var(--text-2)';
+        var sigText = row.significant ? 'Yes (p' + (row.pVal < 0.001 ? '<.001' : '=' + round4(row.pVal)) + ')' : 'No';
+        execTableHtml += '<tr><td>' + escHtml(row.item) + '</td><td>' + row.mean + '</td><td>' + row.top2 + '</td><td style="' + netColor + '">' + (row.net > 0 ? '+' : '') + row.net + '</td><td>' + escHtml(row.bestSeg || '-') + '</td><td>' + escHtml(row.worstSeg || '-') + '</td><td style="' + sigColor + '">' + sigText + '</td></tr>';
+      });
+      execTableHtml += '</table>';
+    }
+
     // Sort findings: important first
     var sortedFindings = s.findings.slice().sort(function(a, b) {
       if (a.important && !b.important) return -1;
@@ -3133,6 +3617,7 @@
       '<div class="report" id="tldr-report">' +
         '<h2>Research Summary \u2014 ' + escHtml(dataLabel) + '</h2>' +
         '<p class="report-meta">N = ' + totalN + ' respondents' + segInfo + itemInfo + '</p>' +
+        execTableHtml +
         '<h3>Key Findings</h3>' +
         findingsHtml +
         segSummaryHtml +
