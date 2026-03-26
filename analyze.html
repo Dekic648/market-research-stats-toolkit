@@ -2021,7 +2021,7 @@
       <a href="index.html" class="back-link">&#8592; <span>Home</span></a>
       <a href="learn.html" class="sister-link">Learn</a>
       <a href="guide.html" class="sister-link">Guide</a>
-      <span style="font-size:0.6rem;color:var(--text-2);opacity:0.4;margin-left:0.5rem">v3.30</span>
+      <span style="font-size:0.6rem;color:var(--text-2);opacity:0.4;margin-left:0.5rem">v3.31</span>
     </div>
     <div class="header-right">
       <button class="start-over-link" id="startOverLink">Start over</button>
@@ -15311,7 +15311,7 @@
     tableHtml += '<div style="font-size:0.75rem;color:var(--text-2);margin-top:6px">Net = % above midpoint \u2212 % below midpoint. Cells shaded: green = positive end, red = negative end. Sorted by net score.</div>';
     html += RC('Response Distribution by Item', tableHtml);
 
-    // === GROUPED ANALYSIS: mean per item per group ===
+    // === GROUPED ANALYSIS: % distribution + mean per item per group ===
     if (grpLines.length > 0) {
       var groupSet = {};
       grpLines.forEach(function(g) { if (g !== '') groupSet[g] = true; });
@@ -15321,61 +15321,109 @@
       groupLabels.forEach(function(g) { groupN[g] = 0; });
       grpLines.forEach(function(g) { if (g !== '') groupN[g]++; });
 
-      // Mean per item per group
-      var groupTableHtml = '<div style="overflow-x:auto"><table class="coeff-table"><tr><th>Item</th>';
-      groupLabels.forEach(function(g) {
-        groupTableHtml += '<th>' + escHtml(g) + '<br><span style="font-weight:400;font-size:0.72rem">n=' + groupN[g] + '</span></th>';
-      });
-      groupTableHtml += '<th>Overall</th><th>Sig.</th></tr>';
-
+      // Compute per-item per-group: mean + % distribution + significance
+      var groupData = []; // [{item, colIdx, overall, groups: [{label, mean, distPct, vals}], pVal}]
       items.forEach(function(item) {
-        // Find this item's column index
         var colIdx = -1;
         for (var ci = 0; ci < nCols; ci++) { if (columnNames[ci] === item.name) { colIdx = ci; break; } }
         if (colIdx === -1) return;
-
-        groupTableHtml += '<tr><td><strong>' + escHtml(item.name) + '</strong></td>';
+        var gData = { item: item, colIdx: colIdx, groups: [], pVal: null };
         var groupArrays = [];
-        var maxMean = -Infinity, minMean = Infinity, maxG = '', minG = '';
         groupLabels.forEach(function(g) {
-          var vals = [];
+          var vals = [], dist = {};
+          scalePoints.forEach(function(sp) { dist[sp] = 0; });
           for (var r = 0; r < nRows; r++) {
             if (r < grpLines.length && grpLines[r] === g) {
               var v = parseFloat(columns[colIdx][r]);
-              if (!isNaN(v)) vals.push(v);
+              if (!isNaN(v)) { vals.push(v); if (dist[v] !== undefined) dist[v]++; }
             }
           }
+          var gMean = vals.length > 0 ? round2(vals.reduce(function(a, b) { return a + b; }, 0) / vals.length) : 0;
+          var distPct = {};
+          scalePoints.forEach(function(sp) { distPct[sp] = vals.length > 0 ? Math.round(dist[sp] / vals.length * 100) : 0; });
+          gData.groups.push({ label: g, mean: gMean, n: vals.length, distPct: distPct });
           groupArrays.push(vals);
-          var gMean = vals.length > 0 ? vals.reduce(function(a, b) { return a + b; }, 0) / vals.length : 0;
-          gMean = round2(gMean);
-          if (gMean > maxMean) { maxMean = gMean; maxG = g; }
-          if (gMean < minMean) { minMean = gMean; minG = g; }
-          var style = '';
-          if (groupLabels.length > 2 && gMean === maxMean) style = ' style="color:var(--green);font-weight:600"';
-          if (groupLabels.length > 2 && gMean === minMean) style = ' style="color:var(--rose);font-weight:600"';
-          groupTableHtml += '<td' + style + '>' + gMean + '</td>';
         });
-        groupTableHtml += '<td><strong>' + item.mean + '</strong></td>';
-
-        // Significance test
         var validGroups = groupArrays.filter(function(a) { return a.length >= 2; });
-        var pVal = null;
         try {
           if (validGroups.length >= 2) {
-            pVal = validGroups.length === 2 ? StatsEngine.mannWhitney(validGroups[0], validGroups[1]).p :
+            gData.pVal = validGroups.length === 2 ? StatsEngine.mannWhitney(validGroups[0], validGroups[1]).p :
               StatsEngine.kruskalWallis(validGroups).p;
           }
         } catch(e) {}
-        if (pVal !== null) {
-          var sigStyle = pVal < 0.05 ? ' style="color:var(--green);font-weight:600"' : '';
-          groupTableHtml += '<td' + sigStyle + '>' + (pVal < 0.001 ? '<0.001' : round4(pVal)) + '</td>';
-        } else {
-          groupTableHtml += '<td>\u2014</td>';
-        }
-        groupTableHtml += '</tr>';
+        groupData.push(gData);
       });
-      groupTableHtml += '</table></div>';
-      html += RC('Mean by ' + escHtml(grpDesc || 'Group'), groupTableHtml);
+
+      // Toggle ID
+      var toggleId = 'scaleToggle_' + Date.now();
+      var pctTableId = 'scalePctTable_' + toggleId;
+      var meanTableId = 'scaleMeanTable_' + toggleId;
+
+      // Toggle buttons
+      html += '<div class="result-card"><div class="result-card-title">By ' + escHtml(grpDesc || 'Group') + '</div>';
+      html += '<div style="display:flex;gap:6px;margin-bottom:0.75rem">' +
+        '<button class="scale-view-btn active" data-view="pct" data-toggle="' + toggleId + '" style="padding:4px 12px;border-radius:4px;border:1px solid var(--border);background:var(--rose);color:#fff;font-size:0.78rem;cursor:pointer">% Distribution</button>' +
+        '<button class="scale-view-btn" data-view="mean" data-toggle="' + toggleId + '" style="padding:4px 12px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text-1);font-size:0.78rem;cursor:pointer">Mean</button>' +
+        '</div>';
+
+      // === % Distribution table (DEFAULT) ===
+      var pctHtml = '<div id="' + pctTableId + '"><div style="overflow-x:auto">';
+      // One sub-table per item
+      groupData.forEach(function(gd) {
+        pctHtml += '<table class="coeff-table" style="margin-bottom:1rem"><tr><th>' + escHtml(gd.item.name) + '</th>';
+        scalePoints.forEach(function(sp) { pctHtml += '<th>' + sp + '</th>'; });
+        pctHtml += '<th>Mean</th><th>n</th></tr>';
+        gd.groups.forEach(function(grp) {
+          pctHtml += '<tr><td><strong>' + escHtml(grp.label) + '</strong></td>';
+          scalePoints.forEach(function(sp) {
+            var pct = grp.distPct[sp];
+            var intensity = Math.min(1, pct / 40);
+            var bgColor = sp > midpoint ? 'rgba(58,154,92,' + (intensity * 0.3) + ')' : sp < midpoint ? 'rgba(212,88,122,' + (intensity * 0.3) + ')' : 'transparent';
+            pctHtml += '<td style="text-align:center;background:' + bgColor + ';font-size:0.82rem">' + pct + '%</td>';
+          });
+          pctHtml += '<td style="text-align:center;font-weight:600">' + grp.mean + '</td>';
+          pctHtml += '<td style="text-align:center;font-size:0.78rem;color:var(--text-2)">' + grp.n + '</td></tr>';
+        });
+        // Significance row
+        if (gd.pVal !== null) {
+          var sigText = gd.pVal < 0.001 ? 'p < 0.001' : 'p = ' + round4(gd.pVal);
+          var sigColor = gd.pVal < 0.05 ? 'color:var(--green)' : 'color:var(--text-2)';
+          pctHtml += '<tr><td colspan="' + (scalePoints.length + 3) + '" style="font-size:0.75rem;' + sigColor + '">' +
+            (gd.pVal < 0.05 ? 'Significant difference across groups' : 'No significant difference') + ' (' + sigText + ')</td></tr>';
+        }
+        pctHtml += '</table>';
+      });
+      pctHtml += '</div></div>';
+      html += pctHtml;
+
+      // === Mean table (HIDDEN by default) ===
+      var meanHtml = '<div id="' + meanTableId + '" style="display:none"><div style="overflow-x:auto"><table class="coeff-table"><tr><th>Item</th>';
+      groupLabels.forEach(function(g) {
+        meanHtml += '<th>' + escHtml(g) + '<br><span style="font-weight:400;font-size:0.72rem">n=' + groupN[g] + '</span></th>';
+      });
+      meanHtml += '<th>Overall</th><th>Sig.</th></tr>';
+      groupData.forEach(function(gd) {
+        meanHtml += '<tr><td><strong>' + escHtml(gd.item.name) + '</strong></td>';
+        var maxMean = -Infinity, minMean = Infinity;
+        gd.groups.forEach(function(grp) { if (grp.mean > maxMean) maxMean = grp.mean; if (grp.mean < minMean) minMean = grp.mean; });
+        gd.groups.forEach(function(grp) {
+          var style = '';
+          if (groupLabels.length > 2 && grp.mean === maxMean) style = ' style="color:var(--green);font-weight:600"';
+          if (groupLabels.length > 2 && grp.mean === minMean) style = ' style="color:var(--rose);font-weight:600"';
+          meanHtml += '<td' + style + '>' + grp.mean + '</td>';
+        });
+        meanHtml += '<td><strong>' + gd.item.mean + '</strong></td>';
+        if (gd.pVal !== null) {
+          var sigStyle = gd.pVal < 0.05 ? ' style="color:var(--green);font-weight:600"' : '';
+          meanHtml += '<td' + sigStyle + '>' + (gd.pVal < 0.001 ? '<0.001' : round4(gd.pVal)) + '</td>';
+        } else {
+          meanHtml += '<td>\u2014</td>';
+        }
+        meanHtml += '</tr>';
+      });
+      meanHtml += '</table></div></div>';
+      html += meanHtml;
+      html += '</div>';
 
       // Grouped bar chart
       var grpChartId = 'scaleGrpChart_' + Date.now();
@@ -15383,22 +15431,10 @@
       html += '<div class="result-card"><div class="result-card-title">Mean Scores by ' + escHtml(grpDesc || 'Group') + '</div>' +
         '<canvas id="' + grpChartId + '" width="' + grpChartW + '" height="320" style="width:100%;max-width:' + grpChartW + 'px;display:block;margin:0 auto"></canvas></div>';
 
-      // Build chart data: meanData[groupIdx][itemIdx]
+      // Build chart data
       var meanChartData = [];
       for (var gi = 0; gi < groupLabels.length; gi++) {
-        meanChartData.push([]);
-        for (var ci2 = 0; ci2 < items.length; ci2++) {
-          var colIdx2 = -1;
-          for (var k = 0; k < nCols; k++) { if (columnNames[k] === items[ci2].name) { colIdx2 = k; break; } }
-          var gVals = [];
-          for (var r2 = 0; r2 < nRows; r2++) {
-            if (r2 < grpLines.length && grpLines[r2] === groupLabels[gi]) {
-              var v2 = parseFloat(columns[colIdx2][r2]);
-              if (!isNaN(v2)) gVals.push(v2);
-            }
-          }
-          meanChartData[gi].push(gVals.length > 0 ? round2(gVals.reduce(function(a, b) { return a + b; }, 0) / gVals.length) : 0);
-        }
+        meanChartData.push(groupData.map(function(gd) { return gd.groups[gi].mean; }));
       }
     }
 
@@ -15420,6 +15456,32 @@
     // Render grouped chart if applicable
     if (grpLines.length > 0 && typeof drawVerticalGroupedBarChart === 'function') {
       drawVerticalGroupedBarChart(grpChartId, grpChartW, 320, groupLabels, items.map(function(it) { return it.name; }), meanChartData);
+
+      // Toggle handler for % / Mean view
+      container.querySelectorAll('.scale-view-btn[data-toggle="' + toggleId + '"]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var view = btn.getAttribute('data-view');
+          var pctEl = document.getElementById(pctTableId);
+          var meanEl = document.getElementById(meanTableId);
+          if (view === 'pct') {
+            if (pctEl) pctEl.style.display = '';
+            if (meanEl) meanEl.style.display = 'none';
+          } else {
+            if (pctEl) pctEl.style.display = 'none';
+            if (meanEl) meanEl.style.display = '';
+          }
+          // Update button styles
+          container.querySelectorAll('.scale-view-btn[data-toggle="' + toggleId + '"]').forEach(function(b) {
+            if (b === btn) {
+              b.style.background = 'var(--rose)';
+              b.style.color = '#fff';
+            } else {
+              b.style.background = 'transparent';
+              b.style.color = 'var(--text-1)';
+            }
+          });
+        });
+      });
     }
 
     // Draw means bar chart
