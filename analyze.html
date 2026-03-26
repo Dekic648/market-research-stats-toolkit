@@ -2086,21 +2086,61 @@
 (function() {
   'use strict';
 
+  var lastErrorTime = 0;
   window.onerror = function(msg, url, line, col, error) {
+    // Debounce: only show one error per second (prevents cascading error cards)
+    var now = Date.now();
+    if (now - lastErrorTime < 1000) return true;
+    lastErrorTime = now;
+
     var container = document.getElementById('chatContainer');
-    if (container) {
-      var errDiv = document.createElement('div');
-      errDiv.className = 'assistant-msg';
-      errDiv.innerHTML = '<div class="result-card" style="border-left:3px solid var(--rose)">' +
-        '<div class="result-card-title" style="color:var(--rose)">Something went wrong</div>' +
-        '<p>The analysis encountered an error. This usually means the data format wasn\'t quite right for this method.</p>' +
-        '<p style="font-size:0.78rem;color:var(--text-2)">Error: ' + msg + '</p>' +
-        '<p>Try checking your data and running again, or <a href="#" onclick="location.reload();return false">refresh the page</a>.</p>' +
-        '</div>';
-      container.appendChild(errDiv);
-      errDiv.scrollIntoView({ behavior: 'smooth' });
+    if (!container) return true;
+
+    // Translate technical errors into actionable guidance
+    var advice, title = 'Something went wrong';
+    if (msg.indexOf('null') > -1 || msg.indexOf('undefined') > -1) {
+      title = 'Data format issue';
+      advice = '<p><strong>What happened:</strong> The analysis couldn\u2019t process your data. This usually means:</p>' +
+        '<ul style="margin:0.5rem 0;padding-left:1.2rem;font-size:0.88rem;line-height:1.6">' +
+          '<li>One or more columns are empty or have too few values</li>' +
+          '<li>The data contains text where numbers are expected</li>' +
+          '<li>Columns have very different row counts \u2014 make sure you\u2019re pasting from the same rows in your spreadsheet</li>' +
+        '</ul>' +
+        '<p><strong>Try:</strong> Clear the boxes, go back to your spreadsheet, select just the columns you need (same rows), and paste again.</p>';
+    } else if (msg.indexOf('convergence') > -1 || msg.indexOf('singular') > -1 || msg.indexOf('Infinity') > -1) {
+      title = 'Analysis couldn\u2019t converge';
+      advice = '<p>The model couldn\u2019t find a solution. This happens when:</p>' +
+        '<ul style="margin:0.5rem 0;padding-left:1.2rem;font-size:0.88rem;line-height:1.6">' +
+          '<li>There isn\u2019t enough variation in your data</li>' +
+          '<li>Two predictors are nearly identical (multicollinearity)</li>' +
+          '<li>Sample size is too small for this method</li>' +
+        '</ul>' +
+        '<p><strong>Try:</strong> Use a simpler method, add more data, or remove redundant columns.</p>';
+    } else {
+      advice = '<p>The analysis encountered an unexpected error.</p>' +
+        '<p><strong>Try:</strong> Check your data format and try again, or <a href="#" onclick="location.reload();return false" style="color:var(--rose)">refresh the page</a> to start over.</p>';
     }
-    return true; // prevent default error handling
+
+    var errDiv = document.createElement('div');
+    errDiv.className = 'assistant-msg';
+    errDiv.innerHTML = '<div class="result-card" style="border-left:3px solid var(--rose)">' +
+      '<div class="result-card-title" style="color:var(--rose)">' + title + '</div>' +
+      advice +
+      '<p style="font-size:0.7rem;color:var(--text-2);margin-top:0.75rem;opacity:0.6">Technical: ' + msg + '</p>' +
+      '</div>';
+    container.appendChild(errDiv);
+    errDiv.scrollIntoView({ behavior: 'smooth' });
+
+    // Reset any stuck "Running..." buttons
+    var runBtns = container.querySelectorAll('.run-btn');
+    runBtns.forEach(function(btn) {
+      if (btn.textContent === 'Running...') {
+        btn.textContent = 'Run Analysis';
+        btn.disabled = false;
+      }
+    });
+
+    return true;
   };
 
   /* ==================================================================
@@ -3777,7 +3817,19 @@
         if (lengths.length >= 2) {
           var allSame = lengths.every(function(l) { return l === lengths[0]; });
           if (!allSame) {
-            mismatchEl.innerHTML = '<strong>\u26A0 Row counts differ (' + lengths.join(', ') + ')</strong>. Each row must match across columns. If one has a header, remove it from all or none.';
+            var minL = Math.min.apply(null, lengths);
+            var maxL = Math.max.apply(null, lengths);
+            var diff = maxL - minL;
+            var hint = '';
+            if (diff === 1) {
+              hint = 'One column may have a header row \u2014 either include headers in all columns or none.';
+            } else if (diff > maxL * 0.3) {
+              hint = 'These look like different data sets. Go to your spreadsheet, select the same rows for each column, then paste.';
+            } else {
+              hint = 'Some rows may have blank or missing values. Check that all columns cover the same respondents.';
+            }
+            mismatchEl.innerHTML = '<strong>\u26A0 Columns have different row counts (' + lengths.join(' vs ') + ')</strong><br>' +
+              '<span style="font-size:0.78rem">' + hint + '</span>';
             mismatchEl.style.display = 'block';
             if (!mismatchEl.parentNode) {
               var runBtnEl = section.querySelector('#runBtn');
