@@ -2081,7 +2081,7 @@
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
-<script src="stats-engine.js"></script>
+<script src="stats-engine.js?v=20260326"></script>
 <script>
 (function() {
   'use strict';
@@ -8467,9 +8467,18 @@
         if (pctData[g][c] > 100.5) { anyOver100 = true; break; }
       }
     }
-    if (anyOver100 && parsed.columns && parsed.columns.length > 1) {
-      runScaleCrosstab(parsed, groupLines, valDesc, grpDesc);
-      return;
+    if (anyOver100) {
+      // Try scale comparison if we have column data
+      if (parsed.columns && parsed.columns.length > 1) {
+        runScaleCrosstab(parsed, groupLines, valDesc, grpDesc);
+        return;
+      }
+      // If no column data available, cap all percentages at 100 and warn
+      for (var g2 = 0; g2 < pctData.length; g2++) {
+        for (var c2 = 0; c2 < pctData[g2].length; c2++) {
+          if (pctData[g2][c2] > 100) pctData[g2][c2] = 100;
+        }
+      }
     }
 
     // Column totals (total who selected each option)
