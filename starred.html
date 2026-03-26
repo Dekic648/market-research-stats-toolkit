@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Starred Methods — Market Research Statistics Toolkit</title>
+  <style>
+    /* ========================================
+       CSS Variables — Light / Dark
+       ======================================== */
+    :root {
+      --bg-0: #ffffff;
+      --bg-1: #f5f2f0;
+      --bg-2: #eeebe9;
+      --bg-card: rgba(255, 255, 255, 0.65);
+      --text-0: #1a1a18;
+      --text-1: #5f5a58;
+      --text-2: #887f7d;
+      --rose: #D4587A;
+      --rose-glow: rgba(212, 88, 122, 0.25);
+      --rose-soft: rgba(212, 88, 122, 0.08);
+      --coral: #E08860;
+      --coral-soft: rgba(224, 136, 96, 0.10);
+      --border: rgba(0, 0, 0, 0.06);
+      --border-hover: rgba(212, 88, 122, 0.35);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+      --card-shadow-hover: 0 8px 30px rgba(212, 88, 122, 0.18), 0 2px 8px rgba(0,0,0,0.06);
+      --dot-color: rgba(0, 0, 0, 0.04);
+      --green: #3a9a5c;
+      --green-soft: rgba(58, 154, 92, 0.10);
+      --amber: #c08a30;
+      --amber-soft: rgba(192, 138, 48, 0.10);
+      --red: #c0392b;
+      --red-soft: rgba(192, 57, 43, 0.10);
+      --purple: #9A7EC7;
+      --purple-soft: rgba(154, 126, 199, 0.10);
+      --blue: #5B8DB8;
+      --blue-soft: rgba(91, 141, 184, 0.10);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-0: #1c1c1a;
+        --bg-1: #252523;
+        --bg-2: #2e2e2b;
+        --bg-card: rgba(37, 37, 35, 0.6);
+        --text-0: #f0ede8;
+        --text-1: #b4aba8;
+        --text-2: #887f7d;
+        --rose: #E8829E;
+        --rose-glow: rgba(232, 130, 158, 0.22);
+        --rose-soft: rgba(232, 130, 158, 0.10);
+        --coral: #F0A882;
+        --coral-soft: rgba(240, 168, 130, 0.10);
+        --border: rgba(255, 255, 255, 0.06);
+        --border-hover: rgba(232, 130, 158, 0.35);
+        --card-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
+        --card-shadow-hover: 0 8px 30px rgba(232, 130, 158, 0.15), 0 2px 8px rgba(0,0,0,0.3);
+        --dot-color: rgba(255, 255, 255, 0.03);
+        --green: #5cb87a;
+        --green-soft: rgba(92, 184, 122, 0.12);
+        --amber: #e0a840;
+        --amber-soft: rgba(224, 168, 64, 0.12);
+        --red: #e05a4a;
+        --red-soft: rgba(224, 90, 74, 0.12);
+        --purple: #B8A0E0;
+        --purple-soft: rgba(184, 160, 224, 0.12);
+        --blue: #7AADE0;
+        --blue-soft: rgba(122, 173, 224, 0.12);
+      }
+    }
+
+    :root.light {
+      --bg-0: #ffffff; --bg-1: #f5f2f0; --bg-2: #eeebe9;
+      --bg-card: rgba(255, 255, 255, 0.65);
+      --text-0: #1a1a18; --text-1: #5f5a58; --text-2: #887f7d;
+      --rose: #D4587A; --rose-glow: rgba(212, 88, 122, 0.25); --rose-soft: rgba(212, 88, 122, 0.08);
+      --coral: #E08860; --coral-soft: rgba(224, 136, 96, 0.10);
+      --border: rgba(0, 0, 0, 0.06); --border-hover: rgba(212, 88, 122, 0.35);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+      --card-shadow-hover: 0 8px 30px rgba(212, 88, 122, 0.18), 0 2px 8px rgba(0,0,0,0.06);
+      --dot-color: rgba(0, 0, 0, 0.04);
+      --green: #3a9a5c; --green-soft: rgba(58, 154, 92, 0.10);
+      --amber: #c08a30; --amber-soft: rgba(192, 138, 48, 0.10);
+      --red: #c0392b; --red-soft: rgba(192, 57, 43, 0.10);
+      --purple: #9A7EC7; --purple-soft: rgba(154, 126, 199, 0.10);
+      --blue: #5B8DB8; --blue-soft: rgba(91, 141, 184, 0.10);
+    }
+
+    :root.dark {
+      --bg-0: #1c1c1a; --bg-1: #252523; --bg-2: #2e2e2b;
+      --bg-card: rgba(37, 37, 35, 0.6);
+      --text-0: #f0ede8; --text-1: #b4aba8; --text-2: #887f7d;
+      --rose: #E8829E; --rose-glow: rgba(232, 130, 158, 0.22); --rose-soft: rgba(232, 130, 158, 0.10);
+      --coral: #F0A882; --coral-soft: rgba(240, 168, 130, 0.10);
+      --border: rgba(255, 255, 255, 0.06); --border-hover: rgba(232, 130, 158, 0.35);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
+      --card-shadow-hover: 0 8px 30px rgba(232, 130, 158, 0.15), 0 2px 8px rgba(0,0,0,0.3);
+      --dot-color: rgba(255, 255, 255, 0.03);
+      --green: #5cb87a; --green-soft: rgba(92, 184, 122, 0.12);
+      --amber: #e0a840; --amber-soft: rgba(224, 168, 64, 0.12);
+      --red: #e05a4a; --red-soft: rgba(224, 90, 74, 0.12);
+      --purple: #B8A0E0; --purple-soft: rgba(184, 160, 224, 0.12);
+      --blue: #7AADE0; --blue-soft: rgba(122, 173, 224, 0.12);
+    }
+
+    /* ========================================
+       Reset & Base
+       ======================================== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-0); color: var(--text-0); line-height: 1.6; overflow-x: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: radial-gradient(var(--dot-color) 1px, transparent 1px);
+      background-size: 24px 24px; pointer-events: none; z-index: 0;
+    }
+    ::selection { background: var(--rose-glow); color: var(--text-0); }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ========================================
+       Sticky Header
+       ======================================== */
+    .sticky-header {
+      position: sticky; top: 0; z-index: 50;
+      background: var(--bg-0); border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      padding: 0.85rem 2rem; display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 1rem; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; font-size: 0.82rem; font-weight: 500;
+      color: var(--text-2); transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--rose); }
+    .sister-link {
+      font-size: 0.78rem; font-weight: 500; color: var(--text-2); text-decoration: none;
+      padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--border);
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .sister-link:hover { color: var(--rose); border-color: var(--border-hover); }
+    .header-title {
+      font-size: 0.95rem; font-weight: 700; letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--rose), var(--coral));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .theme-toggle {
+      width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg-card); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; color: var(--text-1); transition: border-color 0.3s, background 0.3s, transform 0.2s;
+    }
+    .theme-toggle:hover { border-color: var(--border-hover); background: var(--rose-soft); transform: scale(1.08); }
+    .version-badge {
+      font-size: 0.6rem; color: var(--text-2); opacity: 0.4; margin-left: 0.5rem;
+    }
+
+    /* ========================================
+       Main Container
+       ======================================== */
+    .main-container {
+      max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 6rem;
+      position: relative; z-index: 1;
+    }
+
+    /* ========================================
+       Paste Boxes Grid
+       ======================================== */
+    .paste-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;
+    }
+    @media (max-width: 700px) { .paste-grid { grid-template-columns: 1fr; } }
+    .paste-box-full { grid-column: 1 / -1; }
+
+    .paste-box {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 1rem 1.15rem; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--card-shadow); transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .paste-box:hover { border-color: var(--border-hover); box-shadow: var(--card-shadow-hover); }
+
+    .paste-box-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;
+    }
+    .paste-box-label {
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .paste-box-desc {
+      font-size: 0.78rem; color: var(--text-2); margin-bottom: 0.5rem; line-height: 1.5;
+    }
+    .paste-box textarea {
+      width: 100%; min-height: 100px; padding: 0.6rem 0.75rem; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--bg-1); color: var(--text-0);
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.8rem;
+      line-height: 1.5; resize: vertical; transition: border-color 0.2s;
+    }
+    .paste-box textarea:focus { outline: none; border-color: var(--border-hover); }
+    .paste-box textarea::placeholder { color: var(--text-2); opacity: 0.6; }
+
+    .paste-box-footer {
+      display: flex; align-items: center; justify-content: space-between; margin-top: 0.4rem; gap: 0.5rem;
+    }
+    .line-count {
+      font-size: 0.72rem; color: var(--text-2); font-variant-numeric: tabular-nums;
+    }
+    .line-count.has-data { color: var(--green); }
+    .clear-btn {
+      font-size: 0.72rem; font-weight: 500; color: var(--text-2); cursor: pointer;
+      border: none; background: none; font-family: inherit; transition: color 0.2s;
+      padding: 0.2rem 0.5rem; border-radius: 4px;
+    }
+    .clear-btn:hover { color: var(--rose); background: var(--rose-soft); }
+
+    .name-input {
+      width: 100%; margin-top: 0.35rem; padding: 0.3rem 0.6rem; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--bg-1); color: var(--text-0);
+      font-size: 0.75rem; font-family: inherit;
+    }
+    .name-input:focus { outline: none; border-color: var(--border-hover); }
+    .name-input::placeholder { color: var(--text-2); opacity: 0.5; }
+
+    /* ========================================
+       Start Button
+       ======================================== */
+    .start-btn-wrap { text-align: center; margin: 1.5rem 0 2.5rem; }
+    .start-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 0.85rem 2.5rem; border-radius: 12px; border: none;
+      background: var(--green); color: #fff; font-size: 1rem; font-weight: 700;
+      font-family: inherit; cursor: pointer; letter-spacing: -0.01em;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 16px rgba(58, 154, 92, 0.3);
+    }
+    .start-btn:hover:not(:disabled) { background: #339954; transform: translateY(-1px); box-shadow: 0 6px 24px rgba(58, 154, 92, 0.4); }
+    .start-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* ========================================
+       Flow Section
+       ======================================== */
+    .flow-section { margin-top: 1rem; }
+    .flow-title {
+      font-size: 0.85rem; font-weight: 700; color: var(--rose); text-transform: uppercase;
+      letter-spacing: 0.06em; margin-bottom: 1.25rem; padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .flow-subtitle {
+      font-size: 0.78rem; color: var(--text-2); margin-bottom: 1.5rem;
+    }
+
+    /* Step cards */
+    .step-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 1.25rem 1.3rem; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--card-shadow); margin-bottom: 1.25rem;
+      transition: border-color 0.3s;
+    }
+    .step-card.active { border-color: var(--border-hover); }
+    .step-card.completed { border-color: rgba(58, 154, 92, 0.3); }
+    .step-card.upcoming { opacity: 0.5; }
+
+    .step-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; }
+    .step-number {
+      width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: #fff; background: var(--rose); flex-shrink: 0;
+    }
+    .step-card.completed .step-number { background: var(--green); }
+    .step-card.upcoming .step-number { background: var(--text-2); }
+    .step-title { font-size: 0.92rem; font-weight: 700; color: var(--text-0); }
+    .step-desc { font-size: 0.82rem; color: var(--text-2); line-height: 1.5; margin-bottom: 0.75rem; }
+
+    .run-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 0.5rem 1.2rem; border-radius: 8px; border: 1px solid var(--rose);
+      background: var(--rose-soft); color: var(--rose); font-size: 0.82rem; font-weight: 600;
+      font-family: inherit; cursor: pointer; transition: background 0.2s, transform 0.15s;
+    }
+    .run-btn:hover { background: var(--rose); color: #fff; transform: translateY(-1px); }
+    .run-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+    .next-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 0.5rem 1.2rem; border-radius: 8px; border: 1px solid var(--green);
+      background: var(--green-soft); color: var(--green); font-size: 0.82rem; font-weight: 600;
+      font-family: inherit; cursor: pointer; margin-top: 0.75rem; transition: background 0.2s, transform 0.15s;
+    }
+    .next-btn:hover { background: var(--green); color: #fff; transform: translateY(-1px); }
+
+    /* ========================================
+       Result Components (inline from analyze.html)
+       ======================================== */
+    .result-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 1.5rem; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--card-shadow); margin-bottom: 1rem;
+    }
+    .result-card-title {
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--rose); margin-bottom: 1rem;
+    }
+    .test-results-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem;
+    }
+    .test-stat {
+      text-align: center; padding: 0.75rem; border-radius: 10px; background: var(--bg-1);
+    }
+    .test-stat .label {
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em;
+      text-transform: uppercase; color: var(--text-2); margin-bottom: 0.25rem;
+    }
+    .test-stat .value {
+      font-size: 1.1rem; font-weight: 700; color: var(--text-0); font-variant-numeric: tabular-nums;
+    }
+    .test-stat.p-sig .value { color: var(--green); }
+    .test-stat.p-marginal .value { color: var(--amber); }
+    .test-stat.p-nonsig .value { color: var(--red); }
+
+    .plain-english { position: relative; }
+    .plain-english-text { font-size: 0.95rem; line-height: 1.7; color: var(--text-0); }
+
+    .freq-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+    .freq-table th, .freq-table td {
+      padding: 0.4rem 0.6rem; text-align: left; font-size: 0.82rem; border-bottom: 1px solid var(--border);
+    }
+    .freq-table th {
+      font-weight: 600; color: var(--rose); font-size: 0.75rem;
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .freq-table tr:nth-child(even) { background: var(--bg-1); }
+    .freq-table .pct-bar-cell { position: relative; }
+    .freq-table .pct-bar {
+      position: absolute; left: 0; top: 0; bottom: 0;
+      background: var(--rose-soft); border-radius: 0 4px 4px 0; z-index: 0;
+    }
+    .freq-table .pct-bar-cell span { position: relative; z-index: 1; }
+
+    .step-results { margin-top: 1rem; }
+
+    /* Coming soon placeholder */
+    .coming-soon {
+      padding: 1.5rem; text-align: center; border-radius: 10px;
+      background: var(--bg-1); border: 1px dashed var(--border); color: var(--text-2);
+      font-size: 0.85rem;
+    }
+
+    /* ========================================
+       Animations
+       ======================================== */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.35s ease forwards; }
+  </style>
+</head>
+<body>
+
+  <!-- ====== Sticky Header ====== -->
+  <header class="sticky-header">
+    <div class="header-left">
+      <a href="analyze.html" class="back-link">&#8592; <span>Analyzer</span></a>
+      <a href="learn.html" class="sister-link">Learn</a>
+      <a href="guide.html" class="sister-link">Guide</a>
+      <span class="header-title">Starred Methods</span>
+      <span class="version-badge">v0.1 prototype</span>
+    </div>
+    <div class="header-right">
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">&#9790;</button>
+    </div>
+  </header>
+
+  <div class="main-container">
+
+    <!-- ====== Intro ====== -->
+    <div style="margin-bottom: 1.5rem;">
+      <p style="font-size:0.88rem;color:var(--text-1);line-height:1.6">
+        Paste your data into the boxes below, then click <strong>Start Analysis</strong>. The toolkit will detect which analyses apply and walk you through them step by step &mdash; no re-pasting needed.
+      </p>
+    </div>
+
+    <!-- ====== 5 Paste Boxes ====== -->
+    <div class="paste-grid">
+
+      <!-- Box 1: Rating Scale -->
+      <div class="paste-box" data-box="ratings">
+        <div class="paste-box-header">
+          <span class="paste-box-label" style="color:var(--rose)">1. Rating Scale Data</span>
+          <button class="clear-btn" data-clear="ratings">Clear</button>
+        </div>
+        <div class="paste-box-desc">Single response, Likert (1-5, 1-7), or rating questions. One column per question.</div>
+        <textarea id="box-ratings" placeholder="Paste one or more rating columns from your spreadsheet. Tab-separated if multiple."></textarea>
+        <div class="paste-box-footer">
+          <span class="line-count" id="count-ratings">No data</span>
+        </div>
+        <input type="text" class="name-input" id="name-ratings" placeholder="Name this data (optional)">
+      </div>
+
+      <!-- Box 2: Checkbox / Matrix -->
+      <div class="paste-box" data-box="checkbox">
+        <div class="paste-box-header">
+          <span class="paste-box-label" style="color:var(--coral)">2. Checkbox / Matrix Grid</span>
+          <button class="clear-btn" data-clear="checkbox">Clear</button>
+        </div>
+        <div class="paste-box-desc">Multi-response checkboxes or matrix grid ratings. Multiple tab-separated columns.</div>
+        <textarea id="box-checkbox" placeholder="Paste all columns. Blank cells = not selected."></textarea>
+        <div class="paste-box-footer">
+          <span class="line-count" id="count-checkbox">No data</span>
+        </div>
+        <input type="text" class="name-input" id="name-checkbox" placeholder="Name this data (optional)">
+      </div>
+
+      <!-- Box 3: Single-Choice -->
+      <div class="paste-box" data-box="singleChoice">
+        <div class="paste-box-header">
+          <span class="paste-box-label" style="color:var(--green)">3. Single-Choice Questions</span>
+          <button class="clear-btn" data-clear="singleChoice">Clear</button>
+        </div>
+        <div class="paste-box-desc">Radio buttons, Yes/No, preference questions. One column per question.</div>
+        <textarea id="box-singleChoice" placeholder="Paste one column of categories (e.g., Yes/No, Brand A/B/C)"></textarea>
+        <div class="paste-box-footer">
+          <span class="line-count" id="count-singleChoice">No data</span>
+        </div>
+        <input type="text" class="name-input" id="name-singleChoice" placeholder="Name this data (optional)">
+      </div>
+
+      <!-- Box 4: Category / Segment (full width) -->
+      <div class="paste-box" data-box="category">
+        <div class="paste-box-header">
+          <span class="paste-box-label" style="color:var(--purple)">4. Category / Segment Data</span>
+          <button class="clear-btn" data-clear="category">Clear</button>
+        </div>
+        <div class="paste-box-desc">Demographics, payment segments, age groups. Used to <strong>split all analyses by group</strong>.</div>
+        <textarea id="box-category" placeholder="Paste one column: e.g., NonPayer, Minnow, Dolphin, Whale"></textarea>
+        <div class="paste-box-footer">
+          <span class="line-count" id="count-category">No data</span>
+        </div>
+        <input type="text" class="name-input" id="name-category" placeholder="Name this segment (optional)">
+      </div>
+
+      <!-- Box 5: Behavioral / Numeric -->
+      <div class="paste-box" data-box="behavioral">
+        <div class="paste-box-header">
+          <span class="paste-box-label" style="color:var(--blue)">5. Behavioral / Numeric Data</span>
+          <button class="clear-btn" data-clear="behavioral">Clear</button>
+        </div>
+        <div class="paste-box-desc">Continuous measurements: match count, level, revenue, time spent.</div>
+        <textarea id="box-behavioral" placeholder="Paste one or more numeric columns. Tab-separated if multiple."></textarea>
+        <div class="paste-box-footer">
+          <span class="line-count" id="count-behavioral">No data</span>
+        </div>
+        <input type="text" class="name-input" id="name-behavioral" placeholder="Name this data (optional)">
+      </div>
+
+    </div>
+
+    <!-- ====== Start Button ====== -->
+    <div class="start-btn-wrap">
+      <button class="start-btn" id="startBtn" disabled>Start Analysis &#8594;</button>
+    </div>
+
+    <!-- ====== Flow Section ====== -->
+    <div id="flowSection" class="flow-section" style="display:none;"></div>
+
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+<script src="stats-engine.js?v=20260326"></script>
+<script>
+(function() {
+  'use strict';
+
+  /* ==================================================================
+     Theme Toggle
+     ================================================================== */
+  var themeBtn = document.getElementById('themeToggle');
+  function applyTheme() {
+    var stored = localStorage.getItem('theme');
+    if (stored === 'dark') { document.documentElement.classList.add('dark'); document.documentElement.classList.remove('light'); }
+    else if (stored === 'light') { document.documentElement.classList.add('light'); document.documentElement.classList.remove('dark'); }
+  }
+  applyTheme();
+  themeBtn.addEventListener('click', function() {
+    var isDark = document.documentElement.classList.contains('dark') ||
+      (!document.documentElement.classList.contains('light') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+      localStorage.setItem('theme', 'light');
+    } else {
+      document.documentElement.classList.remove('light');
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    }
+  });
+
+  /* ==================================================================
+     Helpers
+     ================================================================== */
+  function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function round2(v) { return Math.round(v * 100) / 100; }
+  function round4(v) { return Math.round(v * 10000) / 10000; }
+  var ALPHA = 0.05;
+  function pClass(p) { return p < ALPHA ? 'p-sig' : p < ALPHA * 2 ? 'p-marginal' : 'p-nonsig'; }
+
+  var CHART_COLORS = ['#5B8DB8','#D4766E','#6BAF7A','#E8A854','#9A7EC7','#C27BA0','#4AADA5','#D4915E','#7A8FC2','#8DB87A'];
+
+  /* Rendering helpers (minimal set) */
+  function RC(title, content) {
+    return '<div class="result-card">' +
+      (title ? '<div class="result-card-title">' + title + '</div>' : '') +
+      content + '</div>';
+  }
+
+  function testStat(label, value, extraClass) {
+    return '<div class="test-stat' + (extraClass ? ' ' + extraClass : '') + '"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>';
+  }
+
+  function renderMetrics(items) {
+    var html = '<div class="test-results-grid">';
+    items.forEach(function(item) { html += testStat(item.label, item.value, item.cls || ''); });
+    return html + '</div>';
+  }
+
+  function renderPlainEnglish(text) {
+    return '<div class="result-card plain-english"><div class="result-card-title">Plain English</div>' +
+      '<div class="plain-english-text">' + text + '</div></div>';
+  }
+
+  function renderSigBadge(p) {
+    var isSig = p < ALPHA;
+    return '<div style="text-align:center;margin-top:0.75rem">' +
+      '<span style="display:inline-block;padding:0.3rem 0.9rem;border-radius:6px;font-size:0.82rem;font-weight:600;letter-spacing:0.02em;' +
+      (isSig ? 'background:var(--green-soft);color:var(--green);border:1px solid rgba(58,154,92,0.2)' : 'background:var(--bg-1);color:var(--text-2);border:1px solid var(--border)') + '">' +
+      (isSig ? 'Statistically significant (p = ' + round4(p) + ')' : 'Not statistically significant (p = ' + round4(p) + ')') +
+      '</span></div>';
+  }
+
+  function renderDistTable(rows, title) {
+    var html = '<table class="freq-table"><tr><th>Response</th><th>Count</th><th>%</th></tr>';
+    rows.forEach(function(row) {
+      var barW = Math.min(row.pct, 100);
+      html += '<tr><td>' + escHtml(String(row.value)) + '</td><td style="font-variant-numeric:tabular-nums">' + row.count + '</td>' +
+        '<td class="pct-bar-cell"><span class="pct-bar" style="width:' + barW.toFixed(1) + '%"></span><span>' + Math.round(row.pct) + '%</span></td></tr>';
+    });
+    html += '</table>';
+    return RC(title || 'Response Distribution', html);
+  }
+
+  function initCanvas(canvasId, w, h) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return null;
+    var ctx = canvas.getContext('2d');
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+    ctx.scale(dpr, dpr);
+    return { ctx: ctx, w: w, h: h };
+  }
+
+  function getColors() {
+    var cs = getComputedStyle(document.documentElement);
+    return {
+      rose: cs.getPropertyValue('--rose').trim(),
+      coral: cs.getPropertyValue('--coral').trim(),
+      text: cs.getPropertyValue('--text-0').trim(),
+      subtext: cs.getPropertyValue('--text-2').trim(),
+      border: cs.getPropertyValue('--border').trim(),
+      green: cs.getPropertyValue('--green').trim(),
+      amber: cs.getPropertyValue('--amber').trim()
+    };
+  }
+
+  function drawBarChart(canvasId, bars) {
+    bars = bars.filter(function(b) { return typeof b.value === 'number' && isFinite(b.value); });
+    if (bars.length === 0) return;
+    var barHeight = 32, barGap = 14, topPad = 8, bottomPad = 20;
+    var leftPad = 130, rightPad = 65;
+    var totalH = Math.max(120, bars.length * (barHeight + barGap) + topPad + bottomPad);
+    var c = initCanvas(canvasId, 500, totalH);
+    if (!c) return;
+    var ctx = c.ctx, w = c.w, h = c.h;
+    var colors = getColors();
+    var allVals = [];
+    bars.forEach(function(b) { allVals.push(b.value); allVals.push(0); });
+    var minVal = Math.min.apply(null, allVals);
+    var maxVal = Math.max.apply(null, allVals);
+    var range = maxVal - minVal || 1;
+    var rangeMin = minVal - range * 0.08;
+    var rangeMax = maxVal + range * 0.18;
+    var chartW = w - leftPad - rightPad;
+    function xPos(val) { return leftPad + ((val - rangeMin) / (rangeMax - rangeMin)) * chartW; }
+
+    // Baseline
+    if (rangeMin <= 0 && rangeMax >= 0) {
+      ctx.strokeStyle = colors.text; ctx.globalAlpha = 0.2; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(xPos(0), topPad - 2); ctx.lineTo(xPos(0), topPad + bars.length * (barHeight + barGap)); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    var maxBarVal = -Infinity, maxBarIdx = 0;
+    bars.forEach(function(b, i) { if (b.value > maxBarVal) { maxBarVal = b.value; maxBarIdx = i; } });
+
+    bars.forEach(function(bar, i) {
+      var y = topPad + i * (barHeight + barGap);
+      var barStart = xPos(Math.min(0, bar.value));
+      var barEnd = xPos(Math.max(0, bar.value));
+      var bw = Math.max(1, barEnd - barStart);
+      ctx.fillStyle = bar.color || CHART_COLORS[i % CHART_COLORS.length];
+      ctx.globalAlpha = (bars.length > 2 && i === maxBarIdx) ? 0.95 : 0.82;
+      ctx.beginPath(); ctx.rect(barStart, y, bw, barHeight); ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Label
+      var labelText = bar.label.length > 18 ? bar.label.substring(0, 16) + '..' : bar.label;
+      ctx.font = '600 12px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.fillStyle = colors.text; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillText(labelText, leftPad - 10, y + barHeight / 2);
+
+      // Value
+      var valStr = bar.isPct ? Math.round(bar.value) + '%' : round2(bar.value).toString();
+      ctx.font = '700 12px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(valStr, barEnd + 8, y + barHeight / 2);
+    });
+  }
+
+  function renderChart(chartId, title, width, height) {
+    return '<div class="result-card"><div class="result-card-title">' + title + '</div>' +
+      '<canvas id="' + chartId + '" width="' + width + '" height="' + height + '" style="width:100%;max-width:' + width + 'px;display:block;margin:0 auto;"></canvas></div>';
+  }
+
+  /* ==================================================================
+     Paste Box Logic
+     ================================================================== */
+  var boxIds = ['ratings', 'checkbox', 'singleChoice', 'category', 'behavioral'];
+  var startBtn = document.getElementById('startBtn');
+
+  function countLines(id) {
+    var ta = document.getElementById('box-' + id);
+    var countEl = document.getElementById('count-' + id);
+    var val = ta.value.trim();
+    if (!val) {
+      countEl.textContent = 'No data';
+      countEl.className = 'line-count';
+    } else {
+      var lines = val.split('\n').filter(function(l) { return l.trim() !== ''; });
+      countEl.textContent = lines.length + ' row' + (lines.length !== 1 ? 's' : '') + ' detected';
+      countEl.className = 'line-count has-data';
+    }
+    updateStartBtn();
+  }
+
+  function updateStartBtn() {
+    var any = boxIds.some(function(id) {
+      return document.getElementById('box-' + id).value.trim() !== '';
+    });
+    startBtn.disabled = !any;
+  }
+
+  boxIds.forEach(function(id) {
+    var ta = document.getElementById('box-' + id);
+    ta.addEventListener('input', function() { countLines(id); });
+    ta.addEventListener('paste', function() { setTimeout(function() { countLines(id); }, 50); });
+  });
+
+  // Clear buttons
+  document.querySelectorAll('.clear-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = btn.getAttribute('data-clear');
+      document.getElementById('box-' + id).value = '';
+      countLines(id);
+    });
+  });
+
+  /* ==================================================================
+     Data Parsing
+     ================================================================== */
+  function parseMultiColumn(text) {
+    // Parse tab-separated columns. Returns { columns: [[...]], labels: [...], nRows: N }
+    var lines = text.trim().split('\n').filter(function(l) { return l.trim() !== ''; });
+    if (lines.length === 0) return null;
+
+    var hasTabs = lines[0].indexOf('\t') > -1;
+    var rows = lines.map(function(l) { return l.split('\t'); });
+    var nCols = rows[0].length;
+
+    // Detect if first row is a header (non-numeric in first column for numeric data)
+    var firstRowVals = rows[0];
+    var secondRowVals = rows.length > 1 ? rows[1] : [];
+    var firstIsHeader = false;
+    if (rows.length > 1) {
+      // If first row has non-numeric values but second row is numeric, treat as header
+      var firstNumeric = firstRowVals.filter(function(v) { return !isNaN(Number(v)) && v.trim() !== ''; }).length;
+      var secondNumeric = secondRowVals.filter(function(v) { return !isNaN(Number(v)) && v.trim() !== ''; }).length;
+      if (firstNumeric < nCols * 0.5 && secondNumeric >= nCols * 0.5) firstIsHeader = true;
+    }
+
+    var labels = [];
+    var dataStart = 0;
+    if (firstIsHeader) {
+      labels = firstRowVals.map(function(v) { return v.trim(); });
+      dataStart = 1;
+    } else {
+      for (var c = 0; c < nCols; c++) labels.push('Column ' + (c + 1));
+    }
+
+    var columns = [];
+    for (var c = 0; c < nCols; c++) columns.push([]);
+    for (var r = dataStart; r < rows.length; r++) {
+      for (var c = 0; c < nCols; c++) {
+        var val = (rows[r][c] || '').trim();
+        columns[c].push(val);
+      }
+    }
+
+    return { columns: columns, labels: labels, nRows: rows.length - dataStart };
+  }
+
+  function parseSingleColumn(text) {
+    var lines = text.trim().split('\n').filter(function(l) { return l.trim() !== ''; });
+    if (lines.length === 0) return null;
+
+    // Check for header
+    var first = lines[0].trim();
+    var second = lines.length > 1 ? lines[1].trim() : '';
+    var hasHeader = false;
+    // If multi-column pasted, just take first column
+    var hasTabs = first.indexOf('\t') > -1;
+
+    var values = [];
+    var label = '';
+    var startIdx = 0;
+
+    if (hasTabs) {
+      // Take first column only
+      var rows = lines.map(function(l) { return l.split('\t')[0].trim(); });
+      // Check header
+      if (rows.length > 1 && isNaN(Number(rows[0])) && !isNaN(Number(rows[1]))) {
+        label = rows[0];
+        startIdx = 1;
+      }
+      for (var i = startIdx; i < rows.length; i++) values.push(rows[i]);
+    } else {
+      if (lines.length > 1 && isNaN(Number(first)) && second !== '') {
+        // Could be header
+        label = first;
+        startIdx = 1;
+      }
+      for (var i = startIdx; i < lines.length; i++) values.push(lines[i].trim());
+    }
+
+    return { values: values, label: label };
+  }
+
+  function toNumbers(arr) {
+    return arr.map(function(v) {
+      var s = String(v).replace(/%/g, '').replace(/,/g, '').trim();
+      return s === '' ? NaN : Number(s);
+    }).filter(function(n) { return !isNaN(n); });
+  }
+
+  function buildSession() {
+    var session = {
+      ratings: null, checkbox: null, singleChoice: null, category: null, behavioral: null
+    };
+
+    // Ratings (multi-column numeric)
+    var ratingsText = document.getElementById('box-ratings').value.trim();
+    if (ratingsText) {
+      var parsed = parseMultiColumn(ratingsText);
+      if (parsed) {
+        var numCols = parsed.columns.map(function(col) { return toNumbers(col); });
+        var nameOverride = document.getElementById('name-ratings').value.trim();
+        session.ratings = {
+          columns: numCols,
+          labels: nameOverride ? [nameOverride] : parsed.labels,
+          nRows: parsed.nRows
+        };
+      }
+    }
+
+    // Checkbox / Matrix (multi-column, could be numeric or text)
+    var checkboxText = document.getElementById('box-checkbox').value.trim();
+    if (checkboxText) {
+      var parsed = parseMultiColumn(checkboxText);
+      if (parsed) {
+        // Auto-detect: if most values are numeric 1-7, it's a scale. Otherwise it's checkbox.
+        var allVals = [];
+        parsed.columns.forEach(function(col) { col.forEach(function(v) { if (v !== '') allVals.push(v); }); });
+        var numericCount = allVals.filter(function(v) { return !isNaN(Number(v)); }).length;
+        var fillRate = allVals.length / (parsed.columns.length * parsed.nRows);
+        var isScale = numericCount / allVals.length > 0.7 && fillRate > 0.6;
+
+        session.checkbox = {
+          columns: parsed.columns,
+          numericColumns: parsed.columns.map(function(col) { return toNumbers(col); }),
+          labels: parsed.labels,
+          nRows: parsed.nRows,
+          isScale: isScale
+        };
+      }
+    }
+
+    // Single-Choice (single column categorical)
+    var scText = document.getElementById('box-singleChoice').value.trim();
+    if (scText) {
+      var parsed = parseSingleColumn(scText);
+      if (parsed) {
+        session.singleChoice = {
+          values: parsed.values,
+          label: document.getElementById('name-singleChoice').value.trim() || parsed.label || 'Response'
+        };
+      }
+    }
+
+    // Category / Segment (single column)
+    var catText = document.getElementById('box-category').value.trim();
+    if (catText) {
+      var parsed = parseSingleColumn(catText);
+      if (parsed) {
+        var vals = parsed.values;
+        var uniqueGroups = [];
+        var seen = {};
+        vals.forEach(function(v) { if (!seen[v]) { seen[v] = true; uniqueGroups.push(v); } });
+        session.category = {
+          values: vals,
+          label: document.getElementById('name-category').value.trim() || parsed.label || 'Segment',
+          groups: uniqueGroups
+        };
+      }
+    }
+
+    // Behavioral (multi-column numeric)
+    var behText = document.getElementById('box-behavioral').value.trim();
+    if (behText) {
+      var parsed = parseMultiColumn(behText);
+      if (parsed) {
+        session.behavioral = {
+          columns: parsed.columns.map(function(col) { return toNumbers(col); }),
+          labels: parsed.labels,
+          nRows: parsed.nRows
+        };
+      }
+    }
+
+    return session;
+  }
+
+  /* ==================================================================
+     Flow Determination
+     ================================================================== */
+  function determineFlows(session) {
+    var hasRatings = session.ratings && session.ratings.columns.some(function(c) { return c.length > 0; });
+    var hasCheckbox = session.checkbox && session.checkbox.numericColumns.some(function(c) { return c.length > 0; });
+    var hasSingleChoice = session.singleChoice && session.singleChoice.values.length > 0;
+    var hasCategory = session.category && session.category.values.length > 0;
+    var hasBehavioral = session.behavioral && session.behavioral.columns.some(function(c) { return c.length > 0; });
+
+    var flows = [];
+
+    if (hasRatings && hasCategory) {
+      flows.push({
+        id: 'ratings_category',
+        title: 'Rating Scale + Segments',
+        desc: 'Distributions, crosstabs, and significance testing for your rating data across segments.',
+        steps: [
+          { id: 'rc_freq', title: 'Frequencies', desc: 'Distribution of each rating column', run: runRatingFrequencies },
+          { id: 'rc_crosstab', title: 'Crosstab', desc: 'Percentage breakdown by segment for each rating', run: runRatingCrosstab },
+          { id: 'rc_sig', title: 'Significance', desc: 'Kruskal-Wallis test per rating column across segments', run: runRatingSignificance },
+          { id: 'rc_posthoc', title: 'Post-hoc', desc: 'Which segments differ from each other?', run: null }
+        ]
+      });
+    }
+
+    if (hasCheckbox && hasCategory) {
+      flows.push({
+        id: 'checkbox_category',
+        title: 'Checkbox/Matrix + Segments',
+        desc: 'Selection rates or scale means by segment, significance, and reliability.',
+        steps: [
+          { id: 'cc_rates', title: session.checkbox.isScale ? 'Scale Comparison' : 'Selection Rates', desc: session.checkbox.isScale ? 'Mean rating per item' : 'Selection rate per item', run: runCheckboxRates },
+          { id: 'cc_segment', title: 'By Segment', desc: 'Mean or percentage by segment for each item', run: runCheckboxBySegment },
+          { id: 'cc_sig', title: 'Significance', desc: 'Kruskal-Wallis or chi-square per item across segments', run: runCheckboxSignificance },
+          { id: 'cc_alpha', title: 'Reliability', desc: "Cronbach's alpha on the items", run: runCheckboxReliability },
+          { id: 'cc_reg', title: 'What Predicts?', desc: 'Regression with items as predictors', run: null }
+        ]
+      });
+    }
+
+    if (hasSingleChoice && hasCategory) {
+      flows.push({
+        id: 'single_category',
+        title: 'Single-Choice + Segments',
+        desc: 'Frequencies, crosstab, and chi-square test.',
+        steps: [
+          { id: 'sc_freq', title: 'Frequencies', desc: 'Count per option', run: runSingleChoiceFreq },
+          { id: 'sc_crosstab', title: 'Crosstab', desc: 'Option breakdown by segment', run: runSingleChoiceCrosstab },
+          { id: 'sc_chi', title: 'Chi-Square', desc: 'Is the association between choice and segment significant?', run: runSingleChoiceChi }
+        ]
+      });
+    }
+
+    if (hasBehavioral && hasCategory) {
+      flows.push({
+        id: 'behavioral_category',
+        title: 'Behavioral + Segments',
+        desc: 'Summary statistics, segment comparison, and significance.',
+        steps: [
+          { id: 'bc_summary', title: 'Summary Stats', desc: 'Mean, median, SD per behavioral variable', run: runBehavioralSummary },
+          { id: 'bc_segment', title: 'Compare by Segment', desc: 'Means per segment for each variable', run: runBehavioralBySegment },
+          { id: 'bc_sig', title: 'Significance', desc: 'ANOVA / Kruskal-Wallis across segments', run: runBehavioralSignificance },
+          { id: 'bc_corr', title: 'Correlation', desc: 'Between behavioral variables', run: runBehavioralCorrelation }
+        ]
+      });
+    }
+
+    if (hasRatings && hasBehavioral) {
+      flows.push({
+        id: 'ratings_behavioral',
+        title: 'Rating + Behavioral',
+        desc: 'Correlation and regression between ratings and behavioral measures.',
+        steps: [
+          { id: 'rb_corr', title: 'Correlation', desc: 'Rating vs behavioral variables', run: runRatingBehavioralCorr },
+          { id: 'rb_reg', title: 'Regression', desc: 'Does behavioral predict rating?', run: null }
+        ]
+      });
+    }
+
+    // Solo data — still useful
+    if (hasRatings && !hasCategory && !hasBehavioral) {
+      flows.push({
+        id: 'ratings_solo',
+        title: 'Rating Scale Analysis',
+        desc: 'Descriptive statistics and distribution for your rating data.',
+        steps: [
+          { id: 'rs_freq', title: 'Frequencies & Descriptives', desc: 'Distribution and summary statistics', run: runRatingFrequencies }
+        ]
+      });
+    }
+
+    if (hasSingleChoice && !hasCategory) {
+      flows.push({
+        id: 'single_solo',
+        title: 'Single-Choice Frequencies',
+        desc: 'Count and percentage for each response option.',
+        steps: [
+          { id: 'ss_freq', title: 'Frequencies', desc: 'Count per option', run: runSingleChoiceFreq }
+        ]
+      });
+    }
+
+    if (hasBehavioral && !hasCategory && !hasRatings) {
+      flows.push({
+        id: 'behavioral_solo',
+        title: 'Behavioral Summary',
+        desc: 'Descriptive statistics for your numeric variables.',
+        steps: [
+          { id: 'bs_summary', title: 'Summary Stats', desc: 'Mean, median, SD', run: runBehavioralSummary },
+          { id: 'bs_corr', title: 'Correlation', desc: 'Between variables', run: runBehavioralCorrelation }
+        ]
+      });
+    }
+
+    return flows;
+  }
+
+  /* ==================================================================
+     Step Runner Functions
+     ================================================================== */
+
+  // --- Ratings + Category ---
+  function runRatingFrequencies(session, container) {
+    var html = '';
+    session.ratings.columns.forEach(function(col, i) {
+      var label = session.ratings.labels[i] || ('Rating ' + (i + 1));
+      var freq = StatsEngine.frequencies(col);
+      var desc = StatsEngine.describe(col);
+      var chartId = 'freq_chart_' + i;
+
+      // Metrics
+      html += RC(label + ' — Summary', renderMetrics([
+        { label: 'n', value: desc.n },
+        { label: 'Mean', value: round2(desc.mean) },
+        { label: 'Median', value: round2(desc.median) },
+        { label: 'SD', value: round2(desc.sd) }
+      ]));
+
+      // Distribution table
+      var rows = freq.uniqueValues.slice().sort(function(a, b) { return Number(a) - Number(b); }).map(function(v) {
+        return { value: v, count: freq.counts[v], pct: freq.percentages[v] };
+      });
+      html += renderDistTable(rows, label + ' — Distribution');
+
+      // Chart
+      html += renderChart(chartId, label + ' — Bar Chart', 500, Math.max(120, rows.length * 46 + 28));
+      // Store bars to draw after render
+      setTimeout(function() {
+        drawBarChart(chartId, rows.map(function(r) {
+          return { label: String(r.value), value: r.pct, isPct: true };
+        }));
+      }, 50);
+    });
+
+    // Plain English
+    var summaries = session.ratings.columns.map(function(col, i) {
+      var d = StatsEngine.describe(col);
+      var lbl = session.ratings.labels[i] || ('Rating ' + (i + 1));
+      return lbl + ': mean ' + round2(d.mean) + ' (SD ' + round2(d.sd) + ', n=' + d.n + ')';
+    });
+    html += renderPlainEnglish('Rating distributions: ' + summaries.join('. ') + '.');
+
+    container.innerHTML = html;
+  }
+
+  function runRatingCrosstab(session, container) {
+    if (!session.category) { container.innerHTML = RC('No Segment Data', '<p>Paste category data in Box 4 to see crosstabs.</p>'); return; }
+    var html = '';
+    session.ratings.columns.forEach(function(col, ci) {
+      var label = session.ratings.labels[ci] || ('Rating ' + (ci + 1));
+      // Build groups by segment
+      var segmentMeans = {};
+      var segmentCounts = {};
+      var catVals = session.category.values;
+      var minLen = Math.min(col.length, catVals.length);
+      for (var i = 0; i < minLen; i++) {
+        var seg = catVals[i];
+        if (!segmentMeans[seg]) { segmentMeans[seg] = []; segmentCounts[seg] = 0; }
+        if (!isNaN(col[i])) {
+          segmentMeans[seg].push(col[i]);
+          segmentCounts[seg]++;
+        }
+      }
+
+      var tableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>Median</th><th>SD</th></tr>';
+      var bars = [];
+      session.category.groups.forEach(function(g) {
+        var vals = segmentMeans[g] || [];
+        if (vals.length === 0) return;
+        var d = StatsEngine.describe(vals);
+        tableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.median) + '</td><td>' + round2(d.sd) + '</td></tr>';
+        bars.push({ label: g, value: d.mean });
+      });
+      tableHtml += '</table>';
+      html += RC(label + ' by ' + session.category.label, tableHtml);
+
+      var chartId = 'xtab_chart_' + ci;
+      html += renderChart(chartId, label + ' — Mean by Segment', 500, Math.max(120, bars.length * 46 + 28));
+      setTimeout(function() { drawBarChart(chartId, bars); }, 50);
+    });
+
+    container.innerHTML = html;
+  }
+
+  function runRatingSignificance(session, container) {
+    if (!session.category) { container.innerHTML = RC('No Segment Data', '<p>Paste category data to test significance.</p>'); return; }
+    var html = '';
+    session.ratings.columns.forEach(function(col, ci) {
+      var label = session.ratings.labels[ci] || ('Rating ' + (ci + 1));
+      // Build groups
+      var groups = {};
+      var catVals = session.category.values;
+      var minLen = Math.min(col.length, catVals.length);
+      for (var i = 0; i < minLen; i++) {
+        var seg = catVals[i];
+        if (!groups[seg]) groups[seg] = [];
+        if (!isNaN(col[i])) groups[seg].push(col[i]);
+      }
+
+      var groupArr = session.category.groups.map(function(g) { return groups[g] || []; }).filter(function(g) { return g.length > 0; });
+      if (groupArr.length < 2) {
+        html += RC(label, '<p style="color:var(--text-2)">Need at least 2 segments with data for significance testing.</p>');
+        return;
+      }
+
+      var result = StatsEngine.kruskalWallis(groupArr);
+      html += RC(label + ' — Kruskal-Wallis Test', renderMetrics([
+        { label: 'H', value: round2(result.H) },
+        { label: 'df', value: result.df },
+        { label: 'p-value', value: round4(result.p), cls: pClass(result.p) },
+        { label: 'Groups', value: groupArr.length }
+      ]) + renderSigBadge(result.p));
+    });
+
+    var summaries = [];
+    session.ratings.columns.forEach(function(col, ci) {
+      var label = session.ratings.labels[ci] || ('Rating ' + (ci + 1));
+      var groups = {};
+      var catVals = session.category.values;
+      var minLen = Math.min(col.length, catVals.length);
+      for (var i = 0; i < minLen; i++) {
+        var seg = catVals[i];
+        if (!groups[seg]) groups[seg] = [];
+        if (!isNaN(col[i])) groups[seg].push(col[i]);
+      }
+      var groupArr = session.category.groups.map(function(g) { return groups[g] || []; }).filter(function(g) { return g.length > 0; });
+      if (groupArr.length >= 2) {
+        var result = StatsEngine.kruskalWallis(groupArr);
+        summaries.push(label + ': H=' + round2(result.H) + ', p=' + round4(result.p) + (result.p < ALPHA ? ' (significant)' : ' (not significant)'));
+      }
+    });
+    html += renderPlainEnglish('Kruskal-Wallis results across ' + session.category.label + ' segments: ' + summaries.join('. ') + '.');
+
+    container.innerHTML = html;
+  }
+
+  // --- Checkbox / Matrix + Category ---
+  function runCheckboxRates(session, container) {
+    var html = '';
+    var cb = session.checkbox;
+    if (cb.isScale) {
+      // Show mean per item
+      var bars = [];
+      cb.numericColumns.forEach(function(col, i) {
+        var d = StatsEngine.describe(col);
+        bars.push({ label: cb.labels[i], value: d.mean });
+      });
+      var chartId = 'cb_rates_chart';
+      html += RC('Scale Comparison — Mean per Item', renderMetrics([
+        { label: 'Items', value: cb.numericColumns.length },
+        { label: 'Respondents', value: cb.nRows }
+      ]));
+      html += renderChart(chartId, 'Mean per Item', 500, Math.max(120, bars.length * 46 + 28));
+      setTimeout(function() { drawBarChart(chartId, bars); }, 50);
+
+      // Table
+      var tableHtml = '<table class="freq-table"><tr><th>Item</th><th>n</th><th>Mean</th><th>SD</th></tr>';
+      cb.numericColumns.forEach(function(col, i) {
+        var d = StatsEngine.describe(col);
+        tableHtml += '<tr><td>' + escHtml(cb.labels[i]) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.sd) + '</td></tr>';
+      });
+      tableHtml += '</table>';
+      html += RC('Item-Level Statistics', tableHtml);
+    } else {
+      // Selection rates
+      var bars = [];
+      cb.columns.forEach(function(col, i) {
+        var filled = col.filter(function(v) { return v.trim() !== ''; }).length;
+        var rate = (filled / col.length) * 100;
+        bars.push({ label: cb.labels[i], value: rate, isPct: true });
+      });
+      var chartId = 'cb_sel_chart';
+      html += renderChart(chartId, 'Selection Rate per Item', 500, Math.max(120, bars.length * 46 + 28));
+      setTimeout(function() { drawBarChart(chartId, bars); }, 50);
+    }
+    container.innerHTML = html;
+  }
+
+  function runCheckboxBySegment(session, container) {
+    if (!session.category) { container.innerHTML = RC('No Segment Data', '<p>Paste category data to see segment breakdown.</p>'); return; }
+    var cb = session.checkbox;
+    var html = '';
+
+    cb.numericColumns.forEach(function(col, ci) {
+      var label = cb.labels[ci];
+      var segData = {};
+      var catVals = session.category.values;
+      var minLen = Math.min(col.length, catVals.length);
+      for (var i = 0; i < minLen; i++) {
+        var seg = catVals[i];
+        if (!segData[seg]) segData[seg] = [];
+        if (!isNaN(col[i])) segData[seg].push(col[i]);
+      }
+
+      var tableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>SD</th></tr>';
+      session.category.groups.forEach(function(g) {
+        var vals = segData[g] || [];
+        if (vals.length === 0) return;
+        var d = StatsEngine.describe(vals);
+        tableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.sd) + '</td></tr>';
+      });
+      tableHtml += '</table>';
+      html += RC(label + ' by ' + session.category.label, tableHtml);
+    });
+    container.innerHTML = html;
+  }
+
+  function runCheckboxSignificance(session, container) {
+    if (!session.category) { container.innerHTML = RC('No Segment Data', '<p>Paste category data to test significance.</p>'); return; }
+    var cb = session.checkbox;
+    var html = '';
+
+    cb.numericColumns.forEach(function(col, ci) {
+      var label = cb.labels[ci];
+      var groups = {};
+      var catVals = session.category.values;
+      var minLen = Math.min(col.length, catVals.length);
+      for (var i = 0; i < minLen; i++) {
+        var seg = catVals[i];
+        if (!groups[seg]) groups[seg] = [];
+        if (!isNaN(col[i])) groups[seg].push(col[i]);
+      }
+      var groupArr = session.category.groups.map(function(g) { return groups[g] || []; }).filter(function(g) { return g.length > 0; });
+      if (groupArr.length < 2) {
+        html += RC(label, '<p style="color:var(--text-2)">Need 2+ segments.</p>');
+        return;
+      }
+      var result = StatsEngine.kruskalWallis(groupArr);
+      html += RC(label + ' — Kruskal-Wallis', renderMetrics([
+        { label: 'H', value: round2(result.H) },
+        { label: 'df', value: result.df },
+        { label: 'p-value', value: round4(result.p), cls: pClass(result.p) }
+      ]) + renderSigBadge(result.p));
+    });
+    container.innerHTML = html;
+  }
+
+  function runCheckboxReliability(session, container) {
+    var cb = session.checkbox;
+    if (!cb.isScale || cb.numericColumns.length < 2) {
+      container.innerHTML = RC('Reliability', '<p style="color:var(--text-2)">Need 2+ numeric scale items for reliability analysis.</p>');
+      return;
+    }
+    var result = StatsEngine.cronbachAlpha(cb.numericColumns);
+    var alphaVal = result.alpha !== undefined ? result.alpha : result;
+    var html = RC("Cronbach's Alpha", renderMetrics([
+      { label: 'Alpha', value: round2(alphaVal) },
+      { label: 'Items', value: cb.numericColumns.length }
+    ]));
+    var interp = alphaVal >= 0.9 ? 'Excellent internal consistency.' :
+                 alphaVal >= 0.8 ? 'Good internal consistency.' :
+                 alphaVal >= 0.7 ? 'Acceptable internal consistency.' :
+                 alphaVal >= 0.6 ? 'Questionable internal consistency.' :
+                 'Poor internal consistency. Consider revising items.';
+    html += renderPlainEnglish("Cronbach's alpha = " + round2(alphaVal) + '. ' + interp);
+    container.innerHTML = html;
+  }
+
+  // --- Single-Choice + Category ---
+  function runSingleChoiceFreq(session, container) {
+    var freq = StatsEngine.frequencies(session.singleChoice.values);
+    var rows = freq.uniqueValues.map(function(v) {
+      return { value: v, count: freq.counts[v], pct: freq.percentages[v] };
+    }).sort(function(a, b) { return b.count - a.count; });
+
+    var chartId = 'sc_freq_chart';
+    var html = renderDistTable(rows, session.singleChoice.label + ' — Distribution');
+    html += renderChart(chartId, session.singleChoice.label + ' — Frequencies', 500, Math.max(120, rows.length * 46 + 28));
+    setTimeout(function() {
+      drawBarChart(chartId, rows.map(function(r) { return { label: r.value, value: r.pct, isPct: true }; }));
+    }, 50);
+
+    html += renderPlainEnglish('Most common response: "' + freq.mode + '" (' + freq.modeCount + ' of ' + freq.n + ', ' + Math.round(freq.percentages[freq.mode]) + '%).');
+    container.innerHTML = html;
+  }
+
+  function runSingleChoiceCrosstab(session, container) {
+    if (!session.category) { container.innerHTML = RC('No Segment Data', '<p>Paste category data for crosstab.</p>'); return; }
+    var minLen = Math.min(session.singleChoice.values.length, session.category.values.length);
+    var colA = session.singleChoice.values.slice(0, minLen);
+    var colB = session.category.values.slice(0, minLen);
+    var result = StatsEngine.crossTab(colA, colB);
+    if (result.error) { container.innerHTML = RC('Error', '<p>' + result.error + '</p>'); return; }
+
+    var html = '<table class="freq-table"><tr><th>' + escHtml(session.singleChoice.label) + '</th>';
+    result.colLabels.forEach(function(cl) { html += '<th>' + escHtml(cl) + '</th>'; });
+    html += '<th>Total</th></tr>';
+    for (var r = 0; r < result.rowLabels.length; r++) {
+      html += '<tr><td><strong>' + escHtml(result.rowLabels[r]) + '</strong></td>';
+      for (var c = 0; c < result.colLabels.length; c++) {
+        var count = result.table[r][c];
+        var pct = result.colTotals[c] > 0 ? Math.round(count / result.colTotals[c] * 100) : 0;
+        html += '<td>' + count + ' (' + pct + '%)</td>';
+      }
+      html += '<td>' + result.rowTotals[r] + '</td></tr>';
+    }
+    html += '</table>';
+    container.innerHTML = RC(session.singleChoice.label + ' x ' + session.category.label, html);
+  }
+
+  function runSingleChoiceChi(session, container) {
+    if (!session.category) { container.innerHTML = RC('No Segment Data', '<p>Paste category data for chi-square test.</p>'); return; }
+    var minLen = Math.min(session.singleChoice.values.length, session.category.values.length);
+    var colA = session.singleChoice.values.slice(0, minLen);
+    var colB = session.category.values.slice(0, minLen);
+    var xt = StatsEngine.crossTab(colA, colB);
+    if (xt.error) { container.innerHTML = RC('Error', '<p>' + xt.error + '</p>'); return; }
+
+    var result = StatsEngine.chiSquare(xt.table);
+    var html = RC('Chi-Square Test of Independence', renderMetrics([
+      { label: '\u03C7\u00B2', value: round2(result.chiSquare) },
+      { label: 'df', value: result.df },
+      { label: 'p-value', value: round4(result.p), cls: pClass(result.p) },
+      { label: 'n', value: xt.grandTotal }
+    ]) + renderSigBadge(result.p));
+
+    var sig = result.p < ALPHA;
+    html += renderPlainEnglish(
+      'Chi-square test: \u03C7\u00B2(' + result.df + ') = ' + round2(result.chiSquare) + ', p = ' + round4(result.p) + '. ' +
+      (sig ? 'There IS a statistically significant association between ' + session.singleChoice.label + ' and ' + session.category.label + '.'
+           : 'There is NO statistically significant association between ' + session.singleChoice.label + ' and ' + session.category.label + '.')
+    );
+    container.innerHTML = html;
+  }
+
+  // --- Behavioral + Category ---
+  function runBehavioralSummary(session, container) {
+    var html = '';
+    session.behavioral.columns.forEach(function(col, i) {
+      var label = session.behavioral.labels[i];
+      var d = StatsEngine.describe(col);
+      html += RC(label + ' — Summary', renderMetrics([
+        { label: 'n', value: d.n },
+        { label: 'Mean', value: round2(d.mean) },
+        { label: 'Median', value: round2(d.median) },
+        { label: 'SD', value: round2(d.sd) },
+        { label: 'Min', value: round2(d.min) },
+        { label: 'Max', value: round2(d.max) }
+      ]));
+    });
+    container.innerHTML = html;
+  }
+
+  function runBehavioralBySegment(session, container) {
+    if (!session.category) { container.innerHTML = RC('No Segment Data', '<p>Paste category data.</p>'); return; }
+    var html = '';
+    session.behavioral.columns.forEach(function(col, ci) {
+      var label = session.behavioral.labels[ci];
+      var segData = {};
+      var catVals = session.category.values;
+      var minLen = Math.min(col.length, catVals.length);
+      for (var i = 0; i < minLen; i++) {
+        var seg = catVals[i];
+        if (!segData[seg]) segData[seg] = [];
+        if (!isNaN(col[i])) segData[seg].push(col[i]);
+      }
+
+      var tableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>Median</th><th>SD</th></tr>';
+      var bars = [];
+      session.category.groups.forEach(function(g) {
+        var vals = segData[g] || [];
+        if (vals.length === 0) return;
+        var d = StatsEngine.describe(vals);
+        tableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.median) + '</td><td>' + round2(d.sd) + '</td></tr>';
+        bars.push({ label: g, value: d.mean });
+      });
+      tableHtml += '</table>';
+      html += RC(label + ' by ' + session.category.label, tableHtml);
+
+      var chartId = 'beh_seg_chart_' + ci;
+      html += renderChart(chartId, label + ' — Mean by Segment', 500, Math.max(120, bars.length * 46 + 28));
+      setTimeout(function() { drawBarChart(chartId, bars); }, 50);
+    });
+    container.innerHTML = html;
+  }
+
+  function runBehavioralSignificance(session, container) {
+    if (!session.category) { container.innerHTML = RC('No Segment Data', '<p>Paste category data.</p>'); return; }
+    var html = '';
+    session.behavioral.columns.forEach(function(col, ci) {
+      var label = session.behavioral.labels[ci];
+      var groups = {};
+      var catVals = session.category.values;
+      var minLen = Math.min(col.length, catVals.length);
+      for (var i = 0; i < minLen; i++) {
+        var seg = catVals[i];
+        if (!groups[seg]) groups[seg] = [];
+        if (!isNaN(col[i])) groups[seg].push(col[i]);
+      }
+      var groupArr = session.category.groups.map(function(g) { return groups[g] || []; }).filter(function(g) { return g.length > 0; });
+      if (groupArr.length < 2) {
+        html += RC(label, '<p style="color:var(--text-2)">Need 2+ segments.</p>');
+        return;
+      }
+      var result = StatsEngine.kruskalWallis(groupArr);
+      html += RC(label + ' — Kruskal-Wallis', renderMetrics([
+        { label: 'H', value: round2(result.H) },
+        { label: 'df', value: result.df },
+        { label: 'p-value', value: round4(result.p), cls: pClass(result.p) }
+      ]) + renderSigBadge(result.p));
+    });
+    container.innerHTML = html;
+  }
+
+  function runBehavioralCorrelation(session, container) {
+    var cols = session.behavioral.columns;
+    if (cols.length < 2) {
+      container.innerHTML = RC('Correlation', '<p style="color:var(--text-2)">Need 2+ behavioral variables for correlation.</p>');
+      return;
+    }
+    var html = '';
+    var tableHtml = '<table class="freq-table"><tr><th></th>';
+    session.behavioral.labels.forEach(function(l) { tableHtml += '<th>' + escHtml(l) + '</th>'; });
+    tableHtml += '</tr>';
+    for (var i = 0; i < cols.length; i++) {
+      tableHtml += '<tr><td><strong>' + escHtml(session.behavioral.labels[i]) + '</strong></td>';
+      for (var j = 0; j < cols.length; j++) {
+        if (i === j) {
+          tableHtml += '<td style="color:var(--text-2)">1.00</td>';
+        } else {
+          var minLen = Math.min(cols[i].length, cols[j].length);
+          var a = cols[i].slice(0, minLen);
+          var b = cols[j].slice(0, minLen);
+          // Filter paired NaNs
+          var pa = [], pb = [];
+          for (var k = 0; k < minLen; k++) {
+            if (!isNaN(a[k]) && !isNaN(b[k])) { pa.push(a[k]); pb.push(b[k]); }
+          }
+          if (pa.length >= 3) {
+            var r = StatsEngine.pearson(pa, pb);
+            var rVal = r.r !== undefined ? r.r : r;
+            var cls = Math.abs(rVal) > 0.5 ? 'color:var(--rose);font-weight:700' : '';
+            tableHtml += '<td style="' + cls + '">' + round2(rVal) + '</td>';
+          } else {
+            tableHtml += '<td style="color:var(--text-2)">-</td>';
+          }
+        }
+      }
+      tableHtml += '</tr>';
+    }
+    tableHtml += '</table>';
+    html += RC('Correlation Matrix', tableHtml);
+    container.innerHTML = html;
+  }
+
+  // --- Ratings + Behavioral ---
+  function runRatingBehavioralCorr(session, container) {
+    var html = '';
+    session.ratings.columns.forEach(function(rCol, ri) {
+      var rLabel = session.ratings.labels[ri] || ('Rating ' + (ri + 1));
+      session.behavioral.columns.forEach(function(bCol, bi) {
+        var bLabel = session.behavioral.labels[bi];
+        var minLen = Math.min(rCol.length, bCol.length);
+        var a = [], b = [];
+        for (var k = 0; k < minLen; k++) {
+          if (!isNaN(rCol[k]) && !isNaN(bCol[k])) { a.push(rCol[k]); b.push(bCol[k]); }
+        }
+        if (a.length < 3) {
+          html += RC(rLabel + ' vs ' + bLabel, '<p style="color:var(--text-2)">Not enough paired data.</p>');
+          return;
+        }
+        var result = StatsEngine.pearson(a, b);
+        var rVal = result.r !== undefined ? result.r : result;
+        var p = result.p !== undefined ? result.p : NaN;
+        html += RC(rLabel + ' vs ' + bLabel, renderMetrics([
+          { label: 'r', value: round2(rVal) },
+          { label: 'n', value: a.length },
+          { label: 'p-value', value: isNaN(p) ? '-' : round4(p), cls: isNaN(p) ? '' : pClass(p) }
+        ]) + (isNaN(p) ? '' : renderSigBadge(p)));
+
+        var strength = Math.abs(rVal) < 0.2 ? 'negligible' : Math.abs(rVal) < 0.4 ? 'weak' : Math.abs(rVal) < 0.6 ? 'moderate' : Math.abs(rVal) < 0.8 ? 'strong' : 'very strong';
+        var direction = rVal > 0 ? 'positive' : 'negative';
+        html += renderPlainEnglish('There is a ' + strength + ' ' + direction + ' correlation (r = ' + round2(rVal) + ') between ' + rLabel + ' and ' + bLabel + '.');
+      });
+    });
+    container.innerHTML = html;
+  }
+
+  /* ==================================================================
+     Flow Rendering
+     ================================================================== */
+  var currentSession = null;
+  var currentFlows = null;
+  var activeFlowIdx = 0;
+  var activeStepIdx = 0;
+
+  startBtn.addEventListener('click', function() {
+    currentSession = buildSession();
+    currentFlows = determineFlows(currentSession);
+
+    if (currentFlows.length === 0) {
+      document.getElementById('flowSection').style.display = 'block';
+      document.getElementById('flowSection').innerHTML = RC('No Analyses Available',
+        '<p style="color:var(--text-2)">The data combination you pasted does not match any known analysis flow. Try adding category/segment data (Box 4) alongside your other data.</p>');
+      return;
+    }
+
+    activeFlowIdx = 0;
+    activeStepIdx = 0;
+    renderAllFlows();
+  });
+
+  function renderAllFlows() {
+    var flowSection = document.getElementById('flowSection');
+    flowSection.style.display = 'block';
+    var html = '';
+
+    currentFlows.forEach(function(flow, fi) {
+      html += '<div class="flow-block" id="flow-' + fi + '">';
+      html += '<div class="flow-title">' + escHtml(flow.title) + '</div>';
+      html += '<div class="flow-subtitle">' + escHtml(flow.desc) + '</div>';
+
+      flow.steps.forEach(function(step, si) {
+        var state = 'upcoming';
+        if (fi < activeFlowIdx || (fi === activeFlowIdx && si < activeStepIdx)) state = 'completed';
+        else if (fi === activeFlowIdx && si === activeStepIdx) state = 'active';
+
+        html += '<div class="step-card ' + state + '" id="step-' + fi + '-' + si + '">';
+        html += '<div class="step-header">';
+        html += '<div class="step-number">' + (si + 1) + '</div>';
+        html += '<div class="step-title">' + escHtml(step.title) + '</div>';
+        html += '</div>';
+        html += '<div class="step-desc">' + escHtml(step.desc) + '</div>';
+
+        if (state === 'active') {
+          if (step.run) {
+            html += '<button class="run-btn" data-flow="' + fi + '" data-step="' + si + '">Run this step &#9654;</button>';
+          } else {
+            html += '<div class="coming-soon">Coming soon &mdash; ' + escHtml(step.desc) + '</div>';
+            html += '<button class="next-btn" data-flow="' + fi + '" data-step="' + si + '" data-action="skip">Skip to next &#8594;</button>';
+          }
+        } else if (state === 'completed') {
+          // Nothing — results already shown
+        }
+
+        html += '<div class="step-results" id="results-' + fi + '-' + si + '"></div>';
+        html += '</div>';
+      });
+
+      html += '</div>';
+    });
+
+    flowSection.innerHTML = html;
+
+    // Attach event listeners
+    flowSection.querySelectorAll('.run-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var fi = parseInt(btn.getAttribute('data-flow'));
+        var si = parseInt(btn.getAttribute('data-step'));
+        runStep(fi, si);
+      });
+    });
+
+    flowSection.querySelectorAll('.next-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        advanceStep();
+      });
+    });
+
+    // Scroll to active step
+    var activeCard = document.querySelector('.step-card.active');
+    if (activeCard) {
+      setTimeout(function() { activeCard.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
+    }
+  }
+
+  function runStep(fi, si) {
+    var flow = currentFlows[fi];
+    var step = flow.steps[si];
+    var container = document.getElementById('results-' + fi + '-' + si);
+    var runBtn = document.querySelector('.run-btn[data-flow="' + fi + '"][data-step="' + si + '"]');
+
+    if (runBtn) { runBtn.disabled = true; runBtn.textContent = 'Running...'; }
+
+    try {
+      step.run(currentSession, container);
+    } catch(e) {
+      container.innerHTML = RC('Error', '<p style="color:var(--red)">Analysis failed: ' + escHtml(e.message) + '</p>');
+    }
+
+    // Mark completed, show next button
+    if (runBtn) { runBtn.style.display = 'none'; }
+
+    // Add next button
+    var hasNext = (si + 1 < flow.steps.length) || (fi + 1 < currentFlows.length);
+    if (hasNext) {
+      var nextBtn = document.createElement('button');
+      nextBtn.className = 'next-btn';
+      nextBtn.innerHTML = 'Next step &#8594;';
+      nextBtn.addEventListener('click', function() { advanceStep(); });
+      container.appendChild(nextBtn);
+    } else {
+      var doneCard = document.createElement('div');
+      doneCard.className = 'result-card';
+      doneCard.style.textAlign = 'center';
+      doneCard.innerHTML = '<div style="font-size:1.2rem;font-weight:700;color:var(--green);margin-bottom:0.5rem">Analysis Complete</div>' +
+        '<div style="font-size:0.85rem;color:var(--text-2)">All analysis flows have been run. Scroll up to review results.</div>';
+      container.appendChild(doneCard);
+    }
+  }
+
+  function advanceStep() {
+    var flow = currentFlows[activeFlowIdx];
+    activeStepIdx++;
+    if (activeStepIdx >= flow.steps.length) {
+      activeFlowIdx++;
+      activeStepIdx = 0;
+    }
+    if (activeFlowIdx >= currentFlows.length) {
+      // All done
+      return;
+    }
+    renderAllFlows();
+
+    // Re-render completed results
+    for (var fi = 0; fi < currentFlows.length; fi++) {
+      for (var si = 0; si < currentFlows[fi].steps.length; si++) {
+        if (fi < activeFlowIdx || (fi === activeFlowIdx && si < activeStepIdx)) {
+          var step = currentFlows[fi].steps[si];
+          var container = document.getElementById('results-' + fi + '-' + si);
+          if (step.run && container && container.innerHTML === '') {
+            try { step.run(currentSession, container); } catch(e) { /* skip */ }
+          }
+        }
+      }
+    }
+  }
+
+})();
+</script>
+</body>
+</html>
