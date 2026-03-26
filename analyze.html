@@ -4401,15 +4401,16 @@
     var ctx = c.ctx, w = c.w, h = c.h;
     var colors = getColors();
 
-    // Auto-detect percentage data: all values 0-100, sum ≈ 100 (±5), no bar flagged isPct=false
-    var valSum = 0, allInRange = true, anyFlaggedNonPct = false;
+    // Auto-detect percentage data
+    var valSum = 0, allInRange = true, anyExplicitPct = false;
     bars.forEach(function(b) {
       valSum += b.value;
       if (b.value < 0 || b.value > 100) allInRange = false;
-      if (b.isPct === false) anyFlaggedNonPct = true;
+      if (b.isPct) anyExplicitPct = true;
     });
-    var looksLikePct = allInRange && !anyFlaggedNonPct && bars.length >= 2 &&
-      ((valSum > 95 && valSum < 105) || bars.some(function(b) { return b.isPct; }));
+    // Treat as percentages if: any bar says isPct, OR values sum to ~100
+    var looksLikePct = anyExplicitPct ||
+      (allInRange && bars.length >= 2 && valSum > 90 && valSum < 110);
 
     var allVals = [];
     bars.forEach(function(b) {
@@ -5690,8 +5691,8 @@
           if (k >= maxV - 1) topCount += uniqueVals[k];
           if (k <= minV + 1) botCount += uniqueVals[k];
         });
-        var topPct = round2(topCount / r.n * 100);
-        var botPct = round2(botCount / r.n * 100);
+        var topPct = Math.round(topCount / r.n * 100);
+        var botPct = Math.round(botCount / r.n * 100);
         html += renderTopBottomBox(topPct, botPct, (maxV - 1) + '\u2013' + maxV, minV + '\u2013' + (minV + 1));
       }
     }
@@ -8096,8 +8097,8 @@
       if (maxVal - minVal >= 4) {
         var topTwo = sorted.filter(function(r) { return parseFloat(r.value) >= maxVal - 1; });
         var botTwo = sorted.filter(function(r) { return parseFloat(r.value) <= minVal + 1; });
-        topPct = round2(topTwo.reduce(function(s, r) { return s + r.pct; }, 0));
-        botPct = round2(botTwo.reduce(function(s, r) { return s + r.pct; }, 0));
+        topPct = Math.round(topTwo.reduce(function(s, r) { return s + r.pct; }, 0));
+        botPct = Math.round(botTwo.reduce(function(s, r) { return s + r.pct; }, 0));
         topLabel = (maxVal - 1) + '\u2013' + maxVal;
         botLabel = minVal + '\u2013' + (minVal + 1);
       }
@@ -8179,7 +8180,7 @@
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     drawBarChart(chartId, chartData.map(function(d, i) {
-      return { label: d.value, value: parseFloat(d.pct.toFixed(2)), color: CHART_COLORS[i % CHART_COLORS.length] };
+      return { label: d.value, value: parseFloat(d.pct.toFixed(2)), isPct: true, color: CHART_COLORS[i % CHART_COLORS.length] };
     }));
     showNextSteps('descriptive', { n: nRespondents });
   }
