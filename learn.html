@@ -246,6 +246,164 @@
   </div>
 
   <!-- ============================================================ -->
+  <!-- WHERE DOES MY DATA GO? GUIDE                                 -->
+  <!-- ============================================================ -->
+  <style>
+    .question-guide {
+      max-width: 800px; margin: 2rem auto 0; padding: 0 1.5rem 1.5rem;
+    }
+    .question-guide h2 {
+      font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem;
+    }
+    .guide-subtitle {
+      color: var(--text-1); font-size: 0.92rem; margin-bottom: 1.25rem;
+    }
+    .guide-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+    }
+    @media (max-width: 600px) {
+      .guide-grid { grid-template-columns: 1fr; }
+      .question-guide { padding: 0 1rem 1.5rem; }
+    }
+    .guide-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1rem 1.15rem;
+      box-shadow: var(--card-shadow);
+      border-left: 3px solid var(--rose);
+      display: flex; flex-direction: column; gap: 0.4rem;
+    }
+    .guide-card.border-rose    { border-left-color: var(--rose); }
+    .guide-card.border-coral   { border-left-color: var(--coral); }
+    .guide-card.border-green   { border-left-color: var(--green); }
+    .guide-card.border-blue    { border-left-color: var(--blue); }
+    .guide-card.border-purple  { border-left-color: var(--purple); }
+    .guide-card-title {
+      font-size: 0.92rem; font-weight: 700; color: var(--text-0);
+    }
+    .guide-card-desc {
+      font-size: 0.82rem; color: var(--text-1); line-height: 1.45;
+    }
+    .guide-card-data {
+      font-size: 0.78rem; color: var(--text-2); font-style: italic;
+    }
+    .guide-card-link {
+      font-size: 0.82rem; font-weight: 600; text-decoration: none;
+      margin-top: auto; padding-top: 0.25rem;
+    }
+    .guide-card-link.link-rose    { color: var(--rose); }
+    .guide-card-link.link-coral   { color: var(--coral); }
+    .guide-card-link.link-green   { color: var(--green); }
+    .guide-card-link.link-blue    { color: var(--blue); }
+    .guide-card-link.link-purple  { color: var(--purple); }
+    .guide-card-link:hover { text-decoration: underline; }
+    .guide-card-methods {
+      font-size: 0.78rem; color: var(--text-1);
+    }
+    .guide-card-methods strong {
+      color: var(--text-0); font-weight: 600;
+    }
+  </style>
+
+  <section class="question-guide" id="question-guide">
+    <h2>Where Does My Data Go?</h2>
+    <p class="guide-subtitle">Match your survey question type to the right analysis method</p>
+
+    <div class="guide-grid">
+
+      <!-- 1. Radio Button / Single-response -->
+      <div class="guide-card border-rose">
+        <div class="guide-card-title">Radio Button / Single-response</div>
+        <div class="guide-card-desc">One answer per question (e.g., "Which brand do you prefer?")</div>
+        <div class="guide-card-data">Data looks like: Brand A / Brand B / Brand C (one column, text or codes)</div>
+        <div class="guide-card-methods"><strong>Use:</strong> Frequencies, Chi-Square</div>
+        <a href="analyze.html?method=frequencies" class="guide-card-link link-rose">Use this method &rarr;</a>
+      </div>
+
+      <!-- 2. Rating / Likert Scale -->
+      <div class="guide-card border-rose">
+        <div class="guide-card-title">Rating / Likert Scale</div>
+        <div class="guide-card-desc">Rate on a scale (e.g., "How satisfied are you? 1-5")</div>
+        <div class="guide-card-data">Data looks like: 4, 3, 5, 2, 4... (one column, integers)</div>
+        <div class="guide-card-methods"><strong>Use:</strong> Summary Statistics, T-test, ANOVA, Correlation</div>
+        <a href="analyze.html?method=summary" class="guide-card-link link-rose">Use this method &rarr;</a>
+      </div>
+
+      <!-- 3. Matrix / Rating Grid -->
+      <div class="guide-card border-rose">
+        <div class="guide-card-title">Matrix / Rating Grid</div>
+        <div class="guide-card-desc">Rate multiple items on the same scale (e.g., "Rate each feature 1-5")</div>
+        <div class="guide-card-data">Data looks like: Multiple columns, every cell has a rating</div>
+        <div class="guide-card-methods"><strong>Use:</strong> Scale Comparison (Multi-Response), Cronbach's Alpha, Factor Analysis</div>
+        <a href="analyze.html?method=multi_response" class="guide-card-link link-rose">Use this method &rarr;</a>
+      </div>
+
+      <!-- 4. Checkboxes / Multi-response -->
+      <div class="guide-card border-rose">
+        <div class="guide-card-title">Checkboxes / Multi-response</div>
+        <div class="guide-card-desc">Select all that apply (e.g., "Which features do you use?")</div>
+        <div class="guide-card-data">Data looks like: Multiple columns, mostly blank, value = selected</div>
+        <div class="guide-card-methods"><strong>Use:</strong> Multi-Response Analysis</div>
+        <a href="analyze.html?method=multi_response" class="guide-card-link link-rose">Use this method &rarr;</a>
+      </div>
+
+      <!-- 5. NPS (0-10) -->
+      <div class="guide-card border-rose">
+        <div class="guide-card-title">NPS (0-10)</div>
+        <div class="guide-card-desc">"How likely are you to recommend?" on a 0-10 scale</div>
+        <div class="guide-card-data">Data looks like: One column: 8, 6, 10, 9, 3...</div>
+        <div class="guide-card-methods"><strong>Use:</strong> Summary Statistics (shows Promoter/Passive/Detractor breakdown)</div>
+        <a href="analyze.html?method=summary" class="guide-card-link link-rose">Use this method &rarr;</a>
+      </div>
+
+      <!-- 6. Ranking -->
+      <div class="guide-card border-coral">
+        <div class="guide-card-title">Ranking</div>
+        <div class="guide-card-desc">Rank items in order (e.g., "Rank these 5 features")</div>
+        <div class="guide-card-data">Data looks like: Multiple columns, each row is a permutation of 1-N</div>
+        <div class="guide-card-methods"><strong>Use:</strong> Friedman Test, Repeated Measures</div>
+        <a href="analyze.html?method=friedman" class="guide-card-link link-coral">Use this method &rarr;</a>
+      </div>
+
+      <!-- 7. Binary (Yes/No) -->
+      <div class="guide-card border-rose">
+        <div class="guide-card-title">Binary (Yes/No)</div>
+        <div class="guide-card-desc">Two outcomes (e.g., "Did the customer churn?")</div>
+        <div class="guide-card-data">Data looks like: One column: Yes/No, 1/0, True/False</div>
+        <div class="guide-card-methods"><strong>Use:</strong> Frequencies, Chi-Square, Logistic Regression</div>
+        <a href="analyze.html?method=frequencies" class="guide-card-link link-rose">Use this method &rarr;</a>
+      </div>
+
+      <!-- 8. Numeric / Continuous -->
+      <div class="guide-card border-green">
+        <div class="guide-card-title">Numeric / Continuous</div>
+        <div class="guide-card-desc">Measurements with no fixed scale (e.g., revenue, age, time)</div>
+        <div class="guide-card-data">Data looks like: One column: 45.2, 1200, 67.8...</div>
+        <div class="guide-card-methods"><strong>Use:</strong> Summary Statistics, Regression, Correlation</div>
+        <a href="analyze.html?method=summary" class="guide-card-link link-green">Use this method &rarr;</a>
+      </div>
+
+      <!-- 9. Open-ended Text -->
+      <div class="guide-card border-purple">
+        <div class="guide-card-title">Open-ended Text</div>
+        <div class="guide-card-desc">Free-text responses (e.g., "What could we improve?")</div>
+        <div class="guide-card-data">Data looks like: One column of text responses</div>
+        <div class="guide-card-methods"><strong>Use:</strong> Word Frequency, Sentiment Analysis</div>
+        <a href="analyze.html?method=frequencies" class="guide-card-link link-purple">Use this method &rarr;</a>
+      </div>
+
+      <!-- 10. Paired / Before-After -->
+      <div class="guide-card border-coral">
+        <div class="guide-card-title">Paired / Before-After</div>
+        <div class="guide-card-desc">Same respondents measured twice (e.g., pre/post training)</div>
+        <div class="guide-card-data">Data looks like: Two columns: Before and After values for the same people</div>
+        <div class="guide-card-methods"><strong>Use:</strong> Paired T-test, Wilcoxon</div>
+        <a href="analyze.html?method=paired_ttest" class="guide-card-link link-coral">Use this method &rarr;</a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
   <!-- STAGE 1: DESCRIBE                                            -->
   <!-- ============================================================ -->
   <h2 class="stage-heading" id="stage-describe"><span class="num">Stage 1 &mdash;</span> Describe</h2>
