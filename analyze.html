@@ -7545,10 +7545,14 @@
 
     // Parse multi-response textarea: each line → array of non-empty values
     function parseMultiCols(text) {
-      var lines = text.split(/\n/).filter(function(s) { return s.trim() !== ''; });
+      // Keep blank lines as positional markers — don't filter them
+      var lines = text.split(/\n/).map(function(s) { return s.trim(); });
+      // Strip trailing blank lines only
+      while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
       var cleanLines = [];
       var excelErrors = 0;
       for (var i = 0; i < lines.length; i++) {
+        if (lines[i] === '') { cleanLines.push(lines[i]); continue; } // preserve blank rows
         var cells = lines[i].split('\t');
         var rowHasOnlyErrors = cells.every(function(c) { var t = c.trim(); return t === '' || isExcelError(t); });
         if (rowHasOnlyErrors && cells.some(function(c) { return isExcelError(c.trim()); })) { excelErrors++; continue; }
@@ -14276,7 +14280,12 @@
      Multi-Response / Checkbox Analysis
      ================================================================== */
   function parseMultiResponse(text) {
-    var lines = text.split(/\n/).filter(function(l) { return l.trim() !== ''; });
+    // CRITICAL: Do NOT filter blank lines — they are positional markers.
+    // For multi-column data, a blank row means "respondent didn't select anything."
+    // Removing it would shift all subsequent rows relative to the grouping variable.
+    var lines = text.split(/\n/).map(function(l) { return l.trim(); });
+    // Strip trailing blank lines only (from trailing newlines in paste)
+    while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
     if (lines.length === 0) return { isMultiResponse: false, values: [] };
 
     // Check if any line has tabs
@@ -14286,20 +14295,23 @@
     }
 
     if (!hasTabs) {
-      // Single column — filter Excel errors
-      var vals = lines.map(function(l) { return l.trim(); }).filter(function(s) { return s !== '' && !isExcelError(s); });
-      var excelErrors = lines.filter(function(l) { return isExcelError(l.trim()); }).length;
+      // Single column — filter blanks and Excel errors (single column has no alignment concern)
+      var vals = lines.filter(function(s) { return s !== '' && !isExcelError(s); });
+      var excelErrors = lines.filter(function(l) { return isExcelError(l); }).length;
       return { isMultiResponse: false, values: vals, excelErrors: excelErrors };
     }
 
-    // Multi-column: split by tabs, skip rows that are entirely Excel errors/empty
+    // Multi-column: split by tabs
+    // Keep ALL rows including fully blank ones (they're positional for grouping variable alignment).
+    // Only skip rows that contain Excel errors.
     var allRows = [];
     var maxCols = 0;
     var excelErrors = 0;
     lines.forEach(function(line) {
       var cells = line.split('\t').map(function(c) { return c.trim(); });
-      var rowAllErrorsOrEmpty = cells.every(function(c) { return c === '' || isExcelError(c); });
-      if (rowAllErrorsOrEmpty && cells.some(function(c) { return isExcelError(c); })) { excelErrors++; return; }
+      // Only skip rows with Excel errors (not blank rows — blanks mean "not selected")
+      var hasExcelError = cells.some(function(c) { return isExcelError(c); });
+      if (hasExcelError) { excelErrors++; return; }
       if (cells.length > maxCols) maxCols = cells.length;
       allRows.push(cells);
     });
