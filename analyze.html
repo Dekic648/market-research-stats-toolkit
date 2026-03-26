@@ -15318,7 +15318,24 @@
     gutter.className = 'line-numbers';
     wrap.appendChild(gutter);
 
+    var stripping = false;
     function updateLines() {
+      // Auto-strip leading blank lines (e.g., user deleted a header but empty line remains)
+      // This prevents row misalignment from orphaned empty first lines
+      if (!stripping) {
+        var val = textarea.value;
+        if (val.length > 0 && val[0] === '\n') {
+          var stripped = val.replace(/^\n+/, '');
+          if (stripped !== val) {
+            stripping = true;
+            var cursorPos = textarea.selectionStart;
+            var removed = val.length - stripped.length;
+            textarea.value = stripped;
+            textarea.selectionStart = textarea.selectionEnd = Math.max(0, cursorPos - removed);
+            stripping = false;
+          }
+        }
+      }
       var lines = textarea.value.split('\n');
       var nums = '';
       for (var i = 1; i <= Math.max(lines.length, 8); i++) nums += i + '\n';
