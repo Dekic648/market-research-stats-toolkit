@@ -656,3 +656,84 @@ NPS-specific output: #10, #120
 % vs Mean toggle: all grouped analyses
 Spearman option in correlation matrix: #36
 Proportion display for binary: #20
+
+---
+
+## TESTING ARCHITECTURE — 5 Layers
+
+The 3 disasters and how to catch them:
+
+### The 3 Disasters
+1. **I paste data → rows get mismatched** — due to app code structure, results are wrong
+2. **Statistics does wrong analysis** — wrong function called, wrong formula applied
+3. **Visual output has wrong data** — charts/tables show numbers that don't match computation
+
+### How world-class engineers solve this: 5 test layers
+
+```
+Layer 1: PARSING TESTS (automated)
+  What: raw pasted text → parsed arrays
+  Checks: row count correct, column count correct, no position shifts,
+          blanks preserved, headers detected, Excel errors filtered
+  Functions tested: parseMultiResponse, parseCategorical, parseValues, alignColumns
+  Catches: Disaster #1 (row mismatch)
+
+Layer 2: ROUTING TESTS (automated)
+  What: parsed data → which analysis function gets called
+  Checks: matrix data → runScaleComparison (not runMultiResponse)
+          checkbox data → runMultiResponse (not runScaleComparison)
+          grouping present → grouped analysis (not dropped)
+          independent groups → no alignColumns (not truncated)
+          paired data → alignColumns (not independent parse)
+  Functions tested: isScaleData detection, avgPerRow check, independent flag,
+                    grpLines.length matching, fill rate threshold
+  Catches: Disaster #2 (wrong analysis)
+
+Layer 3: COMPUTATION TESTS (automated — already built, 1400+ checks)
+  What: arrays → statistical results
+  Checks: p-values in [0,1], effect sizes in range, means correct,
+          known-answer datasets, mathematical identities (F=t² for k=2)
+  Functions tested: all StatsEngine.* functions
+  Catches: Disaster #2 (wrong calculation)
+
+Layer 4: HANDOFF TESTS (automated — NEW)
+  What: computation result → data passed to chart/table rendering
+  Checks: if computation says mean=2.45, the object passed to
+          drawBarChart contains 2.45 (not 167%, not NaN, not undefined)
+          All percentages passed to charts are ≤ 100
+          Group counts match respondent counts
+          Number of bars matches number of groups/items
+  Functions tested: the code between run*() result and drawBarChart/table HTML
+  Catches: Disaster #3 (visual output wrong)
+
+Layer 5: VISUAL REVIEW (human — the user)
+  What: eyes on screen, domain expertise
+  Checks: does the result MAKE SENSE for this survey question?
+          Is "mean 2.45 on a 1-5 scale" reasonable for this data?
+          Are the right segments showing?
+          Is the chart type appropriate?
+  Tool: test-scenarios.html — structured walkthrough of 120 scenarios
+  Catches: everything automated tests can't — domain interpretation
+```
+
+### What each layer catches from the 120 scenarios
+
+| Layer | Scenarios caught | Example |
+|---|---|---|
+| Layer 1 (Parsing) | #7, #11, #15, #23, #66, #67, #110, #112, #113 | Header in one column shifts all rows |
+| Layer 2 (Routing) | #1, #3, #4, #6, #17, #24, #25, #28, #40, #56, #65, #101 | Matrix data sent to checkbox function |
+| Layer 3 (Computation) | #30, #44, #45, #52, #63, #69, #107 | Overfit regression, European decimals |
+| Layer 4 (Handoff) | #8, #14, #33, #38, #41, #42, #79, #119 | Chart receives >100%, wrong variable passed |
+| Layer 5 (Visual/Human) | #10, #13, #19, #20, #36, #50, #120 + confirmation of all above | NPS needs Promoter/Detractor split, not generic top-box |
+
+### Layers 1-4 are fully automatable
+- Run with: `node test-scenarios.js`
+- Each scenario has known input data and expected decision/output
+- If any check fails, we know EXACTLY which scenario broke and at which layer
+
+### Layer 5 requires the user
+- Structured walkthrough page: test-scenarios.html
+- One scenario at a time, pass/fail/skip buttons
+- Progress saved to localStorage
+- Only checks "does this make sense?" — not debugging code
+- Results exportable for developer to act on
