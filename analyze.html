@@ -3180,7 +3180,8 @@
     var tabLines = rawLines.filter(function(l) { return l.indexOf('\t') > -1; });
     var hasMultipleColumns = tabLines.length > 2;
 
-    var lines = text.split(/[\n]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
+    var lines = text.split(/\n/).map(function(s) { return s.trim(); });
+    while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop(); // strip trailing only
     var nums = [];       // filtered: only valid numbers (for stats computation)
     var aligned = [];    // row-aligned: preserves position, null for non-numeric rows
     var bad = 0;
@@ -3780,11 +3781,13 @@
           var idx = ta.getAttribute('data-idx');
           var countEl = section.querySelector('.multi-count[data-idx="' + idx + '"]');
           if (allowMissing) {
-            var lines = ta.value.split(/[\n]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
+            var lines = ta.value.split(/\n/).map(function(s) { return s.trim(); });
+            while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+            var nonBlank = lines.filter(function(s) { return s !== ''; });
             var missing = 0;
-            lines.forEach(function(l) { if (l.toLowerCase() === 'na' || l.toLowerCase() === 'nan' || l === '.') missing++; else if (isNaN(parseFloat(l))) missing++; });
-            if (lines.length === 0) { countEl.textContent = 'No values detected'; countEl.className = 'value-count'; }
-            else { countEl.textContent = lines.length + ' value' + (lines.length !== 1 ? 's' : '') + (missing > 0 ? ' (' + missing + ' missing)' : ''); countEl.className = 'value-count valid'; }
+            nonBlank.forEach(function(l) { if (l.toLowerCase() === 'na' || l.toLowerCase() === 'nan' || l === '.') missing++; else if (isNaN(parseFloat(l))) missing++; });
+            if (nonBlank.length === 0) { countEl.textContent = 'No values detected'; countEl.className = 'value-count'; }
+            else { countEl.textContent = lines.length + ' row' + (lines.length !== 1 ? 's' : '') + ' (' + nonBlank.length + ' with values' + (missing > 0 ? ', ' + missing + ' missing' : '') + ')'; countEl.className = 'value-count valid'; }
           } else {
             updateCount(ta, countEl);
           }
@@ -3805,8 +3808,10 @@
         var lengths = [];
         section.querySelectorAll('.multi-data').forEach(function(ta) {
           if (allowMissing) {
-            var lines = ta.value.split(/[\n]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
-            if (lines.length < minVals) allGood = false;
+            var lines = ta.value.split(/\n/).map(function(s) { return s.trim(); });
+            while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+            var nonBlankCount = lines.filter(function(s) { return s !== ''; }).length;
+            if (nonBlankCount < minVals) allGood = false;
             if (lines.length > 0) lengths.push(lines.length);
           } else {
             var n = parseValues(ta.value).nums.length;
@@ -5897,7 +5902,8 @@
     function parseBinaryValues(text) {
       var lines = text.split(/\n/).map(function(s) { return s.trim(); });
       while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
-      return lines.filter(function(s) { return s !== '' && !isExcelError(s); });
+      // Preserve blank positions — map blanks/errors to null, keep row index intact
+      return lines.map(function(s) { return (s === '' || isExcelError(s)) ? null : s; });
     }
 
     function checkReady() {
