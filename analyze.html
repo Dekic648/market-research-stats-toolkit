@@ -3134,36 +3134,38 @@
   // Takes array of {text, type} where type is 'numeric' or 'categorical'.
   // Returns array of arrays, only rows where ALL columns have valid values.
   function alignColumns(columns) {
-    // Split each column into raw lines (filter empty)
+    // CRITICAL: Do NOT filter blank lines before alignment!
+    // Blanks are positional markers — removing them shifts row indices.
+    // Split each column into raw lines, preserving every line including blanks.
     var allLines = columns.map(function(col) {
-      return col.text.split(/\n/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
+      // Split on newlines, trim whitespace, but KEEP blank entries in place
+      return col.text.split(/\n/).map(function(s) { return s.trim(); });
     });
 
-    // Auto-detect header mismatch: if columns differ by exactly 1 row,
-    // check if the longer column's first line is a non-numeric header.
-    // If so, skip it to keep rows aligned.
-    var lengths = allLines.map(function(l) { return l.length; });
-    var minLen = Math.min.apply(null, lengths);
-    var maxLen = Math.max.apply(null, lengths);
+    // Strip trailing blank lines (from trailing newlines in paste) — these don't carry position info
+    allLines.forEach(function(lines) {
+      while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+    });
+
+    // Auto-detect headers: if first row of a column is non-numeric text, treat as header.
+    // Only skip if ALL columns have a first line (non-empty), and at least one is non-numeric text.
     var headerSkipped = [];
-    if (maxLen - minLen === 1) {
-      for (var c = 0; c < allLines.length; c++) {
-        if (allLines[c].length === maxLen) {
-          var first = allLines[c][0];
-          var isNumeric = !isNaN(parseFloat(first)) && isFinite(parseFloat(first));
-          if (!isNumeric && !isExcelError(first)) {
-            // First line is text (header) — skip it
-            headerSkipped.push(first);
-            allLines[c] = allLines[c].slice(1);
-          }
-        }
-      }
-    } else if (maxLen - minLen > 1) {
-      // Larger mismatch — try skipping headers from all columns that have non-numeric first lines
+    var allHaveFirstLine = allLines.every(function(lines) { return lines.length > 0 && lines[0] !== ''; });
+    if (allHaveFirstLine) {
+      var anyHeader = false;
       for (var c = 0; c < allLines.length; c++) {
         var first = allLines[c][0];
-        if (first && !(!isNaN(parseFloat(first)) && isFinite(parseFloat(first))) && !isExcelError(first)) {
-          headerSkipped.push(first);
+        var isNum = !isNaN(parseFloat(first)) && isFinite(parseFloat(first));
+        if (!isNum && !isExcelError(first)) { anyHeader = true; break; }
+      }
+      if (anyHeader) {
+        // Skip first row from ALL columns (keeps them aligned)
+        for (var c = 0; c < allLines.length; c++) {
+          var first = allLines[c][0];
+          var isNum = !isNaN(parseFloat(first)) && isFinite(parseFloat(first));
+          if (!isNum && !isExcelError(first)) headerSkipped.push(first);
+        }
+        for (var c = 0; c < allLines.length; c++) {
           allLines[c] = allLines[c].slice(1);
         }
       }
@@ -3182,8 +3184,12 @@
         headerSkipped.map(function(h) { return '<strong>\u201c' + h.substring(0, 30) + (h.length > 30 ? '...' : '') + '\u201d</strong>'; }).join(', ');
     }
 
+    // Row-by-row alignment: walk ALL columns simultaneously.
+    // Row index is sacred — row 5 in column A always pairs with row 5 in column B.
+    // If ANY column has a blank, Excel error, or unparseable value on a row, skip that row in ALL columns.
     var maxRows = Math.max.apply(null, allLines.map(function(l) { return l.length; }));
     var results = columns.map(function() { return []; });
+    var skippedRows = 0;
     for (var r = 0; r < maxRows; r++) {
       var allValid = true;
       var rowValues = [];
@@ -3203,8 +3209,24 @@
       }
       if (allValid && rowValues.length === columns.length) {
         for (var c = 0; c < columns.length; c++) results[c].push(rowValues[c]);
+      } else {
+        skippedRows++;
       }
     }
+
+    // Show skipped-rows notice if any rows were dropped
+    if (skippedRows > 0) {
+      var skipNotice = document.querySelector('.rows-skipped-notice');
+      if (!skipNotice) {
+        skipNotice = document.createElement('div');
+        skipNotice.className = 'rows-skipped-notice';
+        skipNotice.style.cssText = 'font-size:0.78rem;padding:6px 10px;margin:0.5rem 0;border-radius:6px;background:var(--amber-soft, rgba(245,158,11,0.08));border:1px solid var(--amber, #f59e0b);color:var(--amber, #f59e0b);text-align:center;';
+        container.appendChild(skipNotice);
+      }
+      var usedRows = results[0].length;
+      skipNotice.textContent = usedRows + ' matched rows used, ' + skippedRows + ' row' + (skippedRows !== 1 ? 's' : '') + ' skipped (blank, error, or non-numeric in one or more columns).';
+    }
+
     return results;
   }
 
@@ -4323,6 +4345,10 @@
     if (!c) return;
     var ctx = c.ctx, w = c.w, h = c.h;
     var colors = getColors();
+
+    // Filter out bars with NaN/undefined values
+    bars = bars.filter(function(b) { return typeof b.value === 'number' && isFinite(b.value); });
+    if (bars.length === 0) return;
 
     var allVals = [];
     bars.forEach(function(b) {
@@ -6083,26 +6109,31 @@
     var maxCols = 10;
 
     function saveGridData() {
-      var saved = [];
+      var saved = { cols: [], k: 3 };
       section.querySelectorAll('.multi-data').forEach(function(ta, i) {
         var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
-        saved.push({ data: ta.value, desc: descEl ? descEl.value : '' });
+        saved.cols.push({ data: ta.value, desc: descEl ? descEl.value : '' });
       });
+      var kEl = section.querySelector('#kInput');
+      if (kEl) saved.k = parseInt(kEl.value) || 3;
       return saved;
     }
     function restoreGridData(saved) {
-      saved.forEach(function(s, i) {
+      saved.cols.forEach(function(s, i) {
         var ta = section.querySelector('.multi-data[data-idx="' + i + '"]');
         var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
         if (ta && s.data) ta.value = s.data;
         if (descEl && s.desc) descEl.value = s.desc;
       });
+      var kEl = section.querySelector('#kInput');
+      if (kEl && saved.k) kEl.value = saved.k;
     }
 
     function buildGrid(savedData) {
+      var kVal = savedData ? savedData.k : 3;
       var gridHtml =
         '<div class="analysis-controls">' +
-          '<label>Number of clusters (K): <input type="number" id="kInput" min="2" max="8" value="3"></label>' +
+          '<label>Number of clusters (K): <input type="number" id="kInput" min="2" max="8" value="' + kVal + '"></label>' +
         '</div>';
       gridHtml += '<div class="input-grid multi-col">';
       for (var i = 0; i < colCount; i++) {
@@ -7042,26 +7073,31 @@
     var maxCols = 20;
 
     function saveGridData() {
-      var saved = [];
+      var saved = { cols: [], nFactors: 2 };
       section.querySelectorAll('.multi-data').forEach(function(ta, i) {
         var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
-        saved.push({ data: ta.value, desc: descEl ? descEl.value : '' });
+        saved.cols.push({ data: ta.value, desc: descEl ? descEl.value : '' });
       });
+      var nfEl = section.querySelector('#nFactorsInput');
+      if (nfEl) saved.nFactors = parseInt(nfEl.value) || 2;
       return saved;
     }
     function restoreGridData(saved) {
-      saved.forEach(function(s, i) {
+      saved.cols.forEach(function(s, i) {
         var ta = section.querySelector('.multi-data[data-idx="' + i + '"]');
         var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
         if (ta && s.data) ta.value = s.data;
         if (descEl && s.desc) descEl.value = s.desc;
       });
+      var nfEl = section.querySelector('#nFactorsInput');
+      if (nfEl && saved.nFactors) nfEl.value = saved.nFactors;
     }
 
     function buildGrid(savedData) {
+      var nfVal = savedData ? savedData.nFactors : 2;
       var gridHtml =
         '<div class="analysis-controls">' +
-          '<label>Number of factors: <input type="number" id="nFactorsInput" min="1" max="10" value="2"></label>' +
+          '<label>Number of factors: <input type="number" id="nFactorsInput" min="1" max="10" value="' + nfVal + '"></label>' +
           '<span style="font-size:0.78rem;color:var(--text-2)">Tip: leave at 2 or set based on theory</span>' +
         '</div>';
       gridHtml += '<div class="input-grid multi-col">';
@@ -9438,12 +9474,50 @@
      Difference-in-Differences
      ================================================================== */
   function runDiffInDiff(outcome, treatment, time) {
-    var minLen = Math.min(outcome.length, treatment.length, time.length);
-    outcome = outcome.slice(0, minLen);
-    treatment = treatment.slice(0, minLen);
-    time = time.slice(0, minLen);
+    // Validate: treatment must be 0/1, time must be 0/1
+    var validTreat = treatment.every(function(v) { return v === 0 || v === 1; });
+    var validTime = time.every(function(v) { return v === 0 || v === 1; });
+    if (!validTreat || !validTime) {
+      addAssistantMessage('<div class="results-section"><div class="result-card"><div class="result-card-title">Data Issue</div>' +
+        '<p>Treatment group must contain only <strong>0</strong> (control) and <strong>1</strong> (treatment), and Time period must contain only <strong>0</strong> (before) and <strong>1</strong> (after).</p>' +
+        '<p>Check your data and make sure you have rows for all four combinations: Control-Before, Control-After, Treatment-Before, Treatment-After.</p></div></div>');
+      return;
+    }
+
+    // Check all 4 cells have data
+    var hasCells = [false, false, false, false];
+    for (var i = 0; i < outcome.length; i++) {
+      if (treatment[i] === 0 && time[i] === 0) hasCells[0] = true;
+      else if (treatment[i] === 0 && time[i] === 1) hasCells[1] = true;
+      else if (treatment[i] === 1 && time[i] === 0) hasCells[2] = true;
+      else hasCells[3] = true;
+    }
+    if (hasCells.indexOf(false) !== -1) {
+      var missing = [];
+      if (!hasCells[0]) missing.push('Control-Before');
+      if (!hasCells[1]) missing.push('Control-After');
+      if (!hasCells[2]) missing.push('Treatment-Before');
+      if (!hasCells[3]) missing.push('Treatment-After');
+      addAssistantMessage('<div class="results-section"><div class="result-card"><div class="result-card-title">Missing Groups</div>' +
+        '<p>DiD requires data in all four cells (Control-Before, Control-After, Treatment-Before, Treatment-After).</p>' +
+        '<p>Missing: <strong>' + missing.join(', ') + '</strong>. Check that your treatment and time columns have both 0s and 1s.</p></div></div>');
+      return;
+    }
 
     var r = StatsEngine.diffInDiff(outcome, treatment, time);
+    if (r.error) {
+      addAssistantMessage('<div class="results-section"><div class="result-card"><div class="result-card-title">Analysis Error</div><p>' + escHtml(r.error) + '</p></div></div>');
+      return;
+    }
+
+    // Check for degenerate results (e.g., 1 obs per cell → no variance → NaN)
+    if (!isFinite(r.didP) || !isFinite(r.didT)) {
+      addAssistantMessage('<div class="results-section"><div class="result-card"><div class="result-card-title">Not Enough Data</div>' +
+        '<p>The model could not compute standard errors — this typically happens when there is only <strong>1 observation per group</strong> or when the outcome has no variance within groups.</p>' +
+        '<p>DiD needs multiple observations per cell (Control-Before, Control-After, Treatment-Before, Treatment-After). Try adding more data — at least 5 per group is recommended.</p></div></div>');
+      return;
+    }
+
     var pc = pClass(r.didP);
 
     var sig = r.didP < 0.05;
@@ -9818,27 +9892,37 @@
     var maxCols = 10;
 
     function saveGridData() {
-      var saved = [];
+      var saved = { cols: [], k: 3, linkage: 'average' };
       section.querySelectorAll('.multi-data').forEach(function(ta, i) {
         var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
-        saved.push({ data: ta.value, desc: descEl ? descEl.value : '' });
+        saved.cols.push({ data: ta.value, desc: descEl ? descEl.value : '' });
       });
+      var kEl = section.querySelector('#kInput');
+      if (kEl) saved.k = parseInt(kEl.value) || 3;
+      var linkEl = section.querySelector('#linkageSelect');
+      if (linkEl) saved.linkage = linkEl.value;
       return saved;
     }
     function restoreGridData(saved) {
-      saved.forEach(function(s, i) {
+      saved.cols.forEach(function(s, i) {
         var ta = section.querySelector('.multi-data[data-idx="' + i + '"]');
         var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
         if (ta && s.data) ta.value = s.data;
         if (descEl && s.desc) descEl.value = s.desc;
       });
+      var kEl = section.querySelector('#kInput');
+      if (kEl && saved.k) kEl.value = saved.k;
+      var linkEl = section.querySelector('#linkageSelect');
+      if (linkEl && saved.linkage) linkEl.value = saved.linkage;
     }
 
     function buildGrid(savedData) {
+      var kVal = savedData ? savedData.k : 3;
+      var linkVal = savedData ? savedData.linkage : 'average';
       var gridHtml =
         '<div class="analysis-controls">' +
-          '<label>Linkage method: <select id="linkageSelect"><option value="average" selected>Average</option><option value="single">Single</option><option value="complete">Complete</option></select></label>' +
-          '<label>Number of clusters (K): <input type="number" id="kInput" min="2" max="8" value="3"></label>' +
+          '<label>Linkage method: <select id="linkageSelect"><option value="average"' + (linkVal === 'average' ? ' selected' : '') + '>Average</option><option value="single"' + (linkVal === 'single' ? ' selected' : '') + '>Single</option><option value="complete"' + (linkVal === 'complete' ? ' selected' : '') + '>Complete</option></select></label>' +
+          '<label>Number of clusters (K): <input type="number" id="kInput" min="2" max="8" value="' + kVal + '"></label>' +
         '</div>';
       gridHtml += '<div class="input-grid multi-col">';
       for (var i = 0; i < colCount; i++) {
@@ -10431,7 +10515,34 @@
     var maxCovs = 8;
     var hasOutcome = false;
 
-    function buildGrid() {
+    function savePropData() {
+      var saved = { treatment: '', outcome: '', covs: [] };
+      var treatEl = section.querySelector('.prop-data[data-idx="treatment"]');
+      if (treatEl) saved.treatment = treatEl.value;
+      var outEl = section.querySelector('.prop-data[data-idx="outcome"]');
+      if (outEl) saved.outcome = outEl.value;
+      for (var i = 0; i < covCount; i++) {
+        var ta = section.querySelector('.prop-data[data-idx="cov_' + i + '"]');
+        var desc = section.querySelector('.prop-desc[data-idx="cov_' + i + '"]');
+        saved.covs.push({ data: ta ? ta.value : '', desc: desc ? desc.value : '' });
+      }
+      return saved;
+    }
+    function restorePropData(saved) {
+      if (!saved) return;
+      var treatEl = section.querySelector('.prop-data[data-idx="treatment"]');
+      if (treatEl && saved.treatment) treatEl.value = saved.treatment;
+      var outEl = section.querySelector('.prop-data[data-idx="outcome"]');
+      if (outEl && saved.outcome) outEl.value = saved.outcome;
+      saved.covs.forEach(function(s, i) {
+        var ta = section.querySelector('.prop-data[data-idx="cov_' + i + '"]');
+        var desc = section.querySelector('.prop-desc[data-idx="cov_' + i + '"]');
+        if (ta && s.data) ta.value = s.data;
+        if (desc && s.desc) desc.value = s.desc;
+      });
+    }
+
+    function buildGrid(savedData) {
       var gridHtml = '<div class="input-grid multi-col">';
       // Treatment column
       gridHtml +=
@@ -10465,6 +10576,7 @@
       gridHtml += '</div>';
       gridHtml += '<button class="run-btn" id="runBtn" disabled>Run Analysis</button>';
       section.innerHTML = gridHtml;
+      if (savedData) restorePropData(savedData);
     }
 
     buildGrid();
@@ -10496,21 +10608,29 @@
       }
 
       var addBtn = section.querySelector('#addCovBtn');
-      if (addBtn) addBtn.addEventListener('click', function() { covCount++; buildGrid(); bindEvents(); scrollToBottom(); });
+      if (addBtn) addBtn.addEventListener('click', function() { var saved = savePropData(); covCount++; buildGrid(saved); bindEvents(); scrollToBottom(); });
       var removeBtn = section.querySelector('#removeCovBtn');
-      if (removeBtn) removeBtn.addEventListener('click', function() { if (covCount > 1) { covCount--; buildGrid(); bindEvents(); scrollToBottom(); } });
+      if (removeBtn) removeBtn.addEventListener('click', function() { if (covCount > 1) { var saved = savePropData(); covCount--; buildGrid(saved); bindEvents(); scrollToBottom(); } });
 
       runBtn.addEventListener('click', function() {
-        var treatment = parseValues(section.querySelector('.prop-data[data-idx="treatment"]').value).nums;
-        var covariates = [];
+        // Build column definitions for alignColumns to ensure row alignment
+        var colDefs = [];
         var covLabels = [];
+        colDefs.push({ text: section.querySelector('.prop-data[data-idx="treatment"]').value, type: 'numeric' });
         for (var i = 0; i < covCount; i++) {
-          covariates.push(parseValues(section.querySelector('.prop-data[data-idx="cov_' + i + '"]').value).nums);
+          colDefs.push({ text: section.querySelector('.prop-data[data-idx="cov_' + i + '"]').value, type: 'numeric' });
           var descEl = section.querySelector('.prop-desc[data-idx="cov_' + i + '"]');
           covLabels.push(descEl ? (descEl.value || 'Covariate ' + (i + 1)) : 'Covariate ' + (i + 1));
         }
         var outcomeEl = section.querySelector('.prop-data[data-idx="outcome"]');
-        var outcome = outcomeEl ? parseValues(outcomeEl.value).nums : [];
+        var hasOutcomeData = outcomeEl && outcomeEl.value.trim() !== '';
+        if (hasOutcomeData) colDefs.push({ text: outcomeEl.value, type: 'numeric' });
+
+        var aligned = alignColumns(colDefs);
+        var treatment = aligned[0];
+        var covariates = [];
+        for (var i = 0; i < covCount; i++) covariates.push(aligned[i + 1]);
+        var outcome = hasOutcomeData ? aligned[aligned.length - 1] : [];
 
         // Validate treatment is 0/1
         for (var i = 0; i < treatment.length; i++) {
@@ -11789,7 +11909,21 @@
     var attrCount = 2;
     var maxAttrs = 8;
 
-    function buildGrid() {
+    function saveConjointData() {
+      var saved = [];
+      section.querySelectorAll('.conjoint-data').forEach(function(ta) {
+        saved.push(ta.value);
+      });
+      return saved;
+    }
+    function restoreConjointData(saved) {
+      if (!saved) return;
+      section.querySelectorAll('.conjoint-data').forEach(function(ta, i) {
+        if (i < saved.length && saved[i]) ta.value = saved[i];
+      });
+    }
+
+    function buildGrid(savedData) {
       var gridHtml = '<div class="input-grid multi-col">';
       gridHtml +=
         '<div class="group-card">' +
@@ -11812,6 +11946,7 @@
       gridHtml += '</div>';
       gridHtml += '<button class="run-btn" id="runBtn" disabled>Run Conjoint Analysis</button>';
       section.innerHTML = gridHtml;
+      if (savedData) restoreConjointData(savedData);
     }
 
     buildGrid();
@@ -11858,21 +11993,26 @@
 
       var addBtn = section.querySelector('#addAttrBtn');
       if (addBtn) addBtn.addEventListener('click', function() {
+        var saved = saveConjointData();
         attrCount++;
-        buildGrid();
+        buildGrid(saved);
         bindEvents();
       });
       var removeBtn = section.querySelector('#removeAttrBtn');
       if (removeBtn) removeBtn.addEventListener('click', function() {
-        if (attrCount > 2) { attrCount--; buildGrid(); bindEvents(); }
+        if (attrCount > 2) { var saved = saveConjointData(); attrCount--; buildGrid(saved); bindEvents(); }
       });
 
       runBtn.addEventListener('click', function() {
-        var ratings = parseValues(section.querySelector('.conjoint-data[data-idx="0"]').value).nums;
-        var attrs = [];
+        var colDefs = [];
+        colDefs.push({ text: section.querySelector('.conjoint-data[data-idx="0"]').value, type: 'numeric' });
         for (var i = 1; i <= attrCount; i++) {
-          attrs.push(parseCategorical(section.querySelector('.conjoint-data[data-idx="' + i + '"]').value));
+          colDefs.push({ text: section.querySelector('.conjoint-data[data-idx="' + i + '"]').value, type: 'categorical' });
         }
+        var aligned = alignColumns(colDefs);
+        var ratings = aligned[0];
+        var attrs = [];
+        for (var i = 1; i <= attrCount; i++) attrs.push(aligned[i]);
         runBtn.disabled = true;
         runBtn.textContent = 'Running...';
         runConjoint(ratings, attrs);
@@ -12171,13 +12311,32 @@
     var attrCount = 2;
     var maxAttrs = 8;
 
-    function buildGrid() {
+    function saveDCData() {
+      var saved = { nAlts: 3, cols: [] };
+      var nAltsEl = section.querySelector('#nAltsSelect');
+      if (nAltsEl) saved.nAlts = parseInt(nAltsEl.value) || 3;
+      section.querySelectorAll('.dc-data').forEach(function(ta) {
+        saved.cols.push(ta.value);
+      });
+      return saved;
+    }
+    function restoreDCData(saved) {
+      if (!saved) return;
+      var nAltsEl = section.querySelector('#nAltsSelect');
+      if (nAltsEl) nAltsEl.value = saved.nAlts;
+      section.querySelectorAll('.dc-data').forEach(function(ta, i) {
+        if (i < saved.cols.length && saved.cols[i]) ta.value = saved.cols[i];
+      });
+    }
+
+    function buildGrid(savedData) {
+      var nAltsVal = savedData ? savedData.nAlts : 3;
       var gridHtml =
         '<div class="choice-controls">' +
           '<label>Alternatives per choice set:</label>' +
           '<select id="nAltsSelect">';
       for (var a = 2; a <= 5; a++) {
-        gridHtml += '<option value="' + a + '"' + (a === 3 ? ' selected' : '') + '>' + a + '</option>';
+        gridHtml += '<option value="' + a + '"' + (a === nAltsVal ? ' selected' : '') + '>' + a + '</option>';
       }
       gridHtml += '</select></div>';
       gridHtml += '<div class="input-grid multi-col">';
@@ -12202,6 +12361,7 @@
       gridHtml += '</div>';
       gridHtml += '<button class="run-btn" id="runBtn" disabled>Run Discrete Choice Model</button>';
       section.innerHTML = gridHtml;
+      if (savedData) restoreDCData(savedData);
     }
 
     buildGrid();
@@ -12241,17 +12401,22 @@
 
       var addBtn = section.querySelector('#addDCAttrBtn');
       if (addBtn) addBtn.addEventListener('click', function() {
+        var saved = saveDCData();
         attrCount++;
-        buildGrid();
+        buildGrid(saved);
         bindEvents();
       });
       var removeBtn = section.querySelector('#removeDCAttrBtn');
       if (removeBtn) removeBtn.addEventListener('click', function() {
-        if (attrCount > 1) { attrCount--; buildGrid(); bindEvents(); }
+        if (attrCount > 1) { var saved = saveDCData(); attrCount--; buildGrid(saved); bindEvents(); }
       });
 
       runBtn.addEventListener('click', function() {
         var nAlts = parseInt(section.querySelector('#nAltsSelect').value) || 3;
+        // Note: Discrete Choice has a different row structure (nAlts rows per choice set for attrs,
+        // but only 1 row per choice set for chosen). alignColumns won't work here because
+        // chosen and attrs have intentionally different row counts. Use parseValues independently
+        // but this is safe because the data structure requires exact row counts (no sparse blanks).
         var chosen = parseValues(section.querySelector('.dc-data[data-idx="0"]').value).nums;
         var attrs = [];
         for (var i = 1; i <= attrCount; i++) {
@@ -12414,12 +12579,14 @@
     var colCount = 3;
     var maxCols = 20;
 
+    var savedNClasses = 2;
+
     function buildGrid() {
       var gridHtml = '<div class="analysis-controls">' +
         '<label>Number of classes:</label>' +
         '<select id="lcaClassesSelect">';
       for (var c = 2; c <= 6; c++) {
-        gridHtml += '<option value="' + c + '"' + (c === 2 ? ' selected' : '') + '>' + c + '</option>';
+        gridHtml += '<option value="' + c + '"' + (c === savedNClasses ? ' selected' : '') + '>' + c + '</option>';
       }
       gridHtml += '</select></div>';
       gridHtml += '<div class="input-grid multi-col">';
@@ -12487,6 +12654,8 @@
           var descEl = section.querySelector('.lca-desc[data-idx="' + i + '"]');
           saved.push({ data: ta.value, desc: descEl ? descEl.value : '' });
         });
+        var ncEl = section.querySelector('#lcaClassesSelect');
+        if (ncEl) savedNClasses = parseInt(ncEl.value) || 2;
         return saved;
       }
       function restoreLCAData(saved) {
@@ -13543,7 +13712,38 @@
     var predCount = 1;
     var maxPreds = 8;
 
-    function buildGrid() {
+    function saveMEData() {
+      var saved = { group: '', outcome: '', outcomeDesc: '', preds: [] };
+      var grp = section.querySelector('.me-data[data-idx="group"]');
+      if (grp) saved.group = grp.value;
+      var out = section.querySelector('.me-data[data-idx="outcome"]');
+      if (out) saved.outcome = out.value;
+      var outDesc = section.querySelector('.me-desc[data-idx="outcome"]');
+      if (outDesc) saved.outcomeDesc = outDesc.value;
+      for (var i = 0; i < predCount; i++) {
+        var ta = section.querySelector('.me-data[data-idx="pred' + i + '"]');
+        var desc = section.querySelector('.me-desc[data-idx="pred' + i + '"]');
+        saved.preds.push({ data: ta ? ta.value : '', desc: desc ? desc.value : '' });
+      }
+      return saved;
+    }
+    function restoreMEData(saved) {
+      if (!saved) return;
+      var grp = section.querySelector('.me-data[data-idx="group"]');
+      if (grp && saved.group) grp.value = saved.group;
+      var out = section.querySelector('.me-data[data-idx="outcome"]');
+      if (out && saved.outcome) out.value = saved.outcome;
+      var outDesc = section.querySelector('.me-desc[data-idx="outcome"]');
+      if (outDesc && saved.outcomeDesc) outDesc.value = saved.outcomeDesc;
+      saved.preds.forEach(function(s, i) {
+        var ta = section.querySelector('.me-data[data-idx="pred' + i + '"]');
+        var desc = section.querySelector('.me-desc[data-idx="pred' + i + '"]');
+        if (ta && s.data) ta.value = s.data;
+        if (desc && s.desc) desc.value = s.desc;
+      });
+    }
+
+    function buildGrid(savedData) {
       var gridHtml = '<div class="input-grid multi-col">';
       // Grouping variable first
       gridHtml +=
@@ -13579,6 +13779,7 @@
       gridHtml += '</div>';
       gridHtml += '<button class="run-btn" id="runBtn" disabled>Run Mixed-Effects Model</button>';
       section.innerHTML = gridHtml;
+      if (savedData) restoreMEData(savedData);
     }
 
     buildGrid();
@@ -13640,9 +13841,9 @@
       });
 
       var addBtn = section.querySelector('#addMEPredBtn');
-      if (addBtn) addBtn.addEventListener('click', function() { predCount++; buildGrid(); bindEvents(); scrollToBottom(); });
+      if (addBtn) addBtn.addEventListener('click', function() { var saved = saveMEData(); predCount++; buildGrid(saved); bindEvents(); scrollToBottom(); });
       var removeBtn = section.querySelector('#removeMEPredBtn');
-      if (removeBtn) removeBtn.addEventListener('click', function() { if (predCount > 1) { predCount--; buildGrid(); bindEvents(); scrollToBottom(); } });
+      if (removeBtn) removeBtn.addEventListener('click', function() { if (predCount > 1) { var saved = saveMEData(); predCount--; buildGrid(saved); bindEvents(); scrollToBottom(); } });
 
       runBtn.addEventListener('click', function() {
         var colDefs = [];
