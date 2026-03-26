@@ -3807,18 +3807,37 @@
         var groups = [];
         var labels = [];
         if (allowMissing) {
+          // Parse each column positionally (preserve blank lines for row alignment)
+          var rawCols = [];
           section.querySelectorAll('.multi-data').forEach(function(ta, i) {
-            // Parse with NaN for missing
-            var lines = ta.value.split(/[\n]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
-            var vals = [];
-            lines.forEach(function(l) {
-              if (l.toLowerCase() === 'na' || l.toLowerCase() === 'nan' || l === '.') vals.push(NaN);
-              else { var n = parseFloat(l); vals.push(n); }
-            });
-            groups.push(vals);
+            var lines = ta.value.split(/\n/).map(function(s) { return s.trim(); });
+            // Strip trailing blanks only
+            while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+            rawCols.push(lines);
             var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
             labels.push(descEl ? (descEl.value || 'Group ' + (i + 1)) : 'Group ' + (i + 1));
           });
+          // Walk all columns row by row with positional alignment
+          var maxRows = 0;
+          rawCols.forEach(function(c) { if (c.length > maxRows) maxRows = c.length; });
+          var aligned = rawCols.map(function() { return []; });
+          for (var r = 0; r < maxRows; r++) {
+            var allBlank = true;
+            for (var c = 0; c < rawCols.length; c++) {
+              if (r < rawCols[c].length && rawCols[c][r] !== '') { allBlank = false; break; }
+            }
+            if (allBlank) continue; // skip rows where ALL columns are blank
+            for (var c = 0; c < rawCols.length; c++) {
+              var cell = r < rawCols[c].length ? rawCols[c][r] : '';
+              if (cell === '' || cell.toLowerCase() === 'na' || cell.toLowerCase() === 'nan' || cell === '.') {
+                aligned[c].push(null);
+              } else {
+                var n = parseFloat(cell);
+                aligned[c].push(isNaN(n) ? null : n);
+              }
+            }
+          }
+          groups = aligned;
         } else {
           var colDefs = [];
           section.querySelectorAll('.multi-data').forEach(function(ta, i) {
@@ -7844,11 +7863,16 @@
 
     // Parse grouping: supports multi-column paste (tabs) by combining into "A | B"
     function parseGrouping(text) {
-      var lines = text.split(/\n/).filter(function(l) { return l.trim() !== '' && !isExcelError(l.trim()); });
+      var lines = text.split(/\n/).map(function(l) { return l.trim(); });
+      // Strip trailing blank lines only
+      while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+      // Filter Excel errors but preserve blank lines as positional markers
+      lines = lines.map(function(l) { return isExcelError(l) ? '' : l; });
       var hasTabs = lines.some(function(l) { return l.indexOf('\t') > -1; });
-      if (!hasTabs) return lines.map(function(l) { return l.trim(); });
+      if (!hasTabs) return lines;
       // Multi-column grouping: combine columns with " | "
       return lines.map(function(l) {
+        if (l === '') return '';
         return l.split('\t').map(function(c) { return c.trim(); }).filter(function(c) { return c !== ''; }).join(' | ');
       });
     }
@@ -12205,7 +12229,7 @@
         for (var i = 1; i <= attrCount; i++) {
           var ta = section.querySelector('.conjoint-data[data-idx="' + i + '"]');
           var vals = parseCategorical(ta.value);
-          if (vals.length !== ratings.length) { allGood = false; break; }
+          if (vals.length < 4) { allGood = false; break; }
         }
         runBtn.disabled = !allGood;
       }
@@ -12859,13 +12883,10 @@
 
       function checkReady() {
         var allGood = true;
-        var firstLen = -1;
         section.querySelectorAll('.lca-data').forEach(function(ta) {
           // Accept any values — will be converted to binary (0 = falsy, non-zero = 1) at run time
           var lines = ta.value.split(/\n/).filter(function(l) { return l.trim() !== ''; });
           if (lines.length < 5) { allGood = false; return; }
-          if (firstLen === -1) firstLen = lines.length;
-          else if (lines.length !== firstLen) allGood = false;
         });
         runBtn.disabled = !allGood;
       }
@@ -13248,12 +13269,9 @@
 
       function checkReady() {
         var allGood = true;
-        var firstLen = -1;
         section.querySelectorAll('textarea.cfa-data[data-idx]').forEach(function(ta) {
           var vals = parseValues(ta.value).nums;
           if (vals.length < 5) { allGood = false; return; }
-          if (firstLen === -1) firstLen = vals.length;
-          else if (vals.length !== firstLen) allGood = false;
         });
         // Check model spec
         var model = parseCFAModel(section.querySelector('#cfaModelSpec').value);
@@ -13671,13 +13689,10 @@
 
       function checkReady() {
         var allGood = true;
-        var firstLen = -1;
         section.querySelectorAll('.irt-data').forEach(function(ta) {
           // Accept any values — will be converted to binary (0 = 0, non-zero = 1) at run time
           var lines = ta.value.split(/\n/).filter(function(l) { return l.trim() !== ''; });
           if (lines.length < 5) { allGood = false; return; }
-          if (firstLen === -1) firstLen = lines.length;
-          else if (lines.length !== firstLen) allGood = false;
         });
         runBtn.disabled = !allGood;
       }
@@ -14039,12 +14054,9 @@
         var outcome = parseValues(outcomeTa.value).nums;
         if (outcome.length < 5) allGood = false;
 
-        if (groups.length !== outcome.length && groups.length > 0 && outcome.length > 0) allGood = false;
-
         section.querySelectorAll('.me-pred').forEach(function(ta) {
           var vals = parseValues(ta.value).nums;
           if (vals.length < 5) allGood = false;
-          if (vals.length !== outcome.length && vals.length > 0 && outcome.length > 0) allGood = false;
         });
 
         // Need at least 2 groups
@@ -14761,8 +14773,10 @@
       // Align grouping with data rows if lengths differ
       if (grpLines.length > 0 && grpLines.length !== parsed.nRows) {
         // The data may have had a header row stripped — align by raw line count
-        var dataRawLines = dataEl.value.split(/\n/).filter(function(l) { return l.trim() !== ''; });
-        var grpRawLines = grpEl.value.split(/\n/).filter(function(l) { return l.trim() !== ''; });
+        var dataRawLines = dataEl.value.split(/\n/).map(function(l) { return l.trim(); });
+        while (dataRawLines.length > 0 && dataRawLines[dataRawLines.length - 1] === '') dataRawLines.pop();
+        var grpRawLines = grpEl.value.split(/\n/).map(function(l) { return l.trim(); });
+        while (grpRawLines.length > 0 && grpRawLines[grpRawLines.length - 1] === '') grpRawLines.pop();
         var alignedGrp = [];
         var maxLen = Math.max(dataRawLines.length, grpRawLines.length);
         var dataIdx = 0;
