@@ -3379,7 +3379,8 @@
     };
   }
 
-  var CHART_COLORS = ['#D4587A','#E08860','#3a9a5c','#6C63FF','#c08a30','#2ecc71','#e74c3c','#9b59b6','#1abc9c','#f39c12'];
+  // Editorial palette — muted, professional tones inspired by FT/Economist
+  var CHART_COLORS = ['#5B8DB8','#D4766E','#6BAF7A','#E8A854','#9A7EC7','#C27BA0','#4AADA5','#D4915E','#7A8FC2','#8DB87A'];
 
   /* ==================================================================
      Launch Method — central dispatcher
@@ -4388,14 +4389,17 @@
 
   // bars = [{label, value, sd, color}]
   function drawBarChart(canvasId, bars) {
-    var c = initCanvas(canvasId, 500, Math.max(120, bars.length * 55 + 30));
-    if (!c) return;
-    var ctx = c.ctx, w = c.w, h = c.h;
-    var colors = getColors();
-
     // Filter out bars with NaN/undefined values
     bars = bars.filter(function(b) { return typeof b.value === 'number' && isFinite(b.value); });
     if (bars.length === 0) return;
+
+    var barHeight = 32, barGap = 14, topPad = 8, bottomPad = 20;
+    var leftPad = 130, rightPad = 65;
+    var totalH = Math.max(120, bars.length * (barHeight + barGap) + topPad + bottomPad);
+    var c = initCanvas(canvasId, 500, totalH);
+    if (!c) return;
+    var ctx = c.ctx, w = c.w, h = c.h;
+    var colors = getColors();
 
     var allVals = [];
     bars.forEach(function(b) {
@@ -4407,71 +4411,135 @@
     var minVal = Math.min.apply(null, allVals);
     var maxVal = Math.max.apply(null, allVals);
     var range = maxVal - minVal || 1;
-    var rangeMin = minVal - range * 0.1;
-    var rangeMax = maxVal + range * 0.15;
-
-    var leftPad = 130, rightPad = 60, topPad = 10;
-    var barHeight = 28, barGap = 22;
+    var rangeMin = minVal - range * 0.08;
+    var rangeMax = maxVal + range * 0.18;
     var chartW = w - leftPad - rightPad;
+    var chartBottom = topPad + bars.length * (barHeight + barGap);
 
     function xPos(val) { return leftPad + ((val - rangeMin) / (rangeMax - rangeMin)) * chartW; }
 
-    // Zero line
+    // Subtle gridlines
+    var niceSteps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000];
+    var step = 1;
+    for (var si = 0; si < niceSteps.length; si++) {
+      if (range / niceSteps[si] <= 6) { step = niceSteps[si]; break; }
+    }
+    var gridStart = Math.ceil(rangeMin / step) * step;
+    ctx.strokeStyle = colors.border;
+    ctx.globalAlpha = 0.3;
+    ctx.lineWidth = 0.5;
+    ctx.setLineDash([3, 3]);
+    for (var gv = gridStart; gv <= rangeMax; gv += step) {
+      var gx = xPos(gv);
+      if (gx > leftPad + 5 && gx < w - rightPad - 5) {
+        ctx.beginPath();
+        ctx.moveTo(gx, topPad - 2);
+        ctx.lineTo(gx, chartBottom);
+        ctx.stroke();
+      }
+    }
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+
+    // Baseline at zero
     if (rangeMin <= 0 && rangeMax >= 0) {
-      ctx.strokeStyle = colors.border;
+      ctx.strokeStyle = colors.text;
+      ctx.globalAlpha = 0.2;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(xPos(0), topPad - 5);
-      ctx.lineTo(xPos(0), topPad + bars.length * (barHeight + barGap));
+      ctx.moveTo(xPos(0), topPad - 2);
+      ctx.lineTo(xPos(0), chartBottom);
       ctx.stroke();
+      ctx.globalAlpha = 1;
     }
+
+    // Find max value for optional highlight
+    var maxBarVal = -Infinity, maxBarIdx = 0;
+    bars.forEach(function(b, i) { if (b.value > maxBarVal) { maxBarVal = b.value; maxBarIdx = i; } });
 
     bars.forEach(function(bar, i) {
       var y = topPad + i * (barHeight + barGap);
       var barStart = xPos(Math.min(0, bar.value));
       var barEnd = xPos(Math.max(0, bar.value));
-      var bw = barEnd - barStart;
+      var bw = Math.max(1, barEnd - barStart);
 
+      // Bar fill — highest bar gets full opacity, others slightly muted
       ctx.fillStyle = bar.color || CHART_COLORS[i % CHART_COLORS.length];
-      ctx.globalAlpha = 0.8;
+      ctx.globalAlpha = (bars.length > 2 && i === maxBarIdx) ? 0.95 : 0.82;
       ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(barStart, y, bw, barHeight, 4);
-      else ctx.rect(barStart, y, bw, barHeight);
+      ctx.rect(barStart, y, bw, barHeight);
       ctx.fill();
       ctx.globalAlpha = 1;
 
+      // CI error bars
       if (bar.sd !== undefined && bar.sd !== null && bar.sd > 0) {
-        // 95% CI: mean +/- 1.96 * SE. SE = sd / sqrt(n). Fall back to +/- 1 SD if no n.
         var halfCI = bar.n ? 1.96 * bar.sd / Math.sqrt(bar.n) : bar.sd;
         var errLeft = xPos(bar.value - halfCI);
         var errRight = xPos(bar.value + halfCI);
         var errY = y + barHeight / 2;
         ctx.strokeStyle = colors.text;
-        ctx.globalAlpha = 0.6;
+        ctx.globalAlpha = 0.5;
         ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.moveTo(errLeft, errY); ctx.lineTo(errRight, errY); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(errLeft, errY - 5); ctx.lineTo(errLeft, errY + 5); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(errRight, errY - 5); ctx.lineTo(errRight, errY + 5); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(errLeft, errY - 4); ctx.lineTo(errLeft, errY + 4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(errRight, errY - 4); ctx.lineTo(errRight, errY + 4); ctx.stroke();
         ctx.globalAlpha = 1;
       }
 
+      // Label (left of bar)
       ctx.fillStyle = colors.text;
-      ctx.font = '500 12px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.font = '500 11.5px -apple-system, BlinkMacSystemFont, "Inter", sans-serif';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
-      var trunc = bar.label.length > 18 ? bar.label.substring(0, 16) + '...' : bar.label;
+      var trunc = bar.label.length > 20 ? bar.label.substring(0, 18) + '\u2026' : bar.label;
       ctx.fillText(trunc, leftPad - 10, y + barHeight / 2);
 
-      ctx.fillStyle = colors.subtext;
-      ctx.font = '600 12px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.textAlign = 'left';
+      // Value (right of bar or inside if wide enough)
       var valText;
       if (typeof bar.value !== 'number') { valText = bar.value; }
       else if (bar.isPct) { valText = Math.round(bar.value) + '%'; }
       else if (Number.isInteger(bar.value)) { valText = String(bar.value); }
       else { var rounded = bar.value.toFixed(1); valText = rounded.replace(/\.0$/, ''); }
-      ctx.fillText(valText, barEnd + 8, y + barHeight / 2);
+
+      var valWidth = ctx.measureText(valText).width;
+      if (bw > valWidth + 16 && bar.value > 0) {
+        // Inside bar (white text)
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Inter", sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(valText, barEnd - 8, y + barHeight / 2);
+      } else {
+        // Outside bar
+        ctx.fillStyle = colors.subtext;
+        ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Inter", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(valText, barEnd + 8, y + barHeight / 2);
+      }
     });
+
+    // Bottom axis line
+    ctx.strokeStyle = colors.text;
+    ctx.globalAlpha = 0.15;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(leftPad, chartBottom);
+    ctx.lineTo(w - rightPad, chartBottom);
+    ctx.stroke();
+
+    // Axis labels
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = colors.subtext;
+    ctx.font = '400 9px -apple-system, BlinkMacSystemFont, "Inter", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (var gv2 = gridStart; gv2 <= rangeMax; gv2 += step) {
+      var gx2 = xPos(gv2);
+      if (gx2 > leftPad + 5 && gx2 < w - rightPad - 5) {
+        var axLabel = Number.isInteger(gv2) ? String(gv2) : gv2.toFixed(1);
+        ctx.fillText(axLabel, gx2, chartBottom + 4);
+      }
+    }
+    ctx.globalAlpha = 1;
   }
 
   // Scatter plot
@@ -4515,11 +4583,11 @@
     ctx.restore();
 
     // Points
-    ctx.fillStyle = colors.rose;
-    ctx.globalAlpha = 0.6;
+    ctx.fillStyle = CHART_COLORS[0];
+    ctx.globalAlpha = 0.55;
     for (var i = 0; i < x.length; i++) {
       ctx.beginPath();
-      ctx.arc(px(x[i]), py(y[i]), 4, 0, Math.PI * 2);
+      ctx.arc(px(x[i]), py(y[i]), 3.5, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
@@ -4531,9 +4599,9 @@
     var slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
     var intercept = (sumY - slope * sumX) / n;
 
-    ctx.strokeStyle = colors.rose;
+    ctx.strokeStyle = CHART_COLORS[1];
     ctx.lineWidth = 2;
-    ctx.globalAlpha = 0.7;
+    ctx.globalAlpha = 0.8;
     ctx.beginPath();
     ctx.moveTo(px(xMin), py(slope * xMin + intercept));
     ctx.lineTo(px(xMax), py(slope * xMax + intercept));
@@ -4571,38 +4639,56 @@
       var maxPct = Math.max.apply(null, sorted.map(function(d) { return d.pct; }));
       var bw = cw / sorted.length;
 
+      // Subtle horizontal gridlines
+      ctx.strokeStyle = colors.border;
+      ctx.globalAlpha = 0.25;
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([3, 3]);
+      var gridPcts = [25, 50, 75, 100];
+      gridPcts.forEach(function(gp) {
+        if (gp <= maxPct) {
+          var gy = pad.top + ch - (gp / maxPct) * ch;
+          ctx.beginPath(); ctx.moveTo(pad.left, gy); ctx.lineTo(pad.left + cw, gy); ctx.stroke();
+        }
+      });
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+
       // Bars
-      ctx.fillStyle = colors.rose;
-      ctx.globalAlpha = 0.75;
+      var maxIdx = 0;
+      sorted.forEach(function(s, i) { if (s.pct > sorted[maxIdx].pct) maxIdx = i; });
       for (var i = 0; i < sorted.length; i++) {
         var bh = maxPct > 0 ? (sorted[i].pct / maxPct) * ch : 0;
+        ctx.fillStyle = CHART_COLORS[0];
+        ctx.globalAlpha = (sorted.length > 2 && i === maxIdx) ? 0.92 : 0.72;
         ctx.fillRect(pad.left + i * bw + 2, pad.top + ch - bh, bw - 4, bh);
       }
       ctx.globalAlpha = 1;
 
       // Value labels on bars
       ctx.fillStyle = colors.text;
-      ctx.font = '600 10px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Inter", sans-serif';
       ctx.textAlign = 'center';
       for (var i = 0; i < sorted.length; i++) {
         var bh = maxPct > 0 ? (sorted[i].pct / maxPct) * ch : 0;
         if (sorted[i].pct > 0) {
-          ctx.fillText(Math.round(sorted[i].pct) + '%', pad.left + i * bw + bw / 2, pad.top + ch - bh - 4);
+          ctx.fillText(Math.round(sorted[i].pct) + '%', pad.left + i * bw + bw / 2, pad.top + ch - bh - 5);
         }
       }
 
-      // Axes
-      ctx.strokeStyle = colors.border;
+      // Bottom axis line
+      ctx.strokeStyle = colors.text;
+      ctx.globalAlpha = 0.15;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(pad.left, pad.top);
-      ctx.lineTo(pad.left, pad.top + ch);
+      ctx.moveTo(pad.left, pad.top + ch);
       ctx.lineTo(pad.left + cw, pad.top + ch);
       ctx.stroke();
+      ctx.globalAlpha = 1;
 
       // X labels
       ctx.fillStyle = colors.subtext;
-      ctx.font = '400 11px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.font = '400 11px -apple-system, BlinkMacSystemFont, "Inter", sans-serif';
       ctx.textAlign = 'center';
       for (var i = 0; i < sorted.length; i++) {
         ctx.fillText(sorted[i].label, pad.left + i * bw + bw / 2, pad.top + ch + 16);
@@ -4610,8 +4696,11 @@
 
       // Y labels (%)
       ctx.textAlign = 'right';
-      ctx.fillText(maxPct.toFixed(0) + '%', pad.left - 6, pad.top + 5);
+      ctx.globalAlpha = 0.5;
+      ctx.font = '400 9px -apple-system, BlinkMacSystemFont, "Inter", sans-serif';
+      ctx.fillText(Math.round(maxPct) + '%', pad.left - 6, pad.top + 5);
       ctx.fillText('0%', pad.left - 6, pad.top + ch + 4);
+      ctx.globalAlpha = 1;
 
       // Mean/Median lines (discrete mode)
       var meanVal = values.reduce(function(a, b) { return a + b; }, 0) / totalN;
