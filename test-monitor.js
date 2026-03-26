@@ -842,13 +842,480 @@ function testAlignmentInvariants() {
   var r1 = SE.pearson([10, 20, 30, 40, 50], [1, 2, 3, 4, 5]);
   check('Alignment: baseline r=1', Math.abs(r1.r - 1) < 0.001);
 
-  // If values are misaligned, r should differ
-  var r2 = SE.pearson([10, 20, 30, 40, 50], [1, 2, 4, 3, 5]); // swap 3,4
-  check('Alignment: misaligned r != 1', Math.abs(r2.r - 1) > 0.001 || true); // weaker check
-
   // Negative perfect correlation
   var r3 = SE.pearson([1, 2, 3, 4, 5], [5, 4, 3, 2, 1]);
   check('Alignment: negative r=-1', Math.abs(r3.r + 1) < 0.001);
+}
+
+// ============================
+// DATA PARSING INTEGRITY TESTS
+// ============================
+// These test parseValues, alignColumns, parseMultiResponse by reimplementing
+// the core logic in Node (since the originals live in an IIFE in analyze.html)
+
+function isExcelError(v) {
+  var errors = {'#N/A':1,'#REF!':1,'#VALUE!':1,'#DIV/0!':1,'#NULL!':1,'#NAME?':1,'#NUM!':1,'#N/A!':1};
+  return errors[v] === 1;
+}
+
+function parseValuesNode(text) {
+  var lines = text.split(/\n/).map(function(s) { return s.trim(); });
+  while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+  var nums = [], aligned = [];
+  lines.forEach(function(line) {
+    if (line === '' || isExcelError(line)) { aligned.push(null); return; }
+    var cleaned = line.replace(/%$/, '');
+    var n = parseFloat(cleaned);
+    if (!isNaN(n) && isFinite(n)) { nums.push(n); aligned.push(n); }
+    else { aligned.push(null); }
+  });
+  return { nums: nums, aligned: aligned };
+}
+
+function alignColumnsNode(columns) {
+  var allLines = columns.map(function(col) {
+    var lines = col.text.split(/\n/).map(function(s) { return s.trim(); });
+    while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+    return lines;
+  });
+  // Header detection
+  var allHaveFirstLine = allLines.every(function(lines) { return lines.length > 0 && lines[0] !== ''; });
+  if (allHaveFirstLine) {
+    var anyHeader = false;
+    for (var c = 0; c < allLines.length; c++) {
+      var first = allLines[c][0];
+      var isNum = !isNaN(parseFloat(first)) && isFinite(parseFloat(first));
+      if (!isNum && !isExcelError(first)) { anyHeader = true; break; }
+    }
+    if (anyHeader) {
+      for (var c = 0; c < allLines.length; c++) allLines[c] = allLines[c].slice(1);
+    }
+  }
+  // Row-by-row alignment
+  var maxRows = Math.max.apply(null, allLines.map(function(l) { return l.length; }));
+  var results = columns.map(function() { return []; });
+  for (var r = 0; r < maxRows; r++) {
+    var allValid = true;
+    var rowValues = [];
+    for (var c = 0; c < columns.length; c++) {
+      var raw = r < allLines[c].length ? allLines[c][r] : '';
+      if (raw === '' || isExcelError(raw)) { allValid = false; break; }
+      if (columns[c].type === 'numeric') {
+        var cleaned = raw.replace(/^(-?\d+(\.\d+)?)%$/, '$1');
+        var n = parseFloat(cleaned);
+        if (!isNaN(n) && isFinite(n)) { rowValues.push(n); }
+        else { allValid = false; break; }
+      } else {
+        rowValues.push(raw);
+      }
+    }
+    if (allValid && rowValues.length === columns.length) {
+      for (var c = 0; c < columns.length; c++) results[c].push(rowValues[c]);
+    }
+  }
+  return results;
+}
+
+function testDataParsing() {
+  // --- parseValues basic ---
+  var p1 = parseValuesNode('10\n20\n30\n40\n50');
+  check('Parse: basic 5 values', p1.nums.length === 5);
+  check('Parse: basic values correct', p1.nums[0] === 10 && p1.nums[4] === 50);
+
+  // --- parseValues with % ---
+  var p2 = parseValuesNode('45%\n62%\n78%');
+  check('Parse %: strips percent', p2.nums[0] === 45 && p2.nums[1] === 62 && p2.nums[2] === 78);
+  check('Parse %: count correct', p2.nums.length === 3);
+
+  // --- parseValues with Excel errors ---
+  var p3 = parseValuesNode('10\n#N/A\n30\n#REF!\n50');
+  check('Parse errors: nums skips errors', p3.nums.length === 3);
+  check('Parse errors: aligned preserves positions', p3.aligned.length === 5);
+  check('Parse errors: aligned[0]=10', p3.aligned[0] === 10);
+  check('Parse errors: aligned[1]=null', p3.aligned[1] === null);
+  check('Parse errors: aligned[2]=30', p3.aligned[2] === 30);
+  check('Parse errors: aligned[3]=null', p3.aligned[3] === null);
+  check('Parse errors: aligned[4]=50', p3.aligned[4] === 50);
+
+  // --- parseValues with headers ---
+  var p4 = parseValuesNode('Satisfaction\n4\n5\n3\n4');
+  check('Parse header: nums skips text', p4.nums.length === 4);
+  check('Parse header: aligned has null for header', p4.aligned[0] === null);
+
+  // --- parseValues with blank lines ---
+  var p5 = parseValuesNode('10\n20\n\n30\n40');
+  check('Parse blanks: aligned preserves blanks', p5.aligned.length === 5);
+  check('Parse blanks: aligned[2]=null (blank)', p5.aligned[2] === null);
+  check('Parse blanks: nums compacts', p5.nums.length === 4);
+
+  // --- parseValues with negatives ---
+  var p6 = parseValuesNode('-1\n0\n1\n2\n3');
+  check('Parse negatives: all 5 parsed', p6.nums.length === 5);
+  check('Parse negatives: -1 is first', p6.nums[0] === -1);
+
+  // --- parseValues with decimals ---
+  var p7 = parseValuesNode('3.14\n2.71\n1.41');
+  check('Parse decimals: 3 values', p7.nums.length === 3);
+  check('Parse decimals: pi approx', Math.abs(p7.nums[0] - 3.14) < 0.001);
+
+  // --- alignColumns: basic pairing ---
+  var a1 = alignColumnsNode([
+    { text: '10\n20\n30\n40\n50', type: 'numeric' },
+    { text: '1\n2\n3\n4\n5', type: 'numeric' }
+  ]);
+  check('Align basic: 5 rows', a1[0].length === 5 && a1[1].length === 5);
+  check('Align basic: row 1 pairs (10,1)', a1[0][0] === 10 && a1[1][0] === 1);
+  check('Align basic: row 5 pairs (50,5)', a1[0][4] === 50 && a1[1][4] === 5);
+
+  // --- CRITICAL: alignColumns with blank in one column ---
+  var a2 = alignColumnsNode([
+    { text: '10\n20\n\n30\n40', type: 'numeric' },
+    { text: '1\n2\n3\n4\n5', type: 'numeric' }
+  ]);
+  check('Align blank: col A blank at row 3, col B has value → row 3 SKIPPED', a2[0].length === 4);
+  check('Align blank: row 1 = (10,1)', a2[0][0] === 10 && a2[1][0] === 1);
+  check('Align blank: row 2 = (20,2)', a2[0][1] === 20 && a2[1][1] === 2);
+  // After blank: row 4 should pair (30,4), NOT (30,3)
+  check('Align blank: row 4 = (30,4) not (30,3)', a2[0][2] === 30 && a2[1][2] === 4);
+  check('Align blank: row 5 = (40,5)', a2[0][3] === 40 && a2[1][3] === 5);
+
+  // --- CRITICAL: alignColumns with blank in BOTH columns at same position ---
+  var a3 = alignColumnsNode([
+    { text: '10\n20\n\n30\n40', type: 'numeric' },
+    { text: '1\n2\n\n4\n5', type: 'numeric' }
+  ]);
+  check('Align both blank: both blank at row 3 → skip', a3[0].length === 4);
+  check('Align both blank: (30,4)', a3[0][2] === 30 && a3[1][2] === 4);
+
+  // --- CRITICAL: blanks at DIFFERENT positions ---
+  var a4 = alignColumnsNode([
+    { text: '10\n\n30\n40\n50', type: 'numeric' },
+    { text: '1\n2\n\n4\n5', type: 'numeric' }
+  ]);
+  check('Align diff blanks: both rows skipped → 3 rows', a4[0].length === 3);
+  check('Align diff blanks: (10,1)', a4[0][0] === 10 && a4[1][0] === 1);
+  check('Align diff blanks: (40,4)', a4[0][1] === 40 && a4[1][1] === 4);
+  check('Align diff blanks: (50,5)', a4[0][2] === 50 && a4[1][2] === 5);
+
+  // --- Header auto-skip ---
+  var a5 = alignColumnsNode([
+    { text: 'Score\n10\n20\n30', type: 'numeric' },
+    { text: 'Rating\n1\n2\n3', type: 'numeric' }
+  ]);
+  check('Align headers: both headers skipped → 3 rows', a5[0].length === 3);
+  check('Align headers: (10,1)', a5[0][0] === 10 && a5[1][0] === 1);
+
+  // --- Header in only one column ---
+  var a6 = alignColumnsNode([
+    { text: 'Score\n10\n20\n30', type: 'numeric' },
+    { text: '1\n2\n3', type: 'numeric' }
+  ]);
+  // "Score" is non-numeric → header detection skips row 1 from ALL columns
+  // Col A: [10,20,30], Col B: [2,3] → row-by-row gives 2 pairs
+  check('Align 1 header: 2 rows survive', a6[0].length === 2);
+  check('Align 1 header: (10,2)', a6[0][0] === 10 && a6[1][0] === 2);
+  check('Align 1 header: (20,3)', a6[0][1] === 20 && a6[1][1] === 3);
+
+  // --- Excel errors mid-data ---
+  var a7 = alignColumnsNode([
+    { text: '10\n20\n#N/A\n40\n50', type: 'numeric' },
+    { text: '1\n2\n3\n4\n5', type: 'numeric' }
+  ]);
+  check('Align Excel error: row 3 skipped', a7[0].length === 4);
+  check('Align Excel error: (40,4) not (40,3)', a7[0][2] === 40 && a7[1][2] === 4);
+
+  // --- Mixed numeric/categorical alignment ---
+  // Note: "A" looks like a header (non-numeric first line) → header skip fires
+  // Use numeric-looking categorical values to avoid header detection
+  var a8 = alignColumnsNode([
+    { text: '10\n20\n30', type: 'numeric' },
+    { text: 'cat1\ncat2\ncat3', type: 'categorical' }
+  ]);
+  // "cat1" is non-numeric → header detection skips row 1 from ALL columns
+  check('Align mixed: header skip → 2 rows', a8[0].length === 2);
+  check('Align mixed: (20,cat2)', a8[0][0] === 20 && a8[1][0] === 'cat2');
+
+  // --- Sparse Alchemer checkbox alignment ---
+  var a9 = alignColumnsNode([
+    { text: '4\n5\n3\n4\n5', type: 'numeric' },
+    { text: '\n1\n\n1\n', type: 'numeric' }
+  ]);
+  // Only rows 2 and 4 have values in both → (5,1) and (4,1)
+  check('Align sparse: only 2 rows survive', a9[0].length === 2);
+  check('Align sparse: (5,1)', a9[0][0] === 5 && a9[1][0] === 1);
+  check('Align sparse: (4,1)', a9[0][1] === 4 && a9[1][1] === 1);
+
+  // --- Trailing whitespace/newlines ---
+  var a10 = alignColumnsNode([
+    { text: '10\n20\n30\n\n\n', type: 'numeric' },
+    { text: '1\n2\n3\n\n\n', type: 'numeric' }
+  ]);
+  check('Align trailing: trailing blanks stripped → 3 rows', a10[0].length === 3);
+
+  // --- Percentage alignment ---
+  var a11 = alignColumnsNode([
+    { text: '45%\n62%\n78%', type: 'numeric' },
+    { text: '1\n2\n3', type: 'numeric' }
+  ]);
+  check('Align %: strips % and pairs', a11[0].length === 3);
+  check('Align %: (45,1)', a11[0][0] === 45 && a11[1][0] === 1);
+
+  // --- Randomized stress test ---
+  // Generate two columns with random blanks, verify no value from row X
+  // ever pairs with a value from row Y (X ≠ Y)
+  for (var stress = 0; stress < 10; stress++) {
+    var n = 50;
+    var linesA = [], linesB = [];
+    var expectedPairs = [];
+    for (var i = 0; i < n; i++) {
+      var valA = (i + 1) * 100;  // 100, 200, 300... (unique per row)
+      var valB = (i + 1);        // 1, 2, 3... (unique per row)
+      var blankA = Math.random() < 0.15;
+      var blankB = Math.random() < 0.15;
+      linesA.push(blankA ? '' : String(valA));
+      linesB.push(blankB ? '' : String(valB));
+      if (!blankA && !blankB) {
+        expectedPairs.push([valA, valB]);
+      }
+    }
+    var aStress = alignColumnsNode([
+      { text: linesA.join('\n'), type: 'numeric' },
+      { text: linesB.join('\n'), type: 'numeric' }
+    ]);
+    check('Align stress #' + (stress+1) + ': pair count matches', aStress[0].length === expectedPairs.length,
+      'got ' + aStress[0].length + ' expected ' + expectedPairs.length);
+    // Verify each pair matches exactly
+    var pairsCorrect = true;
+    for (var j = 0; j < expectedPairs.length; j++) {
+      if (aStress[0][j] !== expectedPairs[j][0] || aStress[1][j] !== expectedPairs[j][1]) {
+        pairsCorrect = false;
+        break;
+      }
+    }
+    check('Align stress #' + (stress+1) + ': all pairs correct', pairsCorrect,
+      pairsCorrect ? '' : 'mismatch at index ' + j);
+  }
+}
+
+// ============================
+// DESCRIPTIVE STATS ACCURACY
+// ============================
+
+function testDescriptiveAccuracy() {
+  // --- Known dataset: [2, 4, 4, 4, 5, 5, 7, 9] ---
+  var data = [2, 4, 4, 4, 5, 5, 7, 9];
+  var d = SE.describe(data);
+  check('Desc: mean = 5.0', Math.abs(d.mean - 5.0) < 0.001, 'mean=' + d.mean);
+  check('Desc: median = 4.5', Math.abs(d.median - 4.5) < 0.001, 'median=' + d.median);
+  // Sample variance = 4.571 (ddof=1)
+  check('Desc: variance ≈ 4.571', Math.abs(d.variance - 4.571) < 0.01, 'var=' + d.variance);
+  // Sample SD = 2.138
+  check('Desc: sd ≈ 2.138', Math.abs(d.sd - 2.138) < 0.01, 'sd=' + d.sd);
+  check('Desc: min = 2', d.min === 2);
+  check('Desc: max = 9', d.max === 9);
+  check('Desc: n = 8', d.n === 8);
+  // SE = sd/sqrt(n) = 2.138/sqrt(8) = 0.756
+  check('Desc: se ≈ 0.756', Math.abs(d.se - 0.756) < 0.01, 'se=' + d.se);
+
+  // --- Skewness/kurtosis on known data ---
+  // [2,4,4,4,5,5,7,9] — slight right skew
+  if (d.skewness !== undefined) {
+    check('Desc: skewness is finite', isFinite(d.skewness), 'skew=' + d.skewness);
+    check('Desc: right-skewed (skew > 0)', d.skewness > 0, 'skew=' + d.skewness);
+  }
+  if (d.kurtosis !== undefined) {
+    check('Desc: kurtosis is finite', isFinite(d.kurtosis), 'kurt=' + d.kurtosis);
+  }
+
+  // --- Symmetric data should have skewness ≈ 0 ---
+  var sym = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  var dSym = SE.describe(sym);
+  check('Desc symmetric: mean = 5', Math.abs(dSym.mean - 5) < 0.001);
+  check('Desc symmetric: median = 5', Math.abs(dSym.median - 5) < 0.001);
+  if (dSym.skewness !== undefined) {
+    check('Desc symmetric: skewness ≈ 0', Math.abs(dSym.skewness) < 0.1, 'skew=' + dSym.skewness);
+  }
+
+  // --- Single value ---
+  var d1 = SE.describe([42]);
+  check('Desc n=1: mean = 42', d1.mean === 42);
+  check('Desc n=1: sd = 0 or NaN', d1.sd === 0 || isNaN(d1.sd));
+
+  // --- Two values ---
+  var d2 = SE.describe([10, 20]);
+  check('Desc n=2: mean = 15', Math.abs(d2.mean - 15) < 0.001);
+  check('Desc n=2: median = 15', Math.abs(d2.median - 15) < 0.001);
+
+  // --- All same values ---
+  var dSame = SE.describe([7, 7, 7, 7, 7]);
+  check('Desc all-same: mean = 7', dSame.mean === 7);
+  check('Desc all-same: sd = 0', dSame.sd === 0);
+  check('Desc all-same: min = max = 7', dSame.min === 7 && dSame.max === 7);
+
+  // --- Percentiles / quartiles ---
+  if (d.q1 !== undefined) {
+    check('Desc: Q1 <= median', d.q1 <= d.median + 0.001, 'Q1=' + d.q1 + ' med=' + d.median);
+    check('Desc: Q3 >= median', d.q3 >= d.median - 0.001, 'Q3=' + d.q3);
+    check('Desc: IQR = Q3-Q1', Math.abs(d.iqr - (d.q3 - d.q1)) < 0.001);
+  }
+
+  // --- CI contains mean ---
+  if (d.ci95) {
+    var ciLo = d.ci95.lower !== undefined ? d.ci95.lower : d.ci95[0];
+    var ciHi = d.ci95.upper !== undefined ? d.ci95.upper : d.ci95[1];
+    check('Desc: CI lower <= mean', ciLo <= d.mean + 0.001, 'ciLo=' + ciLo + ' mean=' + d.mean);
+    check('Desc: CI upper >= mean', ciHi >= d.mean - 0.001, 'ciHi=' + ciHi);
+    check('Desc: CI lower < CI upper', ciLo < ciHi);
+  }
+
+  // --- Large Likert dataset: verify mean/SD against manual calc ---
+  var likert = [1,1,2,2,2,3,3,3,3,4,4,4,4,4,5,5,5,3,3,3];
+  var likertSum = likert.reduce(function(a,b) { return a+b; }, 0);
+  var likertMean = likertSum / likert.length;
+  var likertVarSum = likert.reduce(function(a,b) { return a + (b-likertMean)*(b-likertMean); }, 0);
+  var likertSD = Math.sqrt(likertVarSum / (likert.length - 1));
+  var dLik = SE.describe(likert);
+  check('Desc Likert: mean matches hand calc', Math.abs(dLik.mean - likertMean) < 0.001,
+    'engine=' + dLik.mean + ' expected=' + likertMean.toFixed(4));
+  check('Desc Likert: sd matches hand calc', Math.abs(dLik.sd - likertSD) < 0.01,
+    'engine=' + dLik.sd + ' expected=' + likertSD.toFixed(4));
+
+  // --- Mode ---
+  if (dLik.mode !== undefined) {
+    check('Desc Likert: mode = 3 or 4', dLik.mode === 3 || dLik.mode === 4 ||
+      (Array.isArray(dLik.mode) && (dLik.mode.indexOf(3) >= 0 || dLik.mode.indexOf(4) >= 0)),
+      'mode=' + JSON.stringify(dLik.mode));
+  }
+
+  // --- Randomized: verify mean * n = sum ---
+  for (var r = 0; r < 5; r++) {
+    var randData = randLikert(1, 7, 100);
+    var sum = randData.reduce(function(a,b) { return a+b; }, 0);
+    var dRand = SE.describe(randData);
+    check('Desc random #' + (r+1) + ': mean*n ≈ sum',
+      Math.abs(dRand.mean * dRand.n - sum) < 0.01,
+      'mean*n=' + (dRand.mean * dRand.n).toFixed(2) + ' sum=' + sum);
+    check('Desc random #' + (r+1) + ': min <= mean <= max',
+      dRand.min <= dRand.mean && dRand.mean <= dRand.max);
+    check('Desc random #' + (r+1) + ': min <= median <= max',
+      dRand.min <= dRand.median && dRand.median <= dRand.max);
+    check('Desc random #' + (r+1) + ': sd >= 0', dRand.sd >= 0);
+  }
+}
+
+// ============================
+// ADVANCED STATS ACCURACY
+// ============================
+
+function testAdvancedAccuracy() {
+  // --- Regression: perfect linear data y = 3x + 7 ---
+  var x = [1,2,3,4,5,6,7,8,9,10];
+  var y = x.map(function(v) { return 3*v + 7; });
+  var rr = SE.linearRegression(y, [x]);
+  check('Reg perfect: R2 = 1', Math.abs(rr.R2 - 1) < 0.001, 'R2=' + rr.R2);
+  check('Reg perfect: slope = 3', Math.abs(rr.coefficients[1] - 3) < 0.01, 'slope=' + rr.coefficients[1]);
+  check('Reg perfect: intercept = 7', Math.abs(rr.coefficients[0] - 7) < 0.01, 'int=' + rr.coefficients[0]);
+
+  // --- Regression: known R² ---
+  // y = 2x + noise. With enough data, R² should be high
+  var xReg = [], yReg = [];
+  for (var i = 0; i < 200; i++) {
+    xReg.push(i);
+    yReg.push(2 * i + randNormal(0, 5));
+  }
+  var rrNoisy = SE.linearRegression(yReg, [xReg]);
+  check('Reg noisy: R2 > 0.95', rrNoisy.R2 > 0.95, 'R2=' + rrNoisy.R2);
+  check('Reg noisy: slope ≈ 2', Math.abs(rrNoisy.coefficients[1] - 2) < 0.5, 'slope=' + rrNoisy.coefficients[1]);
+
+  // --- Regression: Durbin-Watson should be near 2 for independent errors ---
+  check('Reg DW: near 2 for iid errors', rrNoisy.durbinWatson > 1.5 && rrNoisy.durbinWatson < 2.5,
+    'DW=' + rrNoisy.durbinWatson);
+
+  // --- Regression: adj R² <= R² ---
+  check('Reg: adjR2 <= R2', rrNoisy.adjR2 <= rrNoisy.R2 + 0.001);
+
+  // --- Regression: adding irrelevant predictor shouldn't help much ---
+  var xIrrel = [];
+  for (var i = 0; i < 200; i++) xIrrel.push(Math.random() * 100);
+  var rrIrrel = SE.linearRegression(yReg, [xReg, xIrrel]);
+  check('Reg irrelevant: adjR2 not much better', rrIrrel.adjR2 - rrNoisy.adjR2 < 0.05,
+    'delta adjR2=' + (rrIrrel.adjR2 - rrNoisy.adjR2).toFixed(4));
+
+  // --- Logistic: separable data ---
+  var logX2 = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+  var logY2 = [0,0,0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1,1,1];
+  var lr2 = SE.logisticRegression(logY2, [logX2]);
+  check('Logistic separable: positive slope', lr2.coefficients[1] > 0, 'b1=' + lr2.coefficients[1]);
+  // Check classification by comparing predicted to actual
+  var correct = 0;
+  if (lr2.predicted) {
+    for (var i = 0; i < logY2.length; i++) {
+      if ((lr2.predicted[i] >= 0.5 ? 1 : 0) === logY2[i]) correct++;
+    }
+    check('Logistic separable: high accuracy', correct / logY2.length > 0.8,
+      'acc=' + (correct / logY2.length).toFixed(2));
+  }
+
+  // --- Cronbach: items that are identical → alpha should be very high ---
+  var sameItem = [1,2,3,4,5,1,2,3,4,5];
+  var rAlphaHigh = SE.cronbachAlpha([sameItem, sameItem.slice(), sameItem.slice()]);
+  check('Cronbach identical items: alpha ≈ 1', rAlphaHigh.alpha > 0.99, 'alpha=' + rAlphaHigh.alpha);
+
+  // --- Cronbach: uncorrelated items → alpha should be low ---
+  var uncorr1 = [1,5,2,4,3,1,5,2,4,3];
+  var uncorr2 = [3,1,4,2,5,3,1,4,2,5];
+  var uncorr3 = [5,3,1,4,2,5,3,1,4,2];
+  var rAlphaLow = SE.cronbachAlpha([uncorr1, uncorr2, uncorr3]);
+  check('Cronbach uncorrelated: alpha < 0.5', rAlphaLow.alpha < 0.5, 'alpha=' + rAlphaLow.alpha);
+
+  // --- Chi-square: independent variables → not significant ---
+  // Large sample, random 2x2
+  var indepTable = [[50, 50], [50, 50]]; // perfectly independent
+  var rIndep = SE.chiSquare(indepTable);
+  check('Chi-sq independent: chi2 ≈ 0', rIndep.chiSquare < 0.01, 'chi2=' + rIndep.chiSquare);
+  check('Chi-sq independent: p ≈ 1', rIndep.p > 0.95, 'p=' + rIndep.p);
+
+  // --- Chi-square: strongly associated ---
+  var assocTable = [[90, 10], [10, 90]];
+  var rAssoc = SE.chiSquare(assocTable);
+  check('Chi-sq associated: p < 0.001', rAssoc.p < 0.001);
+  check('Chi-sq associated: V > 0.5', rAssoc.cramersV > 0.5, 'V=' + rAssoc.cramersV);
+
+  // --- ANOVA: identical groups → F ≈ 0, p ≈ 1 ---
+  var sameGroup = [3,4,5,3,4,5,3,4,5,3];
+  var rAnovaNull = SE.anova([sameGroup.slice(), sameGroup.slice(), sameGroup.slice()]);
+  check('ANOVA null: F ≈ 0', rAnovaNull.F < 0.01, 'F=' + rAnovaNull.F);
+  check('ANOVA null: p ≈ 1', rAnovaNull.p > 0.95, 'p=' + rAnovaNull.p);
+  check('ANOVA null: eta-sq ≈ 0', rAnovaNull.etaSquared < 0.01, 'eta=' + rAnovaNull.etaSquared);
+
+  // --- t-test: known Cohen's d ---
+  // Two groups with mean diff = 10, pooled SD ≈ 10 → d ≈ 1.0
+  var g1 = randNormalArray(50, 10, 100);
+  var g2 = randNormalArray(60, 10, 100);
+  var rTTd = SE.ttest(g1, g2);
+  check('t-test known d: |d| ≈ 1.0', Math.abs(Math.abs(rTTd.cohensD) - 1.0) < 0.4,
+    'd=' + rTTd.cohensD);
+
+  // --- Paired t-test: known effect ---
+  var pre = randNormalArray(50, 10, 50);
+  var post = pre.map(function(v) { return v + 5 + randNormal(0, 2); }); // +5 improvement
+  var rPaired = SE.pairedTTest(pre, post);
+  check('Paired known effect: significant', rPaired.p < 0.05, 'p=' + rPaired.p);
+  check('Paired known effect: meanDiff ≈ -5', Math.abs(Math.abs(rPaired.meanDiff) - 5) < 2,
+    'meanDiff=' + rPaired.meanDiff);
+
+  // --- Correlation: known r ---
+  // Generate correlated data with r ≈ 0.7
+  var xCorr = randNormalArray(0, 1, 200);
+  var yCorr = xCorr.map(function(v) { return 0.7 * v + Math.sqrt(1-0.49) * randNormal(0, 1); });
+  var rCorr = SE.pearson(xCorr, yCorr);
+  check('Pearson known r: r ≈ 0.7', Math.abs(rCorr.r - 0.7) < 0.15, 'r=' + rCorr.r);
+  check('Pearson known r: significant', rCorr.p < 0.001);
+
+  // --- Spearman should agree with Pearson for linear data ---
+  var rSpCorr = SE.spearman(xCorr, yCorr);
+  check('Spearman vs Pearson: similar', Math.abs(rSpCorr.rho - rCorr.r) < 0.15,
+    'rho=' + rSpCorr.rho + ' r=' + rCorr.r);
 }
 
 // ============================
@@ -1248,7 +1715,16 @@ for (var aIter = 0; aIter < ITERATIONS; aIter++) {
   testAlchemerPatterns(alch);
 }
 
-// Run edge cases and invariants once
+// Run structural tests once
+console.log('\n--- Data Parsing Integrity ---');
+testDataParsing();
+
+console.log('\n--- Descriptive Stats Accuracy ---');
+testDescriptiveAccuracy();
+
+console.log('\n--- Advanced Stats Accuracy ---');
+testAdvancedAccuracy();
+
 console.log('\n--- Edge Cases ---');
 testEdgeCases();
 
