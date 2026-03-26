@@ -2021,7 +2021,7 @@
       <a href="index.html" class="back-link">&#8592; <span>Home</span></a>
       <a href="learn.html" class="sister-link">Learn</a>
       <a href="guide.html" class="sister-link">Guide</a>
-      <span style="font-size:0.6rem;color:var(--text-2);opacity:0.4;margin-left:0.5rem">v3.28</span>
+      <span style="font-size:0.6rem;color:var(--text-2);opacity:0.4;margin-left:0.5rem">v3.29</span>
     </div>
     <div class="header-right">
       <button class="start-over-link" id="startOverLink">Start over</button>
@@ -8105,8 +8105,44 @@
         });
       }
 
-      if (grpLines.length > 0 && grpLines.length === parsed.rows.length) {
-        runCrosstab(parsed, grpLines, valDesc, grpDesc);
+      if (grpLines.length > 0) {
+        // Tolerate small row count mismatches (header differences, trailing blanks)
+        // Trim the longer array to match the shorter one
+        var nData = parsed.rows.length;
+        var nGrp = grpLines.length;
+        if (nGrp > nData) {
+          grpLines = grpLines.slice(0, nData);
+        } else if (nData > nGrp) {
+          // Trim parsed data to match grouping length
+          parsed.rows = parsed.rows.slice(0, nGrp);
+          if (parsed.columns) {
+            parsed.columns = parsed.columns.map(function(col) { return col.slice(0, nGrp); });
+          }
+          parsed.nRows = nGrp;
+        }
+        // Filter out blank/empty grouping values (excluded from grouped analysis)
+        var validGrouped = [];
+        var validRows = [];
+        var validCols = parsed.columns ? parsed.columns.map(function() { return []; }) : null;
+        for (var gi = 0; gi < grpLines.length; gi++) {
+          if (grpLines[gi] !== '' && grpLines[gi] !== '#N/A') {
+            validGrouped.push(grpLines[gi]);
+            validRows.push(parsed.rows[gi]);
+            if (validCols) {
+              for (var ci = 0; ci < parsed.columns.length; ci++) {
+                validCols[ci].push(parsed.columns[ci][gi]);
+              }
+            }
+          }
+        }
+        if (validGrouped.length > 0) {
+          parsed.rows = validRows;
+          if (validCols) parsed.columns = validCols;
+          parsed.nRows = validRows.length;
+          runCrosstab(parsed, validGrouped, valDesc, grpDesc);
+        } else {
+          runFrequencies(parsed, valDesc);
+        }
       } else {
         runFrequencies(parsed, valDesc);
       }
