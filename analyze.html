@@ -14940,13 +14940,16 @@
     }
 
     // Detect scale data: all non-empty values are integers in a consistent range (e.g., 1-5, 1-7)
+    // CRITICAL: also check fill rate — sparse checkbox data (mostly blank) must NOT be classified as scale
     var isScaleData = false;
     var scaleMin = Infinity, scaleMax = -Infinity;
     var allScaleInts = true;
+    var filledCells = 0, totalCells = maxCols * matrix.length;
     for (var c = 0; c < maxCols; c++) {
       for (var r = 0; r < matrix.length; r++) {
         var v = columns[c][r];
         if (v === '' || v === undefined) continue;
+        filledCells++;
         var num = parseFloat(v);
         if (isNaN(num) || num !== Math.floor(num)) { allScaleInts = false; break; }
         if (num < scaleMin) scaleMin = num;
@@ -14954,7 +14957,10 @@
       }
       if (!allScaleInts) break;
     }
-    if (allScaleInts && scaleMax - scaleMin >= 2 && scaleMax - scaleMin <= 10 && scaleMin >= 0) {
+    var fillRate = totalCells > 0 ? filledCells / totalCells : 0;
+    // Scale data: every respondent rates every item → fill rate should be > 50%
+    // Checkbox data: respondents select 1-2 out of many → fill rate is typically < 30%
+    if (allScaleInts && scaleMax - scaleMin >= 2 && scaleMax - scaleMin <= 10 && scaleMin >= 0 && fillRate > 0.5) {
       isScaleData = true;
     }
 

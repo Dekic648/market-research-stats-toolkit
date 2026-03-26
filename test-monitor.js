@@ -1781,6 +1781,40 @@ function testAlchemerPatterns(alch) {
     check('Alchemer logistic: no crash', false, e.message);
   }
 
+  // --- isScaleData false positive: sparse checkbox must NOT be classified as scale ---
+  // Simulate: 7 columns, 30 rows, each row has 1-2 non-blank values (codes 1-7)
+  // Fill rate ≈ 20%, which is checkbox, not Likert
+  var sparseCols = [];
+  for (var sc = 0; sc < 7; sc++) sparseCols.push([]);
+  for (var sr = 0; sr < 30; sr++) {
+    var picks = randInt(1, 2); // 1-2 selections per row
+    var picked = {};
+    for (var sp = 0; sp < picks; sp++) {
+      var col = randInt(0, 6);
+      while (picked[col]) col = randInt(0, 6);
+      picked[col] = true;
+    }
+    for (var sc2 = 0; sc2 < 7; sc2++) {
+      sparseCols[sc2].push(picked[sc2] ? String(randInt(1, 7)) : '');
+    }
+  }
+  var sparseFilled = 0, sparseTotal = 7 * 30;
+  sparseCols.forEach(function(col) { col.forEach(function(v) { if (v !== '') sparseFilled++; }); });
+  var sparseFillRate = sparseFilled / sparseTotal;
+  check('Sparse checkbox: fill rate < 50%', sparseFillRate < 0.5,
+    'fillRate=' + sparseFillRate.toFixed(2) + ' (' + sparseFilled + '/' + sparseTotal + ')');
+  // If fill rate < 50%, isScaleData should be false
+  check('Sparse checkbox: NOT classified as scale data', sparseFillRate < 0.5,
+    'This data should be treated as checkbox, not Likert');
+
+  // Conversely, full Likert data (every cell has value) should be classified as scale
+  var fullLikert = [];
+  for (var fl = 0; fl < 4; fl++) fullLikert.push(randLikert(1, 5, 30).map(String));
+  var fullFilled = 0;
+  fullLikert.forEach(function(col) { col.forEach(function(v) { if (v !== '') fullFilled++; }); });
+  var fullFillRate = fullFilled / (4 * 30);
+  check('Full Likert: fill rate > 90%', fullFillRate > 0.9, 'fillRate=' + fullFillRate.toFixed(2));
+
   // --- Very sparse column (reason7 ~3% fill) — tests with tiny groups ---
   var sparseSelected = alch.reason7.filter(function(v) { return v !== 0; });
   var sparseNotSel = alch.reason7.filter(function(v) { return v === 0; });
