@@ -760,10 +760,13 @@
       var pVal = 1 - jStat.normal.cdf(z2, 0, 1);
       return { test: "Shapiro-Wilk", W: W, p: Math.max(0, Math.min(1, pVal)), n: n };
     } else {
-      var lnW = Math.log(1 - W);
-      mu = -1.2725 + 1.0521 * lnN;
-      sigma = 1.0308 - 0.26758 * lnN;
-      var z2 = (lnW - mu) / sigma;
+      // Royston 1995 approximation for n > 11
+      // Transform: u = ln(1-W), then normalize
+      var u = Math.log(1 - W);
+      mu = 0.0038915 * Math.pow(lnN, 3) - 0.083751 * Math.pow(lnN, 2) - 0.31082 * lnN - 1.5861;
+      sigma = Math.exp(0.0030302 * Math.pow(lnN, 2) - 0.082676 * lnN - 0.4803);
+      var z2 = (u - mu) / sigma;
+      // High z = non-normal (W far from 1), so p = 1 - Phi(z)
       var pVal = 1 - jStat.normal.cdf(z2, 0, 1);
       return { test: "Shapiro-Wilk", W: W, p: Math.max(0, Math.min(1, pVal)), n: n };
     }
@@ -844,10 +847,11 @@
     }
     var r = (dX === 0 || dY === 0) ? 0 : num / Math.sqrt(dX * dY);
 
-    // t-test for significance
-    var t = r * Math.sqrt((n - 2) / (1 - r * r));
+    // t-test for significance (guard r = ±1 where 1-r*r = 0)
     var df = n - 2;
-    var p = df > 0 ? 2 * (1 - jStat.studentt.cdf(Math.abs(t), df)) : 1;
+    var t, p;
+    if (Math.abs(r) >= 1) { t = Infinity; p = df > 0 ? 0 : 1; }
+    else { t = r * Math.sqrt((n - 2) / (1 - r * r)); p = df > 0 ? 2 * (1 - jStat.studentt.cdf(Math.abs(t), df)) : 1; }
 
     // Fisher Z transform for CI
     var zr = 0.5 * Math.log((1 + r) / (1 - r));
@@ -2503,8 +2507,8 @@
     var df2 = (k - 1) * (n - 1);
     var msTreatment = ssTreatment / df1;
     var msError = ssError / df2;
-    var F = msError === 0 ? 0 : msTreatment / msError;
-    var p = 1 - jStat.centralF.cdf(F, df1, df2);
+    var F = msError === 0 ? (msTreatment > 0 ? Infinity : 0) : msTreatment / msError;
+    var p = isFinite(F) ? 1 - jStat.centralF.cdf(F, df1, df2) : (msTreatment > 0 ? 0 : 1);
     var etaSquared = (ssTreatment + ssError) === 0 ? 0 : ssTreatment / (ssTreatment + ssError);
 
     // Greenhouse-Geisser epsilon correction for sphericity
