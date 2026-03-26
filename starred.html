@@ -392,6 +392,63 @@
        ======================================== */
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     .fade-in { animation: fadeIn 0.35s ease forwards; }
+
+    /* ========================================
+       TLDR Report Styles
+       ======================================== */
+    .report {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 2rem 2.2rem; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--card-shadow); margin-top: 1.5rem;
+    }
+    .report h2 {
+      font-size: 1.15rem; font-weight: 800; margin-bottom: 0.35rem; letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--rose), var(--coral));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .report-meta { font-size: 0.82rem; color: var(--text-2); margin-bottom: 1.25rem; }
+    .report h3 {
+      font-size: 0.85rem; font-weight: 700; color: var(--rose); text-transform: uppercase;
+      letter-spacing: 0.05em; margin: 1.25rem 0 0.6rem; padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .report ol { padding-left: 1.5rem; margin: 0; }
+    .report ol li {
+      font-size: 0.88rem; line-height: 1.65; color: var(--text-0); margin-bottom: 0.5rem;
+    }
+    .report ol li strong { color: var(--text-0); }
+    .report .report-actions { margin-top: 1.25rem; text-align: center; }
+    .report .report-actions button {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 0.55rem 1.5rem; border-radius: 8px; border: 1px solid var(--green);
+      background: var(--green-soft); color: var(--green); font-size: 0.82rem; font-weight: 600;
+      font-family: inherit; cursor: pointer; transition: background 0.2s, transform 0.15s;
+    }
+    .report .report-actions button:hover { background: var(--green); color: #fff; transform: translateY(-1px); }
+    .generate-report-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 0.75rem 2rem; border-radius: 10px; border: 1px solid var(--rose);
+      background: var(--rose-soft); color: var(--rose); font-size: 0.92rem; font-weight: 700;
+      font-family: inherit; cursor: pointer; margin-top: 1rem;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    }
+    .generate-report-btn:hover { background: var(--rose); color: #fff; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(212, 88, 122, 0.3); }
+
+    @media print {
+      body { background: #fff !important; color: #000 !important; }
+      body::before { display: none !important; }
+      .sticky-header, .paste-grid, .start-btn-wrap, .step-card, .generate-report-btn, .theme-toggle { display: none !important; }
+      .report {
+        background: #fff !important; border: 1px solid #ccc !important; color: #000 !important;
+        box-shadow: none !important; backdrop-filter: none !important;
+      }
+      .report h2 { -webkit-text-fill-color: #333 !important; color: #333 !important; }
+      .report h3 { color: #555 !important; }
+      .report ol li, .report-meta, .report p { color: #000 !important; }
+      .report .report-actions { display: none !important; }
+      .freq-table th { color: #555 !important; }
+      .freq-table td, .freq-table th { border-color: #ccc !important; }
+    }
   </style>
 </head>
 <body>
@@ -430,6 +487,7 @@
         </div>
         <div class="paste-box-desc">Single response, Likert (1-5, 1-7), or rating questions. One column per question.</div>
         <textarea id="box-ratings" placeholder="Paste one or more rating columns from your spreadsheet. Tab-separated if multiple."></textarea>
+        <div style="font-size:0.72rem;color:var(--text-2);margin-top:0.25rem;line-height:1.4;opacity:0.8">Tip: Paste multiple columns at once — tab-separated from your spreadsheet. Each column becomes a separate variable.</div>
         <div class="paste-box-footer">
           <span class="line-count" id="count-ratings">No data</span>
         </div>
@@ -444,6 +502,7 @@
         </div>
         <div class="paste-box-desc">Multi-response checkboxes or matrix grid ratings. Multiple tab-separated columns.</div>
         <textarea id="box-checkbox" placeholder="Paste all columns. Blank cells = not selected."></textarea>
+        <div style="font-size:0.72rem;color:var(--text-2);margin-top:0.25rem;line-height:1.4;opacity:0.8">Tip: Paste multiple columns at once — tab-separated from your spreadsheet. Each column becomes a separate variable.</div>
         <div class="paste-box-footer">
           <span class="line-count" id="count-checkbox">No data</span>
         </div>
@@ -486,6 +545,7 @@
         </div>
         <div class="paste-box-desc">Continuous measurements: match count, level, revenue, time spent.</div>
         <textarea id="box-behavioral" placeholder="Paste one or more numeric columns. Tab-separated if multiple."></textarea>
+        <div style="font-size:0.72rem;color:var(--text-2);margin-top:0.25rem;line-height:1.4;opacity:0.8">Tip: Paste multiple columns at once — tab-separated from your spreadsheet. Each column becomes a separate variable.</div>
         <div class="paste-box-footer">
           <span class="line-count" id="count-behavioral">No data</span>
         </div>
@@ -549,11 +609,12 @@
   function pClass(p) { return p < ALPHA ? 'p-sig' : p < ALPHA * 2 ? 'p-marginal' : 'p-nonsig'; }
 
   /* ---- IMPROVEMENT 4: Plain language helpers ---- */
-  function plainP(p) {
-    if (p < 0.001) return 'There IS a clear difference between groups. Extremely unlikely to be random chance.';
-    if (p < 0.01) return 'There IS a significant difference. Very unlikely to be random.';
-    if (p < 0.05) return 'There IS a significant difference. Unlikely to be random.';
-    return 'There is NO significant difference. The differences could easily be random.';
+  function plainP(p, variableName, groupName) {
+    var what = (variableName && groupName) ? ' between ' + groupName + ' segments on ' + variableName : '';
+    if (p < 0.001) return 'There IS a clear difference' + what + '. Extremely unlikely to be random chance.';
+    if (p < 0.01) return 'There IS a significant difference' + what + '. Very unlikely to be random.';
+    if (p < 0.05) return 'There IS a significant difference' + what + '. Unlikely to be random.';
+    return 'There is NO significant difference' + what + '. The differences could easily be random.';
   }
   function plainR(r) {
     var abs = Math.abs(r);
@@ -768,7 +829,8 @@
     'Rating': { color: 'var(--rose)', desc: 'Rating scale (1-5, 1-7). One column per question.' },
     'Checkbox/Matrix': { color: 'var(--coral)', desc: 'Multi-response checkboxes or matrix grid. Tab-separated columns.' },
     'Single-Choice': { color: 'var(--green)', desc: 'Radio button / single-choice. One column.' },
-    'Behavioral': { color: 'var(--blue)', desc: 'Continuous numeric data. One or more columns.' }
+    'Behavioral': { color: 'var(--blue)', desc: 'Continuous numeric data. One or more columns.' },
+    'Category': { color: 'var(--purple)', desc: 'Category / Segment column. Replaces or sets the grouping variable (Box 4).' }
   };
 
   document.getElementById('addBoxBtn').addEventListener('click', function() {
@@ -790,6 +852,7 @@
         '<option value="Checkbox/Matrix">Checkbox / Matrix</option>' +
         '<option value="Single-Choice">Single-Choice</option>' +
         '<option value="Behavioral">Behavioral</option>' +
+        '<option value="Category">Category / Segment</option>' +
       '</select>' +
       '<div class="paste-box-desc" id="desc-' + boxId + '">' + TYPE_MAP['Rating'].desc + '</div>' +
       '<textarea id="box-' + boxId + '" placeholder="Paste your data here"></textarea>' +
@@ -922,7 +985,8 @@
 
   function buildSession() {
     var session = {
-      ratings: null, checkbox: null, singleChoice: null, category: null, behavioral: null
+      ratings: null, checkbox: null, singleChoice: null, category: null, behavioral: null,
+      findings: []
     };
 
     // Ratings (multi-column numeric)
@@ -1014,7 +1078,21 @@
       var type = typeEl ? typeEl.value : 'Rating';
       var name = nameEl ? nameEl.value.trim() : '';
 
-      if (type === 'Single-Choice') {
+      if (type === 'Category') {
+        var parsed = parseSingleColumn(ta.value);
+        if (parsed) {
+          var vals = parsed.values;
+          var uniqueGroups = [];
+          var seenG = {};
+          vals.forEach(function(v) { if (!seenG[v]) { seenG[v] = true; uniqueGroups.push(v); } });
+          // Use as primary category if Box 4 is empty, otherwise replace it
+          session.category = {
+            values: vals,
+            label: name || parsed.label || 'Segment',
+            groups: uniqueGroups
+          };
+        }
+      } else if (type === 'Single-Choice') {
         var parsed = parseSingleColumn(ta.value);
         if (parsed) {
           session.extras.push({ type: type, values: parsed.values, label: name || parsed.label || 'Extra', nRows: parsed.values.length });
@@ -1173,8 +1251,12 @@
         { label: 'n', value: desc.n },
         { label: 'Mean', value: round2(desc.mean) },
         { label: 'Median', value: round2(desc.median) },
-        { label: 'SD', value: round2(desc.sd) }
+        { label: 'Spread (SD)', value: round2(desc.sd) }
       ]));
+
+      if (i === 0) {
+        html += '<div style="font-size:0.74rem;color:var(--text-2);margin:-0.5rem 0 0.75rem;padding:0 0.25rem;line-height:1.5">SD = Standard Deviation — how spread out the responses are. Lower = more agreement, higher = more varied.</div>';
+      }
 
       // Distribution table
       var rows = freq.uniqueValues.slice().sort(function(a, b) { return Number(a) - Number(b); }).map(function(v) {
@@ -1200,6 +1282,13 @@
     });
     html += renderPlainEnglish('Rating distributions: ' + summaries.join('. ') + '.');
 
+    // Push findings
+    session.ratings.columns.forEach(function(col, i) {
+      var d = StatsEngine.describe(col);
+      var lbl = session.ratings.labels[i] || ('Rating ' + (i + 1));
+      session.findings.push({ step: 'Frequencies', finding: lbl + ': mean ' + round2(d.mean) + ' (SD ' + round2(d.sd) + ', n=' + d.n + ')', detail: '', important: false });
+    });
+
     container.innerHTML = html;
   }
 
@@ -1221,13 +1310,16 @@
         }
       }
 
-      var meanTableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>Median</th><th>SD</th></tr>';
+      var meanTableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>95% CI</th><th>Median</th><th>Spread (SD)</th></tr>';
       var bars = [];
       session.category.groups.forEach(function(g) {
         var vals = segmentMeans[g] || [];
         if (vals.length === 0) return;
         var d = StatsEngine.describe(vals);
-        meanTableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.median) + '</td><td>' + round2(d.sd) + '</td></tr>';
+        var margin = 1.96 * (d.sd / Math.sqrt(d.n));
+        var ciLo = round2(d.mean - margin);
+        var ciHi = round2(d.mean + margin);
+        meanTableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + ciLo + '\u2013' + ciHi + '</td><td>' + round2(d.median) + '</td><td>' + round2(d.sd) + '</td></tr>';
         bars.push({ label: g, value: d.mean });
       });
       meanTableHtml += '</table>';
@@ -1267,7 +1359,7 @@
       }
 
       var result = StatsEngine.kruskalWallis(groupArr);
-      html += renderPlainLang(plainP(result.p), result.p < ALPHA);
+      html += renderPlainLang(plainP(result.p, label, session.category.label || 'segments'), result.p < ALPHA);
       html += RC(label + ' — Kruskal-Wallis Test', renderMetrics([
         { label: 'H', value: round2(result.H) },
         { label: 'df', value: result.df },
@@ -1295,6 +1387,20 @@
     });
     html += renderPlainEnglish('Kruskal-Wallis results across ' + session.category.label + ' segments: ' + summaries.join('. ') + '.');
 
+    // Push findings
+    session.ratings.columns.forEach(function(col, ci) {
+      var label = session.ratings.labels[ci] || ('Rating ' + (ci + 1));
+      var groups = {};
+      var catVals = session.category.values;
+      var minLen = Math.min(col.length, catVals.length);
+      for (var i = 0; i < minLen; i++) { var seg = catVals[i]; if (!groups[seg]) groups[seg] = []; if (!isNaN(col[i])) groups[seg].push(col[i]); }
+      var groupArr = session.category.groups.map(function(g) { return groups[g] || []; }).filter(function(g) { return g.length > 0; });
+      if (groupArr.length >= 2) {
+        var result = StatsEngine.kruskalWallis(groupArr);
+        session.findings.push({ step: 'Significance', finding: label + ': ' + (result.p < ALPHA ? 'Significant difference across segments' : 'No significant difference') + ' (p = ' + round4(result.p) + ')', detail: 'H=' + round2(result.H) + ', df=' + result.df, important: result.p < ALPHA });
+      }
+    });
+
     container.innerHTML = html;
   }
 
@@ -1318,7 +1424,7 @@
       setTimeout(function() { drawBarChart(chartId, bars); }, 50);
 
       // Table
-      var tableHtml = '<table class="freq-table"><tr><th>Item</th><th>n</th><th>Mean</th><th>SD</th></tr>';
+      var tableHtml = '<table class="freq-table"><tr><th>Item</th><th>n</th><th>Mean</th><th>Spread (SD)</th></tr>';
       cb.numericColumns.forEach(function(col, i) {
         var d = StatsEngine.describe(col);
         tableHtml += '<tr><td>' + escHtml(cb.labels[i]) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.sd) + '</td></tr>';
@@ -1336,6 +1442,23 @@
       var chartId = 'cb_sel_chart';
       html += renderChart(chartId, 'Selection Rate per Item', 500, Math.max(120, bars.length * 46 + 28));
       setTimeout(function() { drawBarChart(chartId, bars); }, 50);
+    }
+    // Push findings for checkbox items
+    if (cb.isScale) {
+      var highestItem = '', highestMean = -Infinity;
+      cb.numericColumns.forEach(function(col, i) {
+        var d = StatsEngine.describe(col);
+        if (d.mean > highestMean) { highestMean = d.mean; highestItem = cb.labels[i]; }
+      });
+      session.findings.push({ step: 'Item Rates', finding: 'Highest-rated item: ' + highestItem + ' (mean ' + round2(highestMean) + ')', detail: '', important: false });
+    } else {
+      var highestItem = '', highestRate = -Infinity;
+      cb.columns.forEach(function(col, i) {
+        var filled = col.filter(function(v) { return v.trim() !== ''; }).length;
+        var rate = (filled / col.length) * 100;
+        if (rate > highestRate) { highestRate = rate; highestItem = cb.labels[i]; }
+      });
+      session.findings.push({ step: 'Selection Rates', finding: 'Most selected item: ' + highestItem + ' (' + Math.round(highestRate) + '%)', detail: '', important: false });
     }
     container.innerHTML = html;
   }
@@ -1356,12 +1479,15 @@
         if (!isNaN(col[i])) segData[seg].push(col[i]);
       }
 
-      var meanTableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>SD</th></tr>';
+      var meanTableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>95% CI</th><th>Spread (SD)</th></tr>';
       session.category.groups.forEach(function(g) {
         var vals = segData[g] || [];
         if (vals.length === 0) return;
         var d = StatsEngine.describe(vals);
-        meanTableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.sd) + '</td></tr>';
+        var margin = 1.96 * (d.sd / Math.sqrt(d.n));
+        var ciLo = round2(d.mean - margin);
+        var ciHi = round2(d.mean + margin);
+        meanTableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + ciLo + '\u2013' + ciHi + '</td><td>' + round2(d.sd) + '</td></tr>';
       });
       meanTableHtml += '</table>';
 
@@ -1394,7 +1520,7 @@
         return;
       }
       var result = StatsEngine.kruskalWallis(groupArr);
-      html += renderPlainLang(label + ': ' + plainP(result.p), result.p < ALPHA);
+      html += renderPlainLang(label + ': ' + plainP(result.p, label, session.category.label || 'segments'), result.p < ALPHA);
       html += RC(label + ' — Kruskal-Wallis', renderMetrics([
         { label: 'H', value: round2(result.H) },
         { label: 'df', value: result.df },
@@ -1423,6 +1549,7 @@
                  alphaVal >= 0.6 ? 'Questionable internal consistency.' :
                  'Poor internal consistency. Consider revising items.';
     html += renderPlainEnglish("Cronbach's alpha = " + round2(alphaVal) + '. ' + interp);
+    session.findings.push({ step: 'Reliability', finding: "Cronbach's alpha = " + round2(alphaVal) + ' (' + interp + ')', detail: '', important: alphaVal >= 0.7 });
     container.innerHTML = html;
   }
 
@@ -1487,7 +1614,7 @@
       cramersV = Math.sqrt(result.chiSquare / (xt.grandTotal * (Math.min(nRows, nCols) - 1)));
     }
 
-    var html = renderPlainLang(plainP(result.p) + ' ' + plainCramersV(cramersV), sig);
+    var html = renderPlainLang(plainP(result.p, session.singleChoice.label, session.category.label || 'segments') + ' ' + plainCramersV(cramersV), sig);
     html += RC('Chi-Square Test of Independence', renderMetrics([
       { label: '\u03C7\u00B2', value: round2(result.chiSquare) },
       { label: 'df', value: result.df },
@@ -1514,7 +1641,7 @@
         { label: 'n', value: d.n },
         { label: 'Mean', value: round2(d.mean) },
         { label: 'Median', value: round2(d.median) },
-        { label: 'SD', value: round2(d.sd) },
+        { label: 'Spread (SD)', value: round2(d.sd) },
         { label: 'Min', value: round2(d.min) },
         { label: 'Max', value: round2(d.max) }
       ]));
@@ -1536,13 +1663,16 @@
         if (!isNaN(col[i])) segData[seg].push(col[i]);
       }
 
-      var meanTableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>Median</th><th>SD</th></tr>';
+      var meanTableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>95% CI</th><th>Median</th><th>Spread (SD)</th></tr>';
       var bars = [];
       session.category.groups.forEach(function(g) {
         var vals = segData[g] || [];
         if (vals.length === 0) return;
         var d = StatsEngine.describe(vals);
-        meanTableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.median) + '</td><td>' + round2(d.sd) + '</td></tr>';
+        var margin = 1.96 * (d.sd / Math.sqrt(d.n));
+        var ciLo = round2(d.mean - margin);
+        var ciHi = round2(d.mean + margin);
+        meanTableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + ciLo + '\u2013' + ciHi + '</td><td>' + round2(d.median) + '</td><td>' + round2(d.sd) + '</td></tr>';
         bars.push({ label: g, value: d.mean });
       });
       meanTableHtml += '</table>';
@@ -1578,7 +1708,7 @@
         return;
       }
       var result = StatsEngine.kruskalWallis(groupArr);
-      html += renderPlainLang(label + ': ' + plainP(result.p), result.p < ALPHA);
+      html += renderPlainLang(label + ': ' + plainP(result.p, label, session.category.label || 'segments'), result.p < ALPHA);
       html += RC(label + ' — Kruskal-Wallis', renderMetrics([
         { label: 'H', value: round2(result.H) },
         { label: 'df', value: result.df },
@@ -1726,7 +1856,7 @@
         var result = StatsEngine.pearson(a, b);
         var rVal = result.r !== undefined ? result.r : result;
         var p = result.p !== undefined ? result.p : NaN;
-        html += renderPlainLang(plainR(rVal) + (!isNaN(p) ? ' ' + plainP(p) : ''), !isNaN(p) ? p < ALPHA : null);
+        html += renderPlainLang(plainR(rVal) + (!isNaN(p) ? ' ' + plainP(p, rLabel + ' vs ' + bLabel) : ''), !isNaN(p) ? p < ALPHA : null);
         html += RC(rLabel + ' vs ' + bLabel, renderMetrics([
           { label: 'r', value: round2(rVal) },
           { label: 'n', value: a.length },
@@ -1859,7 +1989,7 @@
       var tVals = result.tStatistics || result.t || [];
       var pVals = result.pValues || result.ps || [];
 
-      html += renderPlainLang(plainR2(r2) + ' ' + plainP(pVal), pVal < ALPHA);
+      html += renderPlainLang(plainR2(r2) + ' ' + plainP(pVal, outcomeLabel, session.category.label || 'segments'), pVal < ALPHA);
 
       html += RC('Regression: ' + outcomeLabel + ' ~ Segments', renderMetrics([
         { label: 'R\u00B2', value: round4(r2) },
@@ -1891,6 +2021,7 @@
       }
       if (maxIdx >= 0) {
         html += renderPlainEnglish('Reference group: ' + groups[0] + '. ' + predLabels[maxIdx] + ' is the strongest predictor (t = ' + round2(tVals[maxIdx]) + ').');
+        session.findings.push({ step: 'Regression', finding: 'Segment regression R\u00B2 = ' + round4(r2) + '. Strongest predictor: ' + predLabels[maxIdx], detail: 'p = ' + round4(pVal), important: pVal < ALPHA });
       }
     } catch(e) {
       html += RC('Regression Error', '<p style="color:var(--red)">' + escHtml(e.message) + '</p>');
@@ -1940,7 +2071,7 @@
       var tVals = result.tStatistics || result.t || [];
       var pVals = result.pValues || result.ps || [];
 
-      html += renderPlainLang(plainR2(r2) + ' ' + plainP(pVal), pVal < ALPHA);
+      html += renderPlainLang(plainR2(r2) + ' ' + plainP(pVal, outcomeLabel, 'behavioral predictors'), pVal < ALPHA);
 
       html += RC('Regression: ' + outcomeLabel + ' ~ Behavioral', renderMetrics([
         { label: 'R\u00B2', value: round4(r2) },
@@ -1968,6 +2099,7 @@
       }
       if (maxIdx >= 0) {
         html += renderPlainEnglish(predLabels[maxIdx] + ' is the strongest driver of ' + outcomeLabel + ' (t = ' + round2(tVals[maxIdx]) + ').');
+        session.findings.push({ step: 'Behavioral Regression', finding: predLabels[maxIdx] + ' is the strongest driver of ' + outcomeLabel + ' (R\u00B2 = ' + round4(r2) + ')', detail: 'p = ' + round4(pVal), important: pVal < ALPHA });
       }
     } catch(e) {
       html += RC('Regression Error', '<p style="color:var(--red)">' + escHtml(e.message) + '</p>');
@@ -2019,6 +2151,37 @@
       loadHtml += '</table>';
       loadHtml += '<div style="font-size:0.72rem;color:var(--text-2);margin-top:0.4rem">Loadings \u2265 0.4 highlighted. Items loading strongly on the same factor form a theme.</div>';
       html += RC('Factor Loadings', loadHtml);
+
+      // Plain language factor interpretation
+      var factorInterpHtml = '';
+      for (var f = 0; f < nFactors; f++) {
+        var highItems = [];
+        var negItems = [];
+        for (var ii = 0; ii < cb.labels.length; ii++) {
+          var ld = loadings[ii] ? loadings[ii][f] : 0;
+          if (typeof ld !== 'number') continue;
+          if (ld >= 0.4) highItems.push({ label: cb.labels[ii], loading: ld });
+          else if (ld <= -0.4) negItems.push({ label: cb.labels[ii], loading: ld });
+        }
+        if (highItems.length > 0 || negItems.length > 0) {
+          factorInterpHtml += '<p style="margin-bottom:0.5rem"><strong>Factor ' + (f + 1) + '</strong>';
+          if (highItems.length > 0) {
+            factorInterpHtml += ' groups ';
+            factorInterpHtml += highItems.map(function(it) { return escHtml(it.label) + ' (' + round2(it.loading) + ')'; }).join(' and ');
+            factorInterpHtml += ' — respondents who rate one high tend to rate the other' + (highItems.length > 1 ? 's' : '') + ' high too.';
+          }
+          if (negItems.length > 0) {
+            negItems.forEach(function(it) {
+              factorInterpHtml += ' ' + escHtml(it.label) + ' loads negatively on Factor ' + (f + 1) + ' (' + round2(it.loading) + ') — it measures the opposite dimension.';
+            });
+          }
+          factorInterpHtml += '</p>';
+        }
+      }
+      if (factorInterpHtml) {
+        html += RC('What the Factors Mean', '<div style="font-size:0.88rem;line-height:1.65;color:var(--text-0)">' + factorInterpHtml + '</div>');
+      }
+      session.findings.push({ step: 'Factor Analysis', finding: nFactors + ' factors explaining ' + Math.round(totalVar * 100) + '% of total variance', detail: '', important: true });
     } catch(e) {
       html += RC('Factor Analysis Error', '<p style="color:var(--red)">' + escHtml(e.message) + '</p>');
     }
@@ -2145,6 +2308,13 @@
       doneCard.innerHTML = '<div style="font-size:1.2rem;font-weight:700;color:var(--green);margin-bottom:0.5rem">Analysis Complete</div>' +
         '<div style="font-size:0.85rem;color:var(--text-2)">All analysis flows have been run. Scroll up to review results.</div>';
       container.appendChild(doneCard);
+
+      // Add TLDR Report button
+      var reportBtn = document.createElement('button');
+      reportBtn.className = 'generate-report-btn';
+      reportBtn.innerHTML = 'Generate TLDR Report &#9998;';
+      reportBtn.addEventListener('click', function() { generateTLDRReport(); });
+      container.appendChild(reportBtn);
     }
   }
 
@@ -2174,6 +2344,223 @@
       }
     }
   }
+
+  /* ==================================================================
+     TLDR Report Generator
+     ================================================================== */
+  function generateTLDRReport() {
+    var s = currentSession;
+    if (!s) return;
+
+    // Build meta info
+    var totalN = 0;
+    var dataLabel = '';
+    if (s.ratings && s.ratings.columns.length > 0) {
+      totalN = s.ratings.columns[0].length;
+      dataLabel = s.ratings.labels[0] || 'Rating Analysis';
+    } else if (s.checkbox && s.checkbox.numericColumns.length > 0) {
+      totalN = s.checkbox.nRows;
+      dataLabel = 'Checkbox/Matrix Analysis';
+    } else if (s.behavioral && s.behavioral.columns.length > 0) {
+      totalN = s.behavioral.columns[0].length;
+      dataLabel = s.behavioral.labels[0] || 'Behavioral Analysis';
+    } else if (s.singleChoice) {
+      totalN = s.singleChoice.values.length;
+      dataLabel = s.singleChoice.label || 'Single-Choice Analysis';
+    }
+
+    var segInfo = '';
+    if (s.category) {
+      segInfo = ', ' + s.category.groups.length + ' segments (' + s.category.label + ')';
+    }
+
+    var itemCount = 0;
+    if (s.ratings) itemCount += s.ratings.columns.length;
+    if (s.checkbox) itemCount += s.checkbox.numericColumns.length;
+    if (s.behavioral) itemCount += s.behavioral.columns.length;
+    var itemInfo = itemCount > 0 ? ', ' + itemCount + ' variables analyzed' : '';
+
+    // Sort findings: important first
+    var sortedFindings = s.findings.slice().sort(function(a, b) {
+      if (a.important && !b.important) return -1;
+      if (!a.important && b.important) return 1;
+      return 0;
+    });
+
+    // Build key findings list
+    var findingsHtml = '';
+    if (sortedFindings.length > 0) {
+      findingsHtml = '<ol>';
+      sortedFindings.forEach(function(f) {
+        findingsHtml += '<li><strong>' + escHtml(f.step) + '</strong> — ' + escHtml(f.finding);
+        if (f.detail) findingsHtml += ' <span style="color:var(--text-2);font-size:0.8rem">(' + escHtml(f.detail) + ')</span>';
+        findingsHtml += '</li>';
+      });
+      findingsHtml += '</ol>';
+    } else {
+      findingsHtml = '<p style="color:var(--text-2)">No findings were captured. Try running more analysis steps before generating the report.</p>';
+    }
+
+    // Build summary stats table
+    var statsTableHtml = '';
+    if (s.ratings && s.category) {
+      statsTableHtml = '<table class="freq-table"><tr><th>Variable</th><th>Overall Mean</th><th>Overall SD</th><th>Test</th><th>p-value</th><th>Significant?</th></tr>';
+      s.ratings.columns.forEach(function(col, ci) {
+        var label = s.ratings.labels[ci] || ('Rating ' + (ci + 1));
+        var d = StatsEngine.describe(col);
+        var groups = {};
+        var catVals = s.category.values;
+        var minLen = Math.min(col.length, catVals.length);
+        for (var i = 0; i < minLen; i++) { var seg = catVals[i]; if (!groups[seg]) groups[seg] = []; if (!isNaN(col[i])) groups[seg].push(col[i]); }
+        var groupArr = s.category.groups.map(function(g) { return groups[g] || []; }).filter(function(g) { return g.length > 0; });
+        var pStr = '-', sigStr = '-';
+        if (groupArr.length >= 2) {
+          var result = StatsEngine.kruskalWallis(groupArr);
+          pStr = round4(result.p);
+          sigStr = result.p < ALPHA ? 'Yes' : 'No';
+        }
+        statsTableHtml += '<tr><td>' + escHtml(label) + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.sd) + '</td><td>Kruskal-Wallis</td><td>' + pStr + '</td><td style="font-weight:700;color:' + (sigStr === 'Yes' ? 'var(--green)' : 'var(--text-2)') + '">' + sigStr + '</td></tr>';
+      });
+      statsTableHtml += '</table>';
+    }
+    if (s.checkbox && s.checkbox.isScale && s.category) {
+      if (!statsTableHtml) statsTableHtml = '<table class="freq-table"><tr><th>Variable</th><th>Overall Mean</th><th>Overall SD</th><th>Test</th><th>p-value</th><th>Significant?</th></tr>';
+      else statsTableHtml = statsTableHtml.replace('</table>', '');
+      s.checkbox.numericColumns.forEach(function(col, ci) {
+        var label = s.checkbox.labels[ci];
+        var d = StatsEngine.describe(col);
+        var groups = {};
+        var catVals = s.category.values;
+        var minLen = Math.min(col.length, catVals.length);
+        for (var i = 0; i < minLen; i++) { var seg = catVals[i]; if (!groups[seg]) groups[seg] = []; if (!isNaN(col[i])) groups[seg].push(col[i]); }
+        var groupArr = s.category.groups.map(function(g) { return groups[g] || []; }).filter(function(g) { return g.length > 0; });
+        var pStr = '-', sigStr = '-';
+        if (groupArr.length >= 2) {
+          var result = StatsEngine.kruskalWallis(groupArr);
+          pStr = round4(result.p);
+          sigStr = result.p < ALPHA ? 'Yes' : 'No';
+        }
+        statsTableHtml += '<tr><td>' + escHtml(label) + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.sd) + '</td><td>Kruskal-Wallis</td><td>' + pStr + '</td><td style="font-weight:700;color:' + (sigStr === 'Yes' ? 'var(--green)' : 'var(--text-2)') + '">' + sigStr + '</td></tr>';
+      });
+      statsTableHtml += '</table>';
+    }
+
+    // Segment means summary for report
+    var segSummaryHtml = '';
+    if (s.category && (s.ratings || (s.checkbox && s.checkbox.isScale))) {
+      var cols = s.ratings ? s.ratings.columns : s.checkbox.numericColumns;
+      var labels = s.ratings ? s.ratings.labels : s.checkbox.labels;
+      // Find highest and lowest segment across all columns
+      var segTotals = {};
+      var segCounts = {};
+      cols.forEach(function(col) {
+        var catVals = s.category.values;
+        var minLen = Math.min(col.length, catVals.length);
+        for (var i = 0; i < minLen; i++) {
+          var seg = catVals[i];
+          if (!isNaN(col[i])) {
+            segTotals[seg] = (segTotals[seg] || 0) + col[i];
+            segCounts[seg] = (segCounts[seg] || 0) + 1;
+          }
+        }
+      });
+      var highSeg = '', lowSeg = '', highMean = -Infinity, lowMean = Infinity;
+      s.category.groups.forEach(function(g) {
+        if (segCounts[g]) {
+          var avg = segTotals[g] / segCounts[g];
+          if (avg > highMean) { highMean = avg; highSeg = g; }
+          if (avg < lowMean) { lowMean = avg; lowSeg = g; }
+        }
+      });
+      if (highSeg && lowSeg && highSeg !== lowSeg) {
+        segSummaryHtml = '<p style="font-size:0.88rem;line-height:1.6;margin-top:0.5rem">Highest-scoring segment: <strong>' + escHtml(highSeg) + '</strong> (overall mean ' + round2(highMean) + '). Lowest-scoring: <strong>' + escHtml(lowSeg) + '</strong> (overall mean ' + round2(lowMean) + ').</p>';
+      }
+    }
+
+    // Chart reference descriptions
+    var chartDesc = '';
+    if (s.ratings && s.ratings.columns.length > 0) {
+      chartDesc += '<p style="font-size:0.82rem;color:var(--text-2);margin-top:0.5rem">See above: Mean comparison bar chart and segment distribution tables for detailed breakdowns.</p>';
+    }
+
+    // Render report
+    var reportHtml =
+      '<div class="report" id="tldr-report">' +
+        '<h2>Research Summary \u2014 ' + escHtml(dataLabel) + '</h2>' +
+        '<p class="report-meta">N = ' + totalN + ' respondents' + segInfo + itemInfo + '</p>' +
+        '<h3>Key Findings</h3>' +
+        findingsHtml +
+        segSummaryHtml +
+        (statsTableHtml ? '<h3>Statistical Details</h3>' + statsTableHtml : '') +
+        chartDesc +
+        '<div class="report-actions">' +
+          '<button onclick="copyTLDRReport()">Copy Report to Clipboard</button>' +
+        '</div>' +
+      '</div>';
+
+    // Find or create report container
+    var existingReport = document.getElementById('tldr-report');
+    if (existingReport) existingReport.remove();
+
+    var flowSection = document.getElementById('flowSection');
+    var reportDiv = document.createElement('div');
+    reportDiv.innerHTML = reportHtml;
+    flowSection.appendChild(reportDiv.firstChild);
+
+    // Scroll to report
+    setTimeout(function() {
+      document.getElementById('tldr-report').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+
+  // Copy report as plain text (needs to be global for onclick)
+  window.copyTLDRReport = function() {
+    var report = document.getElementById('tldr-report');
+    if (!report) return;
+
+    // Build plain text version
+    var lines = [];
+    var h2 = report.querySelector('h2');
+    if (h2) lines.push(h2.textContent, '');
+    var meta = report.querySelector('.report-meta');
+    if (meta) lines.push(meta.textContent, '');
+
+    var h3s = report.querySelectorAll('h3');
+    h3s.forEach(function(h3) {
+      lines.push(h3.textContent.toUpperCase(), '---');
+      var sibling = h3.nextElementSibling;
+      while (sibling && sibling.tagName !== 'H3' && !sibling.classList.contains('report-actions')) {
+        if (sibling.tagName === 'OL') {
+          var items = sibling.querySelectorAll('li');
+          items.forEach(function(li, idx) { lines.push((idx + 1) + '. ' + li.textContent); });
+        } else if (sibling.tagName === 'TABLE') {
+          var rows = sibling.querySelectorAll('tr');
+          rows.forEach(function(row) {
+            var cells = row.querySelectorAll('th, td');
+            var cellTexts = [];
+            cells.forEach(function(c) { cellTexts.push(c.textContent.trim()); });
+            lines.push(cellTexts.join('\t'));
+          });
+        } else if (sibling.tagName === 'P') {
+          lines.push(sibling.textContent);
+        }
+        sibling = sibling.nextElementSibling;
+      }
+      lines.push('');
+    });
+
+    var text = lines.join('\n');
+    navigator.clipboard.writeText(text).then(function() {
+      var btn = report.querySelector('.report-actions button');
+      if (btn) {
+        var orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.style.background = 'var(--green)';
+        btn.style.color = '#fff';
+        setTimeout(function() { btn.textContent = orig; btn.style.background = ''; btn.style.color = ''; }, 2000);
+      }
+    });
+  };
 
 })();
 </script>
