@@ -760,12 +760,267 @@
       ctx.fillStyle = colors.text; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
       ctx.fillText(labelText, leftPad - 10, y + barHeight / 2);
 
+      // CI error bars (if sd and n provided)
+      if (bar.sd && bar.n && bar.n > 1 && !bar.isPct) {
+        var margin = 1.96 * (bar.sd / Math.sqrt(bar.n));
+        var ciLo = xPos(bar.value - margin);
+        var ciHi = xPos(bar.value + margin);
+        ctx.strokeStyle = colors.text;
+        ctx.globalAlpha = 0.5;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(ciLo, y + barHeight / 2);
+        ctx.lineTo(ciHi, y + barHeight / 2);
+        ctx.stroke();
+        // Whisker caps
+        ctx.beginPath();
+        ctx.moveTo(ciLo, y + barHeight / 2 - 5);
+        ctx.lineTo(ciLo, y + barHeight / 2 + 5);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(ciHi, y + barHeight / 2 - 5);
+        ctx.lineTo(ciHi, y + barHeight / 2 + 5);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
       // Value
       var valStr = bar.isPct ? Math.round(bar.value) + '%' : round2(bar.value).toString();
       ctx.font = '700 12px -apple-system, BlinkMacSystemFont, sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText(valStr, barEnd + 8, y + barHeight / 2);
     });
+  }
+
+  function drawVerticalGroupedBarChart(canvasId, canvasW, canvasH, groupLabels, seriesLabels, data, sdData) {
+    // Estimate legend height first
+    var tempCanvas = document.createElement('canvas');
+    var tempCtx = tempCanvas.getContext('2d');
+    tempCtx.font = '500 10px -apple-system, BlinkMacSystemFont, sans-serif';
+    var nSeries = seriesLabels.length;
+    var legendItemWidths = [];
+    var legendTotalW = 0;
+    for (var s = 0; s < nSeries; s++) {
+      var lbl = seriesLabels[s].length > 20 ? seriesLabels[s].substring(0, 18) + '...' : seriesLabels[s];
+      var w = tempCtx.measureText(lbl).width + 20 + 8;
+      legendItemWidths.push(w);
+      legendTotalW += w;
+    }
+    var chartAreaW = canvasW - 70;
+    var legendRows = 1;
+    var rowW = 0;
+    for (var s = 0; s < nSeries; s++) {
+      rowW += legendItemWidths[s];
+      if (rowW > chartAreaW && s > 0) { legendRows++; rowW = legendItemWidths[s]; }
+    }
+    var legendH = legendRows * 16 + 10;
+    var adjustedH = canvasH + legendH;
+
+    var c = initCanvas(canvasId, canvasW, adjustedH);
+    if (!c) return;
+    var ctx = c.ctx, w = c.w, h = c.h;
+    var colors = getColors();
+
+    var pad = { left: 50, right: 20, top: 14, bottom: 60 + legendH };
+    var cw = w - pad.left - pad.right;
+    var ch = h - pad.top - pad.bottom;
+
+    var nGroups = groupLabels.length;
+    var groupW = cw / nGroups;
+    var barW = Math.max(8, Math.min(28, (groupW - 12) / nSeries));
+    var totalBarsW = nSeries * barW;
+
+    // Find max value for y-axis
+    var maxVal = 0;
+    for (var r = 0; r < data.length; r++) {
+      for (var cc = 0; cc < data[r].length; cc++) {
+        var v = data[r][cc];
+        if (sdData && sdData[r] && sdData[r][cc] && sdData[r][cc].sd && sdData[r][cc].n && sdData[r][cc].n > 1) {
+          v += 1.96 * (sdData[r][cc].sd / Math.sqrt(sdData[r][cc].n));
+        }
+        if (v > maxVal) maxVal = v;
+      }
+    }
+    maxVal = Math.ceil(maxVal / 10) * 10;
+    if (maxVal < 10) maxVal = 10;
+    var yStep = maxVal <= 20 ? 5 : maxVal <= 50 ? 10 : 20;
+
+    function yPos(val) { return pad.top + ch - (val / maxVal) * ch; }
+
+    // Y-axis gridlines and labels
+    ctx.font = '500 11px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (var yy = 0; yy <= maxVal; yy += yStep) {
+      var py = yPos(yy);
+      ctx.strokeStyle = colors.border;
+      ctx.globalAlpha = 0.3;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, py);
+      ctx.lineTo(pad.left + cw, py);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = colors.subtext;
+      ctx.fillText(yy, pad.left - 8, py);
+    }
+
+    // Bars
+    for (var g = 0; g < nGroups; g++) {
+      var gx = pad.left + g * groupW + (groupW - totalBarsW) / 2;
+      for (var s = 0; s < nSeries; s++) {
+        var val = data[g][s];
+        var bx = gx + s * barW;
+        var by = yPos(val);
+        var bh = yPos(0) - by;
+
+        ctx.fillStyle = CHART_COLORS[s % CHART_COLORS.length];
+        ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(bx, by, barW - 1, bh, [3, 3, 0, 0]);
+        else ctx.rect(bx, by, barW - 1, bh);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // CI error bars
+        if (sdData && sdData[g] && sdData[g][s] && sdData[g][s].sd && sdData[g][s].n && sdData[g][s].n > 1) {
+          var margin = 1.96 * (sdData[g][s].sd / Math.sqrt(sdData[g][s].n));
+          var ciTop = yPos(val + margin);
+          var ciBot = yPos(val - margin);
+          var barCenterX = bx + (barW - 1) / 2;
+          ctx.strokeStyle = colors.text;
+          ctx.globalAlpha = 0.55;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(barCenterX, ciTop); ctx.lineTo(barCenterX, ciBot); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(barCenterX - 4, ciTop); ctx.lineTo(barCenterX + 4, ciTop); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(barCenterX - 4, ciBot); ctx.lineTo(barCenterX + 4, ciBot); ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+
+        // Value label on top of bar
+        if (val > 0 && barW >= 12) {
+          ctx.fillStyle = colors.text;
+          ctx.font = '600 ' + Math.max(8, Math.min(10, barW - 2)) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          var valLabel = maxVal > 10 ? Math.round(val) + '%' : val.toFixed(1).replace(/\.0$/, '');
+          ctx.fillText(valLabel, bx + (barW - 1) / 2, by - 2);
+        }
+      }
+
+      // Group label (x-axis)
+      ctx.fillStyle = colors.text;
+      ctx.font = '500 11px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      var gLabel = groupLabels[g].length > 12 ? groupLabels[g].substring(0, 10) + '...' : groupLabels[g];
+      ctx.fillText(gLabel, pad.left + g * groupW + groupW / 2, pad.top + ch + 6);
+    }
+
+    // Legend (below chart, centered)
+    ctx.font = '500 10px -apple-system, BlinkMacSystemFont, sans-serif';
+    var legendBaseY = pad.top + ch + 30;
+    // Compute rows for centering
+    var rows = [[]];
+    var rowWidths = [0];
+    for (var s = 0; s < nSeries; s++) {
+      var lbl = seriesLabels[s].length > 20 ? seriesLabels[s].substring(0, 18) + '...' : seriesLabels[s];
+      var itemW = ctx.measureText(lbl).width + 20 + 8;
+      if (rowWidths[rowWidths.length - 1] + itemW > cw && rows[rows.length - 1].length > 0) {
+        rows.push([]);
+        rowWidths.push(0);
+      }
+      rows[rows.length - 1].push({ lbl: lbl, idx: s, w: itemW });
+      rowWidths[rowWidths.length - 1] += itemW;
+    }
+    for (var ri = 0; ri < rows.length; ri++) {
+      var rowStartX = pad.left + (cw - rowWidths[ri]) / 2;
+      var curX = rowStartX;
+      var curY = legendBaseY + ri * 16;
+      for (var si = 0; si < rows[ri].length; si++) {
+        var item = rows[ri][si];
+        ctx.fillStyle = CHART_COLORS[item.idx % CHART_COLORS.length];
+        ctx.fillRect(curX, curY, 10, 10);
+        ctx.fillStyle = colors.text;
+        ctx.textAlign = 'left';
+        ctx.fillText(item.lbl, curX + 13, curY + 8);
+        curX += item.w;
+      }
+    }
+  }
+
+  // Draw a scatter plot on canvas
+  function drawScatterPlot(canvasId, points, xLabel, yLabel) {
+    if (!points || points.length === 0) return;
+    var c = initCanvas(canvasId, 500, 300);
+    if (!c) return;
+    var ctx = c.ctx, w = c.w, h = c.h;
+    var colors = getColors();
+    var pad = { left: 55, right: 20, top: 15, bottom: 40 };
+    var cw = w - pad.left - pad.right;
+    var ch = h - pad.top - pad.bottom;
+
+    var xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+    points.forEach(function(p) {
+      if (p.x < xMin) xMin = p.x;
+      if (p.x > xMax) xMax = p.x;
+      if (p.y < yMin) yMin = p.y;
+      if (p.y > yMax) yMax = p.y;
+    });
+    var xRange = xMax - xMin || 1;
+    var yRange = yMax - yMin || 1;
+    xMin -= xRange * 0.05; xMax += xRange * 0.05;
+    yMin -= yRange * 0.05; yMax += yRange * 0.05;
+
+    function xPos(val) { return pad.left + ((val - xMin) / (xMax - xMin)) * cw; }
+    function yPos(val) { return pad.top + ch - ((val - yMin) / (yMax - yMin)) * ch; }
+
+    // Gridlines
+    ctx.strokeStyle = colors.border; ctx.globalAlpha = 0.2; ctx.lineWidth = 1;
+    for (var i = 0; i <= 4; i++) {
+      var gy = pad.top + (ch / 4) * i;
+      ctx.beginPath(); ctx.moveTo(pad.left, gy); ctx.lineTo(pad.left + cw, gy); ctx.stroke();
+      var gx = pad.left + (cw / 4) * i;
+      ctx.beginPath(); ctx.moveTo(gx, pad.top); ctx.lineTo(gx, pad.top + ch); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Axis labels
+    ctx.fillStyle = colors.subtext;
+    ctx.font = '500 10px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(xLabel, pad.left + cw / 2, h - 8);
+    ctx.save();
+    ctx.translate(12, pad.top + ch / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(yLabel, 0, 0);
+    ctx.restore();
+
+    // Points
+    ctx.fillStyle = colors.rose || '#D4587A';
+    ctx.globalAlpha = 0.6;
+    points.forEach(function(p) {
+      ctx.beginPath();
+      ctx.arc(xPos(p.x), yPos(p.y), 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    // Trend line (linear regression)
+    if (points.length >= 3) {
+      var sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, n = points.length;
+      points.forEach(function(p) { sumX += p.x; sumY += p.y; sumXY += p.x * p.y; sumX2 += p.x * p.x; });
+      var slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+      var intercept = (sumY - slope * sumX) / n;
+      ctx.strokeStyle = colors.rose || '#D4587A';
+      ctx.globalAlpha = 0.4;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(xPos(xMin), yPos(slope * xMin + intercept));
+      ctx.lineTo(xPos(xMax), yPos(slope * xMax + intercept));
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
   }
 
   function renderChart(chartId, title, width, height) {
@@ -1274,6 +1529,19 @@
       }, 50);
     });
 
+    // Mean comparison chart across all items (with CI)
+    if (session.ratings.columns.length > 1) {
+      var meanBars = [];
+      session.ratings.columns.forEach(function(col, i) {
+        var d = StatsEngine.describe(col);
+        var lbl = session.ratings.labels[i] || ('Rating ' + (i + 1));
+        meanBars.push({ label: lbl, value: d.mean, sd: d.sd, n: d.n });
+      });
+      var meanChartId = 'freq_mean_compare';
+      html += renderChart(meanChartId, 'Mean Comparison (with 95% CI)', 500, Math.max(120, meanBars.length * 46 + 28));
+      setTimeout(function() { drawBarChart(meanChartId, meanBars); }, 60);
+    }
+
     // Plain English
     var summaries = session.ratings.columns.map(function(col, i) {
       var d = StatsEngine.describe(col);
@@ -1320,7 +1588,7 @@
         var ciLo = round2(d.mean - margin);
         var ciHi = round2(d.mean + margin);
         meanTableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + ciLo + '\u2013' + ciHi + '</td><td>' + round2(d.median) + '</td><td>' + round2(d.sd) + '</td></tr>';
-        bars.push({ label: g, value: d.mean });
+        bars.push({ label: g, value: d.mean, sd: d.sd, n: d.n });
       });
       meanTableHtml += '</table>';
 
@@ -1329,9 +1597,45 @@
       html += RC(label + ' by ' + session.category.label, wrapWithToggle(meanTableHtml, distHtml, toggleId));
 
       var chartId = 'xtab_chart_' + ci;
-      html += renderChart(chartId, label + ' — Mean by Segment', 500, Math.max(120, bars.length * 46 + 28));
+      html += renderChart(chartId, label + ' — Mean by Segment (with 95% CI)', 500, Math.max(120, bars.length * 46 + 28));
       setTimeout(function() { drawBarChart(chartId, bars); }, 50);
     });
+
+    // Grouped bar chart: all items x all segments
+    if (session.ratings.columns.length > 1) {
+      var grpGroupLabels = session.category.groups.slice();
+      var grpSeriesLabels = session.ratings.columns.map(function(c, i) { return session.ratings.labels[i] || ('Rating ' + (i + 1)); });
+      var grpData = [];
+      var grpSdData = [];
+      grpGroupLabels.forEach(function(g) {
+        var row = [];
+        var sdRow = [];
+        session.ratings.columns.forEach(function(col) {
+          var vals = [];
+          var catVals = session.category.values;
+          var minLen = Math.min(col.length, catVals.length);
+          for (var i = 0; i < minLen; i++) {
+            if (catVals[i] === g && !isNaN(col[i])) vals.push(col[i]);
+          }
+          if (vals.length > 0) {
+            var d = StatsEngine.describe(vals);
+            row.push(d.mean);
+            sdRow.push({ sd: d.sd, n: d.n });
+          } else {
+            row.push(0);
+            sdRow.push({ sd: 0, n: 0 });
+          }
+        });
+        grpData.push(row);
+        grpSdData.push(sdRow);
+      });
+      var grpChartId = 'xtab_grouped_all';
+      var grpChartH = Math.max(250, 40 * grpGroupLabels.length + 80);
+      html += renderChart(grpChartId, 'All Items by ' + session.category.label + ' (Grouped)', 600, grpChartH);
+      setTimeout(function() {
+        drawVerticalGroupedBarChart(grpChartId, 600, grpChartH, grpGroupLabels, grpSeriesLabels, grpData, grpSdData);
+      }, 70);
+    }
 
     container.innerHTML = html;
     bindToggles();
@@ -1387,6 +1691,62 @@
     });
     html += renderPlainEnglish('Kruskal-Wallis results across ' + session.category.label + ' segments: ' + summaries.join('. ') + '.');
 
+    // Significance map: -log10(p) per item
+    var sigBars = [];
+    session.ratings.columns.forEach(function(col, ci) {
+      var label = session.ratings.labels[ci] || ('Rating ' + (ci + 1));
+      var groups2 = {};
+      var catVals2 = session.category.values;
+      var minLen2 = Math.min(col.length, catVals2.length);
+      for (var i = 0; i < minLen2; i++) { var seg = catVals2[i]; if (!groups2[seg]) groups2[seg] = []; if (!isNaN(col[i])) groups2[seg].push(col[i]); }
+      var groupArr2 = session.category.groups.map(function(g) { return groups2[g] || []; }).filter(function(g) { return g.length > 0; });
+      if (groupArr2.length >= 2) {
+        var res = StatsEngine.kruskalWallis(groupArr2);
+        var negLogP = res.p > 0 ? -Math.log10(res.p) : 5;
+        sigBars.push({ label: label, value: round2(negLogP), color: res.p < ALPHA ? '#3a9a5c' : '#c0392b' });
+      }
+    });
+    if (sigBars.length > 0) {
+      var sigChartId = 'rating_sig_map';
+      html += renderChart(sigChartId, 'Significance Map (-log10 p)', 500, Math.max(120, sigBars.length * 46 + 28));
+      setTimeout(function() {
+        drawBarChart(sigChartId, sigBars);
+        // Draw threshold line at -log10(0.05) = 1.3
+        var canvas = document.getElementById(sigChartId);
+        if (canvas) {
+          var ctx2 = canvas.getContext('2d');
+          var dpr = window.devicePixelRatio || 1;
+          ctx2.save();
+          ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+          // Approximate position: threshold at 1.3
+          var allV = sigBars.map(function(b) { return b.value; });
+          allV.push(0);
+          var maxV = Math.max.apply(null, allV);
+          var rangeV = maxV || 1;
+          var rMin = -rangeV * 0.08;
+          var rMax = maxV + rangeV * 0.18;
+          var leftPad = 130, rightPad = 65;
+          var chartW = 500 - leftPad - rightPad;
+          var xThr = leftPad + ((1.3 - rMin) / (rMax - rMin)) * chartW;
+          ctx2.strokeStyle = '#c08a30';
+          ctx2.globalAlpha = 0.7;
+          ctx2.lineWidth = 1.5;
+          ctx2.setLineDash([5, 3]);
+          ctx2.beginPath();
+          ctx2.moveTo(xThr, 4);
+          ctx2.lineTo(xThr, canvas.height / dpr - 4);
+          ctx2.stroke();
+          ctx2.setLineDash([]);
+          ctx2.globalAlpha = 1;
+          ctx2.font = '500 10px -apple-system, sans-serif';
+          ctx2.fillStyle = '#c08a30';
+          ctx2.textAlign = 'center';
+          ctx2.fillText('p=.05', xThr, canvas.height / dpr - 6);
+          ctx2.restore();
+        }
+      }, 70);
+    }
+
     // Push findings
     session.ratings.columns.forEach(function(col, ci) {
       var label = session.ratings.labels[ci] || ('Rating ' + (ci + 1));
@@ -1413,7 +1773,7 @@
       var bars = [];
       cb.numericColumns.forEach(function(col, i) {
         var d = StatsEngine.describe(col);
-        bars.push({ label: cb.labels[i], value: d.mean });
+        bars.push({ label: cb.labels[i], value: d.mean, sd: d.sd, n: d.n });
       });
       var chartId = 'cb_rates_chart';
       html += RC('Scale Comparison — Mean per Item', renderMetrics([
@@ -1495,6 +1855,43 @@
       var toggleId = 'cc_seg_' + ci;
       html += RC(label + ' by ' + session.category.label, wrapWithToggle(meanTableHtml, distHtml, toggleId));
     });
+
+    // Grouped bar chart: all checkbox items x all segments
+    if (cb.numericColumns.length > 1) {
+      var cbGrpLabels = session.category.groups.slice();
+      var cbSeriesLabels = cb.labels.slice();
+      var cbGrpData = [];
+      var cbGrpSdData = [];
+      cbGrpLabels.forEach(function(g) {
+        var row = [];
+        var sdRow = [];
+        cb.numericColumns.forEach(function(col) {
+          var vals = [];
+          var catVals2 = session.category.values;
+          var minLen2 = Math.min(col.length, catVals2.length);
+          for (var i = 0; i < minLen2; i++) {
+            if (catVals2[i] === g && !isNaN(col[i])) vals.push(col[i]);
+          }
+          if (vals.length > 0) {
+            var d = StatsEngine.describe(vals);
+            row.push(d.mean);
+            sdRow.push({ sd: d.sd, n: d.n });
+          } else {
+            row.push(0);
+            sdRow.push({ sd: 0, n: 0 });
+          }
+        });
+        cbGrpData.push(row);
+        cbGrpSdData.push(sdRow);
+      });
+      var cbGrpChartId = 'cb_seg_grouped_all';
+      var cbGrpChartH = Math.max(250, 40 * cbGrpLabels.length + 80);
+      html += renderChart(cbGrpChartId, 'All Items by ' + session.category.label + ' (Grouped)', 600, cbGrpChartH);
+      setTimeout(function() {
+        drawVerticalGroupedBarChart(cbGrpChartId, 600, cbGrpChartH, cbGrpLabels, cbSeriesLabels, cbGrpData, cbGrpSdData);
+      }, 70);
+    }
+
     container.innerHTML = html;
     bindToggles();
   }
@@ -1527,6 +1924,61 @@
         { label: 'p-value', value: round4(result.p), cls: pClass(result.p) }
       ]) + renderSigBadge(result.p));
     });
+
+    // Significance map: -log10(p) per checkbox item
+    var cbSigBars = [];
+    cb.numericColumns.forEach(function(col, ci) {
+      var label2 = cb.labels[ci];
+      var groups2 = {};
+      var catVals2 = session.category.values;
+      var minLen2 = Math.min(col.length, catVals2.length);
+      for (var i = 0; i < minLen2; i++) { var seg = catVals2[i]; if (!groups2[seg]) groups2[seg] = []; if (!isNaN(col[i])) groups2[seg].push(col[i]); }
+      var groupArr2 = session.category.groups.map(function(g) { return groups2[g] || []; }).filter(function(g) { return g.length > 0; });
+      if (groupArr2.length >= 2) {
+        var res2 = StatsEngine.kruskalWallis(groupArr2);
+        var negLogP = res2.p > 0 ? -Math.log10(res2.p) : 5;
+        cbSigBars.push({ label: label2, value: round2(negLogP), color: res2.p < ALPHA ? '#3a9a5c' : '#c0392b' });
+      }
+    });
+    if (cbSigBars.length > 0) {
+      var cbSigChartId = 'cb_sig_map';
+      html += renderChart(cbSigChartId, 'Significance Map (-log10 p)', 500, Math.max(120, cbSigBars.length * 46 + 28));
+      setTimeout(function() {
+        drawBarChart(cbSigChartId, cbSigBars);
+        var canvas = document.getElementById(cbSigChartId);
+        if (canvas) {
+          var ctx2 = canvas.getContext('2d');
+          var dpr = window.devicePixelRatio || 1;
+          ctx2.save();
+          ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+          var allV = cbSigBars.map(function(b) { return b.value; });
+          allV.push(0);
+          var maxV = Math.max.apply(null, allV);
+          var rangeV = maxV || 1;
+          var rMin = -rangeV * 0.08;
+          var rMax = maxV + rangeV * 0.18;
+          var leftPad = 130, rightPad = 65;
+          var chartW2 = 500 - leftPad - rightPad;
+          var xThr = leftPad + ((1.3 - rMin) / (rMax - rMin)) * chartW2;
+          ctx2.strokeStyle = '#c08a30';
+          ctx2.globalAlpha = 0.7;
+          ctx2.lineWidth = 1.5;
+          ctx2.setLineDash([5, 3]);
+          ctx2.beginPath();
+          ctx2.moveTo(xThr, 4);
+          ctx2.lineTo(xThr, canvas.height / dpr - 4);
+          ctx2.stroke();
+          ctx2.setLineDash([]);
+          ctx2.globalAlpha = 1;
+          ctx2.font = '500 10px -apple-system, sans-serif';
+          ctx2.fillStyle = '#c08a30';
+          ctx2.textAlign = 'center';
+          ctx2.fillText('p=.05', xThr, canvas.height / dpr - 6);
+          ctx2.restore();
+        }
+      }, 70);
+    }
+
     container.innerHTML = html;
   }
 
@@ -1549,6 +2001,38 @@
                  alphaVal >= 0.6 ? 'Questionable internal consistency.' :
                  'Poor internal consistency. Consider revising items.';
     html += renderPlainEnglish("Cronbach's alpha = " + round2(alphaVal) + '. ' + interp);
+
+    // Item-total correlations and alpha-if-deleted chart
+    if (cb.numericColumns.length >= 3) {
+      var itemCorBars = [];
+      cb.numericColumns.forEach(function(col, idx) {
+        // Compute total score without this item
+        var n = col.length;
+        var totalWithout = [];
+        for (var r = 0; r < n; r++) {
+          var sum = 0, cnt = 0;
+          cb.numericColumns.forEach(function(c, j) {
+            if (j !== idx && r < c.length && !isNaN(c[r])) { sum += c[r]; cnt++; }
+          });
+          totalWithout.push(cnt > 0 ? sum : NaN);
+        }
+        // Pearson correlation between this item and total-without
+        var pairs_a = [], pairs_b = [];
+        for (var r = 0; r < n; r++) {
+          if (!isNaN(col[r]) && !isNaN(totalWithout[r])) { pairs_a.push(col[r]); pairs_b.push(totalWithout[r]); }
+        }
+        var rVal = 0;
+        if (pairs_a.length >= 3) {
+          var rRes = StatsEngine.pearson(pairs_a, pairs_b);
+          rVal = rRes.r !== undefined ? rRes.r : rRes;
+        }
+        itemCorBars.push({ label: cb.labels[idx], value: round2(rVal), color: rVal >= 0.3 ? '#3a9a5c' : rVal >= 0.15 ? '#c08a30' : '#c0392b' });
+      });
+      var itemCorChartId = 'cb_item_total_corr';
+      html += renderChart(itemCorChartId, 'Item-Total Correlations', 500, Math.max(120, itemCorBars.length * 46 + 28));
+      setTimeout(function() { drawBarChart(itemCorChartId, itemCorBars); }, 60);
+    }
+
     session.findings.push({ step: 'Reliability', finding: "Cronbach's alpha = " + round2(alphaVal) + ' (' + interp + ')', detail: '', important: alphaVal >= 0.7 });
     container.innerHTML = html;
   }
@@ -1646,6 +2130,19 @@
         { label: 'Max', value: round2(d.max) }
       ]));
     });
+
+    // Bar chart of means with CI
+    if (session.behavioral.columns.length >= 1) {
+      var behBars = [];
+      session.behavioral.columns.forEach(function(col, i) {
+        var d = StatsEngine.describe(col);
+        behBars.push({ label: session.behavioral.labels[i], value: d.mean, sd: d.sd, n: d.n });
+      });
+      var behChartId = 'beh_summary_chart';
+      html += renderChart(behChartId, 'Mean per Variable (with 95% CI)', 500, Math.max(120, behBars.length * 46 + 28));
+      setTimeout(function() { drawBarChart(behChartId, behBars); }, 50);
+    }
+
     container.innerHTML = html;
   }
 
@@ -1673,7 +2170,7 @@
         var ciLo = round2(d.mean - margin);
         var ciHi = round2(d.mean + margin);
         meanTableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + ciLo + '\u2013' + ciHi + '</td><td>' + round2(d.median) + '</td><td>' + round2(d.sd) + '</td></tr>';
-        bars.push({ label: g, value: d.mean });
+        bars.push({ label: g, value: d.mean, sd: d.sd, n: d.n });
       });
       meanTableHtml += '</table>';
 
@@ -1682,7 +2179,7 @@
       html += RC(label + ' by ' + session.category.label, wrapWithToggle(meanTableHtml, distHtml, toggleId));
 
       var chartId = 'beh_seg_chart_' + ci;
-      html += renderChart(chartId, label + ' — Mean by Segment', 500, Math.max(120, bars.length * 46 + 28));
+      html += renderChart(chartId, label + ' — Mean by Segment (with 95% CI)', 500, Math.max(120, bars.length * 46 + 28));
       setTimeout(function() { drawBarChart(chartId, bars); }, 50);
     });
     container.innerHTML = html;
@@ -1715,6 +2212,50 @@
         { label: 'p-value', value: round4(result.p), cls: pClass(result.p) }
       ]) + renderSigBadge(result.p));
     });
+
+    // Significance map for behavioral variables
+    var behSigBars = [];
+    session.behavioral.columns.forEach(function(col, ci) {
+      var label3 = session.behavioral.labels[ci];
+      var groups3 = {};
+      var catVals3 = session.category.values;
+      var minLen3 = Math.min(col.length, catVals3.length);
+      for (var i = 0; i < minLen3; i++) { var seg = catVals3[i]; if (!groups3[seg]) groups3[seg] = []; if (!isNaN(col[i])) groups3[seg].push(col[i]); }
+      var groupArr3 = session.category.groups.map(function(g) { return groups3[g] || []; }).filter(function(g) { return g.length > 0; });
+      if (groupArr3.length >= 2) {
+        var res3 = StatsEngine.kruskalWallis(groupArr3);
+        var negLogP = res3.p > 0 ? -Math.log10(res3.p) : 5;
+        behSigBars.push({ label: label3, value: round2(negLogP), color: res3.p < ALPHA ? '#3a9a5c' : '#c0392b' });
+      }
+    });
+    if (behSigBars.length > 0) {
+      var behSigChartId = 'beh_sig_map';
+      html += renderChart(behSigChartId, 'Significance Map (-log10 p)', 500, Math.max(120, behSigBars.length * 46 + 28));
+      setTimeout(function() {
+        drawBarChart(behSigChartId, behSigBars);
+        var canvas = document.getElementById(behSigChartId);
+        if (canvas) {
+          var ctx2 = canvas.getContext('2d');
+          var dpr = window.devicePixelRatio || 1;
+          ctx2.save(); ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+          var allV = behSigBars.map(function(b) { return b.value; }); allV.push(0);
+          var maxV = Math.max.apply(null, allV);
+          var rangeV = maxV || 1;
+          var rMin = -rangeV * 0.08; var rMax = maxV + rangeV * 0.18;
+          var leftPad = 130, rightPad = 65;
+          var chartW2 = 500 - leftPad - rightPad;
+          var xThr = leftPad + ((1.3 - rMin) / (rMax - rMin)) * chartW2;
+          ctx2.strokeStyle = '#c08a30'; ctx2.globalAlpha = 0.7; ctx2.lineWidth = 1.5;
+          ctx2.setLineDash([5, 3]);
+          ctx2.beginPath(); ctx2.moveTo(xThr, 4); ctx2.lineTo(xThr, canvas.height / dpr - 4); ctx2.stroke();
+          ctx2.setLineDash([]); ctx2.globalAlpha = 1;
+          ctx2.font = '500 10px -apple-system, sans-serif'; ctx2.fillStyle = '#c08a30';
+          ctx2.textAlign = 'center'; ctx2.fillText('p=.05', xThr, canvas.height / dpr - 6);
+          ctx2.restore();
+        }
+      }, 70);
+    }
+
     container.innerHTML = html;
   }
 
@@ -1756,6 +2297,47 @@
     }
     tableHtml += '</table>';
     html += RC('Correlation Matrix', tableHtml);
+
+    // Correlation bar chart (off-diagonal unique pairs)
+    var corrBars = [];
+    var corrPairs = [];
+    for (var i = 0; i < cols.length; i++) {
+      for (var j = i + 1; j < cols.length; j++) {
+        var minLen2 = Math.min(cols[i].length, cols[j].length);
+        var pa2 = [], pb2 = [];
+        for (var k = 0; k < minLen2; k++) {
+          if (!isNaN(cols[i][k]) && !isNaN(cols[j][k])) { pa2.push(cols[i][k]); pb2.push(cols[j][k]); }
+        }
+        if (pa2.length >= 3) {
+          var r2 = StatsEngine.pearson(pa2, pb2);
+          var rVal2 = r2.r !== undefined ? r2.r : r2;
+          var lbl = session.behavioral.labels[i] + ' x ' + session.behavioral.labels[j];
+          corrBars.push({ label: lbl, value: round2(Math.abs(rVal2)), color: Math.abs(rVal2) > 0.5 ? '#D4587A' : Math.abs(rVal2) > 0.3 ? '#c08a30' : '#5B8DB8' });
+          corrPairs.push({ i: i, j: j, r: rVal2, points: { a: pa2, b: pb2 }, labelA: session.behavioral.labels[i], labelB: session.behavioral.labels[j] });
+        }
+      }
+    }
+    if (corrBars.length > 0) {
+      var corrChartId = 'beh_corr_bars';
+      html += renderChart(corrChartId, 'Correlation Strength (|r|)', 500, Math.max(120, corrBars.length * 46 + 28));
+      setTimeout(function() { drawBarChart(corrChartId, corrBars); }, 60);
+    }
+
+    // Scatter plots for top 3 strongest correlations
+    corrPairs.sort(function(a, b) { return Math.abs(b.r) - Math.abs(a.r); });
+    var topPairs = corrPairs.slice(0, 3);
+    topPairs.forEach(function(pair, idx) {
+      var scatterId = 'beh_scatter_' + idx;
+      var scatterPoints = [];
+      for (var k = 0; k < pair.points.a.length; k++) {
+        scatterPoints.push({ x: pair.points.a[k], y: pair.points.b[k] });
+      }
+      html += renderChart(scatterId, pair.labelA + ' vs ' + pair.labelB + ' (r=' + round2(pair.r) + ')', 500, 300);
+      setTimeout(function() {
+        drawScatterPlot(scatterId, scatterPoints, pair.labelA, pair.labelB);
+      }, 80 + idx * 20);
+    });
+
     container.innerHTML = html;
   }
 
@@ -1922,6 +2504,16 @@
 
       html += renderPlainLang(anySig ? 'At least one pair of segments differs significantly on ' + label + '.' : 'No segment pairs differ significantly on ' + label + ' after correction for multiple comparisons.', anySig);
       html += RC(label + ' — Pairwise Comparisons', tableHtml);
+
+      // Mean plot with CI error bars for this item
+      var phBars = [];
+      validGroups.forEach(function(g) {
+        var d = StatsEngine.describe(groups[g]);
+        phBars.push({ label: g, value: d.mean, sd: d.sd, n: d.n });
+      });
+      var phChartId = 'posthoc_mean_' + ci;
+      html += renderChart(phChartId, label + ' — Segment Means (with 95% CI)', 500, Math.max(120, phBars.length * 46 + 28));
+      setTimeout(function() { drawBarChart(phChartId, phBars); }, 60);
     });
     container.innerHTML = html;
   }
@@ -2151,6 +2743,26 @@
       loadHtml += '</table>';
       loadHtml += '<div style="font-size:0.72rem;color:var(--text-2);margin-top:0.4rem">Loadings \u2265 0.4 highlighted. Items loading strongly on the same factor form a theme.</div>';
       html += RC('Factor Loadings', loadHtml);
+
+      // Factor loadings grouped bar chart
+      var faGroupLabels = cb.labels.slice();
+      var faSeriesLabels = [];
+      for (var f = 0; f < nFactors; f++) faSeriesLabels.push('Factor ' + (f + 1));
+      var faData = [];
+      for (var ii = 0; ii < cb.labels.length; ii++) {
+        var row = [];
+        for (var f = 0; f < nFactors; f++) {
+          var ld = loadings[ii] ? (loadings[ii][f] !== undefined ? loadings[ii][f] : 0) : 0;
+          row.push(typeof ld === 'number' ? Math.abs(ld) : 0);
+        }
+        faData.push(row);
+      }
+      var faChartId = 'cb_factor_loadings_chart';
+      var faChartH = Math.max(250, 40 * faGroupLabels.length + 80);
+      html += renderChart(faChartId, 'Factor Loadings by Item (Absolute Values)', 600, faChartH);
+      setTimeout(function() {
+        drawVerticalGroupedBarChart(faChartId, 600, faChartH, faGroupLabels, faSeriesLabels, faData);
+      }, 70);
 
       // Plain language factor interpretation
       var factorInterpHtml = '';
@@ -2477,10 +3089,43 @@
       }
     }
 
-    // Chart reference descriptions
-    var chartDesc = '';
+    // Report charts
+    var reportChartHtml = '';
+    var reportChartDrawers = [];
     if (s.ratings && s.ratings.columns.length > 0) {
-      chartDesc += '<p style="font-size:0.82rem;color:var(--text-2);margin-top:0.5rem">See above: Mean comparison bar chart and segment distribution tables for detailed breakdowns.</p>';
+      var rptBars = [];
+      s.ratings.columns.forEach(function(col, i) {
+        var d = StatsEngine.describe(col);
+        rptBars.push({ label: s.ratings.labels[i] || ('Rating ' + (i + 1)), value: d.mean, sd: d.sd, n: d.n });
+      });
+      var rptChartId = 'report_mean_chart';
+      reportChartHtml += '<h3>Key Chart</h3>';
+      reportChartHtml += '<canvas id="' + rptChartId + '" width="500" height="' + Math.max(120, rptBars.length * 46 + 28) + '" style="width:100%;max-width:500px;display:block;margin:0.5rem auto;"></canvas>';
+      reportChartDrawers.push(function() { drawBarChart(rptChartId, rptBars); });
+    }
+    if (s.category && s.ratings && s.ratings.columns.length > 0) {
+      // Segment means for first rating
+      var segBars = [];
+      var col0 = s.ratings.columns[0];
+      var segData0 = {};
+      var catVals0 = s.category.values;
+      var minLen0 = Math.min(col0.length, catVals0.length);
+      for (var i = 0; i < minLen0; i++) {
+        var seg = catVals0[i];
+        if (!segData0[seg]) segData0[seg] = [];
+        if (!isNaN(col0[i])) segData0[seg].push(col0[i]);
+      }
+      s.category.groups.forEach(function(g) {
+        if (segData0[g] && segData0[g].length > 0) {
+          var d = StatsEngine.describe(segData0[g]);
+          segBars.push({ label: g, value: d.mean, sd: d.sd, n: d.n });
+        }
+      });
+      if (segBars.length > 0) {
+        var rptSegChartId = 'report_seg_chart';
+        reportChartHtml += '<canvas id="' + rptSegChartId + '" width="500" height="' + Math.max(120, segBars.length * 46 + 28) + '" style="width:100%;max-width:500px;display:block;margin:0.5rem auto;"></canvas>';
+        reportChartDrawers.push(function() { drawBarChart(rptSegChartId, segBars); });
+      }
     }
 
     // Render report
@@ -2492,7 +3137,7 @@
         findingsHtml +
         segSummaryHtml +
         (statsTableHtml ? '<h3>Statistical Details</h3>' + statsTableHtml : '') +
-        chartDesc +
+        reportChartHtml +
         '<div class="report-actions">' +
           '<button onclick="copyTLDRReport()">Copy Report to Clipboard</button>' +
         '</div>' +
@@ -2507,10 +3152,15 @@
     reportDiv.innerHTML = reportHtml;
     flowSection.appendChild(reportDiv.firstChild);
 
+    // Draw report charts
+    setTimeout(function() {
+      reportChartDrawers.forEach(function(fn) { fn(); });
+    }, 80);
+
     // Scroll to report
     setTimeout(function() {
       document.getElementById('tldr-report').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
+    }, 150);
   }
 
   // Copy report as plain text (needs to be global for onclick)

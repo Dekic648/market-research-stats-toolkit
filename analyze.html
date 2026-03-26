@@ -8804,17 +8804,36 @@
 
   // --- Vertical grouped bar chart for crosstabs (row % distribution) ---
   function drawVerticalGroupedBarChart(canvasId, canvasW, canvasH, groupLabels, seriesLabels, data) {
-    var c = initCanvas(canvasId, canvasW, canvasH);
+    // Estimate legend height to add below chart
+    var tempCanvas = document.createElement('canvas');
+    var tempCtx = tempCanvas.getContext('2d');
+    tempCtx.font = '500 10px -apple-system, BlinkMacSystemFont, sans-serif';
+    var nSeries = seriesLabels.length;
+    var legendItemWidths = [];
+    for (var s = 0; s < nSeries; s++) {
+      var lbl = seriesLabels[s].length > 20 ? seriesLabels[s].substring(0, 18) + '...' : seriesLabels[s];
+      legendItemWidths.push(tempCtx.measureText(lbl).width + 20 + 8);
+    }
+    var chartAreaW = canvasW - 70;
+    var legendRows = 1;
+    var rowW = 0;
+    for (var s = 0; s < nSeries; s++) {
+      rowW += legendItemWidths[s];
+      if (rowW > chartAreaW && s > 0) { legendRows++; rowW = legendItemWidths[s]; }
+    }
+    var legendH = legendRows * 16 + 10;
+    var adjustedH = canvasH + legendH;
+
+    var c = initCanvas(canvasId, canvasW, adjustedH);
     if (!c) return;
     var ctx = c.ctx, w = c.w, h = c.h;
     var colors = getColors();
 
-    var pad = { left: 50, right: 20, top: 40, bottom: 60 };
+    var pad = { left: 50, right: 20, top: 14, bottom: 60 + legendH };
     var cw = w - pad.left - pad.right;
     var ch = h - pad.top - pad.bottom;
 
     var nGroups = groupLabels.length;
-    var nSeries = seriesLabels.length;
     var groupW = cw / nGroups;
     var barW = Math.max(8, Math.min(28, (groupW - 12) / nSeries));
     var totalBarsW = nSeries * barW;
@@ -8848,27 +8867,6 @@
       ctx.globalAlpha = 1;
       ctx.fillStyle = colors.subtext;
       ctx.fillText(yy, pad.left - 8, py);
-    }
-
-    // Legend (top)
-    ctx.font = '500 10px -apple-system, BlinkMacSystemFont, sans-serif';
-    var legendX = pad.left;
-    var legendY = 10;
-    var maxLegendWidth = cw;
-    var currentX = legendX;
-    for (var s = 0; s < nSeries; s++) {
-      var lbl = seriesLabels[s].length > 20 ? seriesLabels[s].substring(0, 18) + '...' : seriesLabels[s];
-      var lblW = ctx.measureText(lbl).width + 20;
-      if (currentX + lblW > legendX + maxLegendWidth && s > 0) {
-        legendY += 14;
-        currentX = legendX;
-      }
-      ctx.fillStyle = CHART_COLORS[s % CHART_COLORS.length];
-      ctx.fillRect(currentX, legendY, 10, 10);
-      ctx.fillStyle = colors.text;
-      ctx.textAlign = 'left';
-      ctx.fillText(lbl, currentX + 13, legendY + 8);
-      currentX += lblW + 8;
     }
 
     // Bars
@@ -8907,6 +8905,36 @@
       ctx.textBaseline = 'top';
       var gLabel = groupLabels[g].length > 12 ? groupLabels[g].substring(0, 10) + '...' : groupLabels[g];
       ctx.fillText(gLabel, pad.left + g * groupW + groupW / 2, pad.top + ch + 6);
+    }
+
+    // Legend (below chart, centered)
+    ctx.font = '500 10px -apple-system, BlinkMacSystemFont, sans-serif';
+    var legendBaseY = pad.top + ch + 30;
+    var rows = [[]];
+    var rowWidths = [0];
+    for (var s = 0; s < nSeries; s++) {
+      var lbl = seriesLabels[s].length > 20 ? seriesLabels[s].substring(0, 18) + '...' : seriesLabels[s];
+      var itemW = ctx.measureText(lbl).width + 20 + 8;
+      if (rowWidths[rowWidths.length - 1] + itemW > cw && rows[rows.length - 1].length > 0) {
+        rows.push([]);
+        rowWidths.push(0);
+      }
+      rows[rows.length - 1].push({ lbl: lbl, idx: s, w: itemW });
+      rowWidths[rowWidths.length - 1] += itemW;
+    }
+    for (var ri = 0; ri < rows.length; ri++) {
+      var rowStartX = pad.left + (cw - rowWidths[ri]) / 2;
+      var curX = rowStartX;
+      var curY = legendBaseY + ri * 16;
+      for (var si = 0; si < rows[ri].length; si++) {
+        var item = rows[ri][si];
+        ctx.fillStyle = CHART_COLORS[item.idx % CHART_COLORS.length];
+        ctx.fillRect(curX, curY, 10, 10);
+        ctx.fillStyle = colors.text;
+        ctx.textAlign = 'left';
+        ctx.fillText(item.lbl, curX + 13, curY + 8);
+        curX += item.w;
+      }
     }
   }
 
