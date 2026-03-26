@@ -3495,7 +3495,7 @@
       ttest: showTwoColumnInput.bind(null, 'Group A', 'Group B', 3, function(a, b, dA, dB) { runTTest(a, b, dA, dB); }),
       paired_ttest: showTwoColumnInput.bind(null, 'Before / Condition 1', 'After / Condition 2', 3, function(a, b, dA, dB) { runPairedTTest(a, b, dA, dB); }),
       mann_whitney: showTwoColumnInput.bind(null, 'Group A', 'Group B', 3, function(a, b, dA, dB) { runMannWhitney(a, b, dA, dB); }),
-      kruskal_wallis: function() { showMultiColumnInput(3, 20, 3, function(groups, labels) { runKruskalWallis(groups, labels); }); },
+      kruskal_wallis: function() { showMultiColumnInput(3, 20, 3, function(groups, labels) { runKruskalWallis(groups, labels); }, false, 'Group', true); },
       wilcoxon: showTwoColumnInput.bind(null, 'Before / Condition 1', 'After / Condition 2', 3, function(a, b, dA, dB) { runWilcoxon(a, b, dA, dB); }),
       pearson: showTwoColumnInput.bind(null, 'Variable X', 'Variable Y', 3, function(a, b, dA, dB) { runPearson(a, b, dA, dB); }),
       spearman: showTwoColumnInput.bind(null, 'Variable X', 'Variable Y', 3, function(a, b, dA, dB) { runSpearman(a, b, dA, dB); }),
@@ -3504,14 +3504,14 @@
       linear_regression: showRegressionInput.bind(null, 'linear'),
       logistic_regression: showRegressionInput.bind(null, 'logistic'),
       kmeans: showKMeansInput,
-      anova: function() { showMultiColumnInput(3, 20, 3, function(groups, labels) { runAnova(groups, labels); }); },
+      anova: function() { showMultiColumnInput(3, 20, 3, function(groups, labels) { runAnova(groups, labels); }, false, 'Group', true); },
       cronbach: function() { showMultiColumnInput(3, 20, 3, function(items, labels) { runCronbach(items, labels); }, false, 'Item'); },
       chi_square: showContingencyTableInput,
       fisher_exact: showFisherExactInput,
       mcnemar: showMcNemarInput,
       two_proportion_z: showTwoProportionInput,
       shapiro_wilk: showSingleColumnInput.bind(null, 'Your Data', 'Paste values, one per line...', 3, function(vals, desc) { runShapiroWilk(vals, desc); }),
-      levene: function() { showMultiColumnInput(2, 20, 3, function(groups, labels) { runLevene(groups, labels); }); },
+      levene: function() { showMultiColumnInput(2, 20, 3, function(groups, labels) { runLevene(groups, labels); }, false, 'Group', true); },
       pca: function() { showMultiColumnInput(3, 20, 3, function(cols, labels) { runPCA(cols, labels); }, false, 'Variable'); },
       factor_analysis: showFactorAnalysisInput,
       distribution: showSingleColumnInput.bind(null, 'Your Data', 'Paste values, one per line...', 3, function(vals, desc) { runDistribution(vals, desc); }),
@@ -3523,7 +3523,7 @@
       irr: showIRRInput,
       ab_test: showABTestInput,
       word_freq: showTextInput.bind(null, 'Text Responses', function(responses) { runWordFreq(responses); }),
-      welch_anova: function() { showMultiColumnInput(3, 20, 3, function(groups, labels) { runWelchAnova(groups, labels); }); },
+      welch_anova: function() { showMultiColumnInput(3, 20, 3, function(groups, labels) { runWelchAnova(groups, labels); }, false, 'Group', true); },
       friedman: function() { showMultiColumnInput(3, 20, 3, function(groups, labels) { runFriedman(groups, labels); }); },
       repeated_anova: function() { showMultiColumnInput(3, 20, 3, function(groups, labels) { runRepeatedAnova(groups, labels); }); },
       two_way_anova: function() {
@@ -3715,7 +3715,7 @@
   }
 
   // --- Multi Column (3+) ---
-  function showMultiColumnInput(startCols, maxCols, minVals, callback, allowMissing, itemLabel) {
+  function showMultiColumnInput(startCols, maxCols, minVals, callback, allowMissing, itemLabel, independent) {
     var label = itemLabel || 'Group';
     var section = document.createElement('div');
     section.className = 'data-input-section';
@@ -3747,7 +3747,9 @@
             '<div class="group-card-label">' + label + ' ' + (i + 1) + '</div>' +
             '<textarea class="multi-data" data-idx="' + i + '" placeholder="Paste values, one per line..."></textarea>' +
             '<div class="data-type-guide">' +
-              '<strong>Numeric values</strong> \u2014 one per line. Each row = one respondent or observation.' +
+              '<strong>Numeric values</strong> \u2014 one per line.' +
+              (independent ? ' Groups can have different sizes \u2014 just paste each group\u2019s data separately.' :
+                ' Each row = one respondent. All columns must have the same number of rows.') +
             '</div>' +
             '<div class="desc-label">Name this ' + label.toLowerCase() + '</div>' +
             '<input type="text" class="multi-desc" data-idx="' + i + '" placeholder="e.g., ' + label + ' ' + (i + 1) + '">' +
@@ -3813,8 +3815,8 @@
         });
         runBtn.disabled = !allGood;
 
-        // Show mismatch warning if columns have different lengths
-        if (lengths.length >= 2) {
+        // Show mismatch warning if columns have different lengths (only for paired data)
+        if (lengths.length >= 2 && !independent) {
           var allSame = lengths.every(function(l) { return l === lengths[0]; });
           if (!allSame) {
             var minL = Math.min.apply(null, lengths);
@@ -3891,12 +3893,22 @@
             }
           }
           groups = aligned;
+        } else if (independent) {
+          // Independent groups (ANOVA, Kruskal-Wallis, etc.): each column is a separate group
+          // Different group sizes are expected — do NOT align rows across columns
+          section.querySelectorAll('.multi-data').forEach(function(ta, i) {
+            var parsed = parseValues(ta.value);
+            groups.push(parsed.nums);
+            var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
+            labels.push(descEl ? (descEl.value || label + ' ' + (i + 1)) : label + ' ' + (i + 1));
+          });
         } else {
+          // Paired/correlated columns (same respondents): align rows across columns
           var colDefs = [];
           section.querySelectorAll('.multi-data').forEach(function(ta, i) {
             colDefs.push({ text: ta.value, type: 'numeric' });
             var descEl = section.querySelector('.multi-desc[data-idx="' + i + '"]');
-            labels.push(descEl ? (descEl.value || 'Group ' + (i + 1)) : 'Group ' + (i + 1));
+            labels.push(descEl ? (descEl.value || label + ' ' + (i + 1)) : label + ' ' + (i + 1));
           });
           groups = alignColumns(colDefs);
         }
