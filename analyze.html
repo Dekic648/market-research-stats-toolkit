@@ -8893,7 +8893,9 @@
           ctx.font = '600 ' + Math.max(8, Math.min(10, barW - 2)) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'bottom';
-          ctx.fillText(Math.round(val) + '%', bx + (barW - 1) / 2, by - 2);
+          // Show value: use % only if values look like percentages (max > 10), otherwise plain number
+          var valLabel = maxVal > 10 ? Math.round(val) + '%' : val.toFixed(1).replace(/\.0$/, '');
+          ctx.fillText(valLabel, bx + (barW - 1) / 2, by - 2);
         }
       }
 
