@@ -2019,6 +2019,8 @@
   <header class="sticky-header">
     <div class="header-left">
       <a href="index.html" class="back-link">&#8592; <span>Home</span></a>
+      <a href="learn.html" class="sister-link">Learn</a>
+      <a href="guide.html" class="sister-link">Guide</a>
     </div>
     <div class="header-right">
       <button class="start-over-link" id="startOverLink">Start over</button>
@@ -2084,14 +2086,31 @@
 (function() {
   'use strict';
 
+  window.onerror = function(msg, url, line, col, error) {
+    var container = document.getElementById('chatContainer');
+    if (container) {
+      var errDiv = document.createElement('div');
+      errDiv.className = 'assistant-msg';
+      errDiv.innerHTML = '<div class="result-card" style="border-left:3px solid var(--rose)">' +
+        '<div class="result-card-title" style="color:var(--rose)">Something went wrong</div>' +
+        '<p>The analysis encountered an error. This usually means the data format wasn\'t quite right for this method.</p>' +
+        '<p style="font-size:0.78rem;color:var(--text-2)">Error: ' + msg + '</p>' +
+        '<p>Try checking your data and running again, or <a href="#" onclick="location.reload();return false">refresh the page</a>.</p>' +
+        '</div>';
+      container.appendChild(errDiv);
+      errDiv.scrollIntoView({ behavior: 'smooth' });
+    }
+    return true; // prevent default error handling
+  };
+
   /* ==================================================================
      Method Registry
      ================================================================== */
   var METHOD_REGISTRY = [
     { category: "Descriptive & Distributional", methods: [
       { id: "summary", name: "Summary Statistics", desc: "means, medians, SD, confidence intervals", hint: "e.g., What\u2019s the average customer satisfaction score?", implemented: true, enriched: true },
-      { id: "distribution", name: "Distribution Checker", desc: "normality tests, skewness, kurtosis", hint: "e.g., Is my revenue data normally distributed or skewed?", implemented: true },
-      { id: "shapiro_wilk", name: "Shapiro-Wilk Test", desc: "test if data follows a normal distribution", hint: "e.g., Should I use a parametric or non-parametric test?", implemented: true },
+      { id: "distribution", name: "Distribution Checker", desc: "normality tests, skewness, kurtosis", hint: "e.g., Is my revenue data normally distributed or skewed?", implemented: true, enriched: true },
+      { id: "shapiro_wilk", name: "Shapiro-Wilk Test", desc: "test if data follows a normal distribution", hint: "e.g., Should I use a parametric or non-parametric test?", implemented: true, enriched: true },
       { id: "frequencies", name: "Frequencies & Crosstabs", desc: "frequency tables, percentages, crosstabs", hint: "e.g., How many respondents chose each brand?", implemented: true, enriched: true },
       { id: "multi_response", name: "Multi-Response / Checkbox Analysis", desc: "analyze select-all-that-apply questions", hint: "e.g., Which features did customers select? (check all that apply)", implemented: true, enriched: true }
     ]},
@@ -2109,7 +2128,7 @@
       { id: "fisher_exact", name: "Fisher\u2019s Exact Test", desc: "categorical comparison with small samples", hint: "e.g., Small sample 2\u00d72 comparison", implemented: true },
       { id: "mcnemar", name: "McNemar\u2019s Test", desc: "paired categorical comparison", hint: "e.g., Did brand preference change after the ad campaign?", implemented: true },
       { id: "two_proportion_z", name: "Two-Proportion Z-Test", desc: "compare two proportions", hint: "e.g., Did conversion rate differ between campaigns?", implemented: true },
-      { id: "levene", name: "Levene\u2019s Test", desc: "check if groups have equal variances", hint: "e.g., Do my groups have similar variability?", implemented: true },
+      { id: "levene", name: "Levene\u2019s Test", desc: "check if groups have equal variances", hint: "e.g., Do my groups have similar variability?", implemented: true, enriched: true },
       { id: "welch_anova", name: "Welch\u2019s ANOVA", desc: "comparison with unequal variances", hint: "e.g., Compare groups when variances are very different", implemented: true, enriched: true }
     ]},
     { category: "Correlation & Association", methods: [
@@ -2211,7 +2230,7 @@
 
       cat.methods.forEach(function(method) {
         var row = document.createElement('div');
-        row.className = 'palette-method' + (method.enriched ? '' : ' palette-method-coming-soon');
+        row.className = 'palette-method' + (method.implemented ? '' : ' palette-method-coming-soon');
         row.setAttribute('data-method-id', method.id);
         row.setAttribute('data-name', method.name.toLowerCase());
         row.setAttribute('data-desc', method.desc.toLowerCase());
@@ -2219,7 +2238,7 @@
           '<span class="palette-method-name">' + method.name + '</span>' +
           '<span class="palette-method-sep">&mdash;</span>' +
           '<span class="palette-method-desc">' + method.desc + '</span>' +
-          (method.enriched ? '' : '<span class="palette-coming-soon-tag">coming soon</span>');
+          (method.implemented ? '' : '<span class="palette-coming-soon-tag">coming soon</span>');
         if (method.hint) {
           row.innerHTML += '<span class="palette-method-hint">' + method.hint + '</span>';
         }
@@ -2492,18 +2511,20 @@
                           options: [
                             { text: "Two separate groups of people", next: {
                               id: 'two_num_dist',
-                              question: "Is your data normally distributed, or are you unsure?",
+                              question: "What kind of numbers are these?",
                               options: [
-                                { text: "Yes, or it\u2019s continuous data", next: { id: 'ttest', method: 'ttest' } },
-                                { text: "Not sure, or it\u2019s ratings / ranks", next: { id: 'mann_whitney_node', method: 'mann_whitney' } }
+                                { text: "Measurements (time, money, weight, continuous values)", next: { id: 'ttest', method: 'ttest' } },
+                                { text: "Ratings or rankings (1\u20135, 1\u20137, Likert scales)", next: { id: 'mann_whitney_node', method: 'mann_whitney' } },
+                                { text: "Not sure", next: { id: 'mann_whitney_node', method: 'mann_whitney' } }
                               ]
                             }},
                             { text: "Same people, measured before and after", next: {
                               id: 'paired_dist',
-                              question: "Is your data normally distributed?",
+                              question: "What kind of numbers are these?",
                               options: [
-                                { text: "Yes / continuous data", next: { id: 'paired_ttest', method: 'paired_ttest' } },
-                                { text: "Not sure / ordinal / ratings", next: { id: 'wilcoxon_node', method: 'wilcoxon' } }
+                                { text: "Measurements (time, money, weight, continuous values)", next: { id: 'paired_ttest', method: 'paired_ttest' } },
+                                { text: "Ratings or rankings (1\u20135, 1\u20137, Likert scales)", next: { id: 'wilcoxon_node', method: 'wilcoxon' } },
+                                { text: "Not sure", next: { id: 'wilcoxon_node', method: 'wilcoxon' } }
                               ]
                             }}
                           ]
@@ -2532,9 +2553,9 @@
                     options: [
                       { text: "A number (scores, revenue, time spent)", next: {
                         id: 'three_num_dist',
-                        question: "Is your data normally distributed?",
+                        question: "What kind of numbers are these?",
                         options: [
-                          { text: "Yes, or it\u2019s continuous data", next: {
+                          { text: "Measurements (time, money, weight, continuous values)", next: {
                             id: 'anova_variance',
                             question: "Are the groups roughly equal in spread (variance)?",
                             options: [
@@ -2542,7 +2563,8 @@
                               { text: "No, very different spread across groups", next: { id: 'welch_anova_node', method: 'welch_anova' } }
                             ]
                           }},
-                          { text: "Not sure / ordinal / ratings", next: { id: 'kruskal_node', method: 'kruskal_wallis' } }
+                          { text: "Ratings or rankings (1\u20135, 1\u20137, Likert scales)", next: { id: 'kruskal_node', method: 'kruskal_wallis' } },
+                          { text: "Not sure", next: { id: 'kruskal_node', method: 'kruskal_wallis' } }
                         ]
                       }},
                       { text: "A category (yes/no, bought/didn\u2019t buy)", next: { id: 'chi_3', method: 'chi_square' } }
@@ -2553,10 +2575,11 @@
                   text: "Same people measured 3+ times (e.g., monthly surveys)",
                   next: {
                     id: 'repeated_measures',
-                    question: "Is your data normally distributed?",
+                    question: "What kind of numbers are these?",
                     options: [
-                      { text: "Yes / continuous data", next: { id: 'repeated_anova_node', method: 'repeated_anova' } },
-                      { text: "Not sure / ordinal / ratings", next: { id: 'friedman_node', method: 'friedman' } }
+                      { text: "Measurements (time, money, weight, continuous values)", next: { id: 'repeated_anova_node', method: 'repeated_anova' } },
+                      { text: "Ratings or rankings (1\u20135, 1\u20137, Likert scales)", next: { id: 'friedman_node', method: 'friedman' } },
+                      { text: "Not sure", next: { id: 'friedman_node', method: 'friedman' } }
                     ]
                   }
                 },
@@ -2721,10 +2744,14 @@
 
   function scrollToResults() {
     setTimeout(function() {
-      var results = container.querySelectorAll('.results-section');
-      var lastResult = results[results.length - 1];
-      if (lastResult) {
-        lastResult.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      var answers = container.querySelectorAll('.plain-english, .big-answer-card');
+      var target = answers.length ? answers[answers.length - 1] : null;
+      if (!target) {
+        var results = container.querySelectorAll('.results-section');
+        target = results.length ? results[results.length - 1] : null;
+      }
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } else {
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       }
@@ -3020,7 +3047,8 @@
       { keywords: ['cfa', 'confirmatory factor', 'factor structure', 'hypothesized structure'], branch: 'cfa_node' },
       { keywords: ['irt', 'rasch', 'item response', 'item difficulty', 'person ability'], branch: 'irt_node' },
       { keywords: ['nested', 'multilevel', 'hierarchical model', 'mixed', 'random intercept', 'icc'], branch: 'mixed_effects_node' },
-      { keywords: ['checkbox', 'multi-response', 'select all', 'multiple choice', 'multi-select', 'multi response', 'check all'], branch: 'multi_response_node' }
+      { keywords: ['checkbox', 'multi-response', 'select all', 'multiple choice', 'multi-select', 'multi response', 'check all'], branch: 'multi_response_node' },
+      { keywords: ['before', 'after', 'pre-post', 'pre post', 'same people', 'paired', 'repeated'], branch: 'time_compare' }
     ];
 
     var matched = null;
@@ -4906,6 +4934,93 @@
     ctx.fillText('Residuals', 0, 0); ctx.restore();
   }
 
+  // Heatmap for correlation matrix
+  function drawHeatmap(canvasId, matrix, labels) {
+    var k = labels.length;
+    var cellSize = Math.max(48, Math.min(72, Math.floor(360 / k)));
+    var labelPad = 90;
+    var topPad = 70;
+    var totalW = labelPad + k * cellSize + 20;
+    var totalH = topPad + k * cellSize + 20;
+    var c = initCanvas(canvasId, totalW, totalH);
+    if (!c) return;
+    var ctx = c.ctx;
+    var colors = getColors();
+
+    function corrColor(v) {
+      // dark red (-1) → white (0) → dark green (+1)
+      var r, g, b;
+      if (v < 0) {
+        var t = Math.min(1, Math.abs(v));
+        r = Math.round(255 - t * 75);    // 255 → 180
+        g = Math.round(255 - t * 200);   // 255 → 55
+        b = Math.round(255 - t * 190);   // 255 → 65
+      } else {
+        var t = Math.min(1, v);
+        r = Math.round(255 - t * 200);   // 255 → 55
+        g = Math.round(255 - t * 95);    // 255 → 160
+        b = Math.round(255 - t * 170);   // 255 → 85
+      }
+      return 'rgb(' + r + ',' + g + ',' + b + ')';
+    }
+
+    // Draw cells
+    for (var i = 0; i < k; i++) {
+      for (var j = 0; j < k; j++) {
+        var x = labelPad + j * cellSize;
+        var y = topPad + i * cellSize;
+        var val = matrix[i][j];
+        ctx.fillStyle = corrColor(val);
+        ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
+        // r value text
+        var absV = Math.abs(val);
+        ctx.fillStyle = absV > 0.6 ? '#fff' : colors.text;
+        ctx.font = '600 ' + Math.max(9, Math.min(12, cellSize / 5)) + 'px -apple-system, BlinkMacSystemFont, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(val.toFixed(2), x + (cellSize - 1) / 2, y + (cellSize - 1) / 2);
+      }
+    }
+
+    // Row labels (left)
+    ctx.fillStyle = colors.text;
+    ctx.font = '400 11px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (var i = 0; i < k; i++) {
+      var lbl = labels[i].length > 12 ? labels[i].substring(0, 11) + '\u2026' : labels[i];
+      ctx.fillText(lbl, labelPad - 6, topPad + i * cellSize + (cellSize - 1) / 2);
+    }
+
+    // Column labels (top, rotated)
+    ctx.textAlign = 'left';
+    for (var j = 0; j < k; j++) {
+      var lbl = labels[j].length > 12 ? labels[j].substring(0, 11) + '\u2026' : labels[j];
+      ctx.save();
+      ctx.translate(labelPad + j * cellSize + (cellSize - 1) / 2, topPad - 6);
+      ctx.rotate(-Math.PI / 4);
+      ctx.fillText(lbl, 0, 0);
+      ctx.restore();
+    }
+
+    // Color legend bar
+    var legX = labelPad, legY = topPad + k * cellSize + 8, legW = k * cellSize, legH = 8;
+    var grad = ctx.createLinearGradient(legX, 0, legX + legW, 0);
+    grad.addColorStop(0, corrColor(-1));
+    grad.addColorStop(0.5, corrColor(0));
+    grad.addColorStop(1, corrColor(1));
+    ctx.fillStyle = grad;
+    ctx.fillRect(legX, legY, legW, legH);
+    ctx.font = '400 9px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillStyle = colors.subtext;
+    ctx.textAlign = 'left';
+    ctx.fillText('-1', legX, legY + legH + 10);
+    ctx.textAlign = 'center';
+    ctx.fillText('0', legX + legW / 2, legY + legH + 10);
+    ctx.textAlign = 'right';
+    ctx.fillText('+1', legX + legW, legY + legH + 10);
+  }
+
   /* ==================================================================
      t-test (using StatsEngine)
      ================================================================== */
@@ -5194,6 +5309,13 @@
     for (var rr2 = 0; rr2 < observed.length; rr2++) for (var c2 = 0; c2 < observed[rr2].length; c2++) totalN += observed[rr2][c2];
 
     var html = '<div class="results-section">';
+
+    // 0. Big answer
+    if (r.p < 0.05) {
+      html += renderBigAnswer('Significant Association', 'The variables are related (p = ' + round6(r.p) + ')', 'var(--green)');
+    } else {
+      html += renderBigAnswer('No Significant Association', 'No evidence of a relationship (p = ' + round6(r.p) + ')', 'var(--text-2)');
+    }
 
     // 1. Key metrics
     html += RC('Chi-Square Test Results',
@@ -6593,6 +6715,19 @@
 
     var html = '<div class="results-section">';
 
+    // 0. Big answer
+    var fisherSub = 'The variables are related (p = ' + round6(r.p) + ')';
+    if (r.p < 0.05 && isFinite(r.oddsRatio) && r.oddsRatio > 1) {
+      fisherSub += ' — odds ratio = ' + round4(r.oddsRatio) + ' (outcome is more likely in Group 1)';
+    } else if (r.p < 0.05 && isFinite(r.oddsRatio) && r.oddsRatio < 1) {
+      fisherSub += ' — odds ratio = ' + round4(r.oddsRatio) + ' (outcome is more likely in Group 2)';
+    }
+    if (r.p < 0.05) {
+      html += renderBigAnswer('Significant Association', fisherSub, 'var(--green)');
+    } else {
+      html += renderBigAnswer('No Significant Association', 'No evidence of a relationship (p = ' + round6(r.p) + ')', 'var(--text-2)');
+    }
+
     // 1. Key metrics
     html += RC('Fisher Exact Test Results',
       renderMetrics([
@@ -6906,13 +7041,41 @@
     var r = StatsEngine.correlationMatrix(cols);
     var k = r.k;
 
+    // Collect all unique pairs with their r values
+    var allPairs = [];
+    for (var i = 0; i < k; i++) {
+      for (var j = i + 1; j < k; j++) {
+        allPairs.push({ i: i, j: j, labelA: labels[i], labelB: labels[j], r: r.r[i][j], absR: Math.abs(r.r[i][j]), p: r.p[i][j] });
+      }
+    }
+    // Sort by absolute r descending
+    allPairs.sort(function(a, b) { return b.absR - a.absR; });
+
+    // Strength label helper
+    function corrStrength(absR) {
+      if (absR >= 0.9) return 'very strong';
+      if (absR >= 0.7) return 'strong';
+      if (absR >= 0.5) return 'moderate';
+      if (absR >= 0.3) return 'weak';
+      return 'very weak';
+    }
+
+    function corrDirection(val) {
+      return val >= 0 ? 'positive' : 'negative';
+    }
+
+    function corrColor(absR) {
+      if (absR >= 0.7) return 'var(--green)';
+      if (absR >= 0.5) return 'var(--amber)';
+      return 'var(--text-2)';
+    }
+
+    var strongest = allPairs.length > 0 ? allPairs[0] : null;
+
     // Build matrix table
     var tableHtml = '<table class="corr-matrix-table"><tr><th></th>';
     for (var j = 0; j < k; j++) tableHtml += '<th>' + escHtml(labels[j]) + '</th>';
     tableHtml += '</tr>';
-
-    var strongest = { r: 0, pair: '' };
-    var weakest = { r: 1, pair: '' };
 
     for (var i = 0; i < k; i++) {
       tableHtml += '<tr><th>' + escHtml(labels[i]) + '</th>';
@@ -6928,11 +7091,6 @@
           else if (absR >= 0.3 && val > 0) cls = 'corr-mod-pos';
           else if (absR >= 0.5 && val < 0) cls = 'corr-strong-neg';
           else if (absR >= 0.3 && val < 0) cls = 'corr-mod-neg';
-
-          if (i < j) {
-            if (absR > strongest.r) { strongest.r = absR; strongest.pair = labels[i] + ' & ' + labels[j]; strongest.val = val; }
-            if (absR < weakest.r) { weakest.r = absR; weakest.pair = labels[i] + ' & ' + labels[j]; weakest.val = val; }
-          }
         }
         var display = i === j ? '1.000' : round4(val);
         var title = i === j ? '' : ' title="p = ' + round6(pVal) + '"';
@@ -6942,48 +7100,92 @@
     }
     tableHtml += '</table>';
 
-    var interpText = 'Strongest correlation: ' + strongest.pair + ' (r = ' + round4(strongest.val) + '). ' +
-      'Weakest correlation: ' + weakest.pair + ' (r = ' + round4(weakest.val) + ').';
-    var plainText = 'Correlation matrix across ' + k + ' variables. ' + interpText;
-
     var html = '<div class="results-section">';
 
-    // 1. Key metrics
+    // 1. Big answer — strongest relationship
+    if (strongest) {
+      var bigLabel = 'Strongest: ' + strongest.labelA + ' \u2194 ' + strongest.labelB;
+      var bigSub = 'r = ' + round4(strongest.r) + ' \u2014 ' + corrStrength(strongest.absR) + ' ' + corrDirection(strongest.r) + ' correlation';
+      html += renderBigAnswer(bigLabel, bigSub, corrColor(strongest.absR));
+    }
+
+    // 2. Key metrics
     html += RC('Correlation Matrix Overview',
       renderMetrics([
         { label: 'Variables', value: k },
         { label: 'n (per pair)', value: minLen },
-        { label: 'Strongest Pair', value: strongest.pair },
-        { label: 'Strongest r', value: round4(strongest.val) }
+        { label: 'Strongest Pair', value: strongest ? strongest.labelA + ' & ' + strongest.labelB : '—' },
+        { label: 'Strongest r', value: strongest ? round4(strongest.r) : '—' }
       ])
     );
 
-    // 2. Correlation matrix table (visible)
+    // 3. Heatmap chart
+    var chartId = 'heatmap_' + Date.now();
+    var cellSize = Math.max(48, Math.min(72, Math.floor(360 / k)));
+    var heatW = 90 + k * cellSize + 20;
+    var heatH = 70 + k * cellSize + 20;
+    html += renderChart(chartId, 'Correlation Heatmap', heatW, heatH, 'Color scale: red = negative, white = zero, green = positive');
+
+    // 4. Correlation matrix table (visible)
     html += RC('Correlation Matrix',
       '<div style="overflow-x:auto">' + tableHtml + '</div>' +
       '<div class="effect-interpretation">Hover over cells to see p-values. Colors: <span style="color:var(--green)">green = positive</span>, <span style="color:var(--red)">red = negative</span>, gray = weak.</div>'
     );
 
-    // 3. Technical details collapsed
+    // 5. Technical details collapsed
     var pTableHtml = '<table class="corr-matrix-table"><tr><th></th>';
     for (var j2 = 0; j2 < k; j2++) pTableHtml += '<th>' + escHtml(labels[j2]) + '</th>';
     pTableHtml += '</tr>';
     for (var i2 = 0; i2 < k; i2++) {
       pTableHtml += '<tr><th>' + escHtml(labels[i2]) + '</th>';
       for (var j2 = 0; j2 < k; j2++) {
-        pTableHtml += '<td>' + (i2 === j2 ? '—' : round6(r.p[i2][j2])) + '</td>';
+        pTableHtml += '<td>' + (i2 === j2 ? '\u2014' : round6(r.p[i2][j2])) + '</td>';
       }
       pTableHtml += '</tr>';
     }
     pTableHtml += '</table>';
     html += renderCollapsed('p-value Matrix', '<div style="overflow-x:auto">' + pTableHtml + '</div>');
 
-    // 4. Plain English last
-    html += renderPlainEnglish(plainText);
+    // 6. Improved plain English
+    var plainParts = [];
+    plainParts.push('This correlation matrix examines the relationships between ' + k + ' variables (' + minLen + ' observations each).');
+
+    // Top 3 strongest correlations
+    var topN = Math.min(3, allPairs.length);
+    if (topN > 0) {
+      plainParts.push('');
+      plainParts.push('<strong>Strongest relationships:</strong>');
+      for (var t = 0; t < topN; t++) {
+        var p = allPairs[t];
+        var sigNote = p.p < 0.05 ? ' (statistically significant, p = ' + round4(p.p) + ')' : ' (not significant, p = ' + round4(p.p) + ')';
+        plainParts.push((t + 1) + '. <strong>' + escHtml(p.labelA) + '</strong> and <strong>' + escHtml(p.labelB) + '</strong>: r = ' + round4(p.r) + ' \u2014 ' + corrStrength(p.absR) + ' ' + corrDirection(p.r) + ' correlation' + sigNote);
+      }
+    }
+
+    // Multicollinearity warning
+    var highCorrs = allPairs.filter(function(p) { return p.absR > 0.8; });
+    if (highCorrs.length > 0) {
+      plainParts.push('');
+      var highNames = highCorrs.map(function(p) { return p.labelA + ' & ' + p.labelB + ' (r = ' + round4(p.r) + ')'; }).join('; ');
+      plainParts.push('\u26a0\ufe0f <strong>Multicollinearity warning:</strong> Very high correlations (|r| > 0.8) found between: ' + highNames + '. These variables may be measuring the same underlying construct. Consider removing one from regression models.');
+    }
+
+    // All weak note
+    var allWeak = allPairs.every(function(p) { return p.absR < 0.3; });
+    if (allWeak && allPairs.length > 0) {
+      plainParts.push('');
+      plainParts.push('No strong relationships found between these variables. All correlations are weak (|r| < 0.3), suggesting these variables are largely independent of each other.');
+    }
+
+    html += renderPlainEnglish(plainParts.join('<br>'));
 
     html += '</div>';
 
     container.insertAdjacentHTML('beforeend', html);
+
+    // Draw heatmap after DOM insertion
+    drawHeatmap(chartId, r.r, labels);
+
     scrollToBottom();
     showNextSteps('correlation', { n: minLen });
   }
@@ -8321,6 +8523,13 @@
 
     var html = '<div class="results-section">';
 
+    // 0. Big answer
+    if (p < 0.05) {
+      html += renderBigAnswer('Significant Association', '\u03C6 = ' + round4(phi) + ' \u2014 ' + strength + ' relationship', 'var(--green)');
+    } else {
+      html += renderBigAnswer('No Significant Association', '\u03C6 = ' + round4(phi) + ' \u2014 no meaningful relationship', 'var(--text-2)');
+    }
+
     // 1. Key metrics
     html += RC('Phi Coefficient',
       renderMetrics([
@@ -9240,39 +9449,76 @@
 
     var r = StatsEngine.ancova(outcome, groupVar, covariateArr);
     var pc = pClass(r.p);
+    var covPc = pClass(r.covariateEffect.p);
+    var alpha = getAlpha();
+    var sig = r.p < alpha;
+    var covSig = r.covariateEffect.p < alpha;
 
-    var sig = r.p < 0.05;
-    var adjMeansStr = r.adjustedMeans.map(function(am) { return am.group + ': ' + round4(am.adjustedMean); }).join(', ');
-    var rawMeansStr = r.groupStats.map(function(gs) { return gs.group + ': ' + round4(gs.rawMean) + ' (n=' + gs.n + ')'; }).join(', ');
+    // Partial eta-squared for the group factor
+    var partialEta2 = (r.F * r.df1) / (r.F * r.df1 + r.df2);
+    var etaLabel = partialEta2 < 0.01 ? 'negligible' : partialEta2 < 0.06 ? 'small' : partialEta2 < 0.14 ? 'medium' : 'large';
 
-    var plainText = 'ANCOVA ' + (sig ? 'found a significant group effect' : 'did not find a significant group effect') +
-      ', F(' + r.df1 + ', ' + r.df2 + ') = ' + round4(r.F) + ', p = ' + round6(r.p) + ', R-squared = ' + round4(r.rSquared) +
-      '. Adjusted means (controlling for the covariate): ' + adjMeansStr +
-      '. Covariate effect: B = ' + round4(r.covariateEffect.B) + ', p = ' + round6(r.covariateEffect.p) + '.';
-
-    // Adjusted means table
-    var adjHtml = '<table class="posthoc-table"><tr><th>Group</th><th>Raw Mean</th><th>Adjusted Mean</th><th>n</th></tr>';
-    for (var i = 0; i < r.groupStats.length; i++) {
-      adjHtml += '<tr><td>' + escHtml(r.groupStats[i].group) + '</td><td>' + round4(r.groupStats[i].rawMean) + '</td>' +
-        '<td><strong>' + round4(r.adjustedMeans[i].adjustedMean) + '</strong></td><td>' + r.groupStats[i].n + '</td></tr>';
+    // Find highest / lowest adjusted means
+    var best = { mean: -Infinity, group: '' }, worst = { mean: Infinity, group: '' };
+    for (var i = 0; i < r.adjustedMeans.length; i++) {
+      if (r.adjustedMeans[i].adjustedMean > best.mean) { best = { mean: r.adjustedMeans[i].adjustedMean, group: r.adjustedMeans[i].group }; }
+      if (r.adjustedMeans[i].adjustedMean < worst.mean) { worst = { mean: r.adjustedMeans[i].adjustedMean, group: r.adjustedMeans[i].group }; }
     }
-    adjHtml += '</table>';
 
     var chartId = 'ancovaChart_' + Date.now();
     var bars = r.adjustedMeans.map(function(am, i) {
       return { label: am.group + ' (adj)', value: am.adjustedMean, color: CHART_COLORS[i % CHART_COLORS.length] };
     });
 
-    // Build adjusted means group cards
-    var adjGroups = r.adjustedMeans.map(function(am) {
-      // Find matching group stats for that group
-      var gs = r.groupStats.filter(function(g) { return g.group === am.group; })[0];
-      return gs ? gs.values || [] : [];
-    });
-    var adjLabels = r.adjustedMeans.map(function(am) { return am.group; });
+    var html = '<div class="results-section">';
 
-    // Comparison table: raw vs adjusted
-    var compHtml = '<table class="posthoc-table"><tr><th>Group</th><th>Raw Mean</th><th>Adjusted Mean</th><th>Difference</th><th>n</th></tr>';
+    // 1. Big answer headline
+    var bigText = sig ? 'Groups differ significantly' : 'No significant difference';
+    var bigSub = sig
+      ? 'After controlling for the covariate, groups show a statistically significant difference (p = ' + round4(r.p) + '). Effect size is ' + etaLabel + '.'
+      : 'After controlling for the covariate, no significant group difference was found (p = ' + round4(r.p) + ').';
+    html += renderBigAnswer(bigText, bigSub, sig ? 'var(--green)' : 'var(--text-2)');
+
+    // 2. Significance badge
+    html += renderSigBadge(r.p);
+
+    // 3. Group cards showing adjusted means
+    var adjGroupCards = '<div style="display:flex;gap:0.6rem;flex-wrap:wrap">';
+    for (var i = 0; i < r.adjustedMeans.length; i++) {
+      var gs = r.groupStats[i];
+      var am = r.adjustedMeans[i];
+      var diff = am.adjustedMean - gs.rawMean;
+      adjGroupCards += '<div style="flex:1;min-width:100px;background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:0.75rem;text-align:center">' +
+        '<div style="font-size:0.72rem;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em">' + escHtml(am.group) + '</div>' +
+        '<div style="font-size:1.5rem;font-weight:700;color:var(--text-0);margin:0.3rem 0">' + round2(am.adjustedMean) + '</div>' +
+        '<div style="font-size:0.72rem;color:var(--text-2)">raw ' + round2(gs.rawMean) + ' &middot; adj ' + (diff >= 0 ? '+' : '') + round2(diff) + ' &middot; n=' + gs.n + '</div>' +
+      '</div>';
+    }
+    adjGroupCards += '</div>';
+    html += RC('Adjusted Group Means (controlling for covariate)', adjGroupCards);
+
+    // 4. Key metrics: F, p, partial eta-squared, N
+    html += RC('Key Statistics',
+      renderMetrics([
+        { label: 'F (group)', value: round4(r.F) },
+        { label: 'p-value', value: round6(r.p), cls: pc },
+        { label: 'Partial \u03B7\u00B2', value: round4(partialEta2) + ' (' + etaLabel + ')' },
+        { label: 'N', value: minLen }
+      ])
+    );
+
+    // 5. Adjusted means bar chart
+    html += renderChart(chartId, 'Adjusted Group Means', 500, Math.max(180, bars.length * 55 + 30));
+
+    // 6. Full ANOVA table & coefficient details (collapsed)
+    var anovaTableHtml = '<table class="posthoc-table"><tr><th>Source</th><th>df</th><th>F</th><th>p</th><th>Sig?</th></tr>' +
+      '<tr><td>Group</td><td>' + r.df1 + '</td><td>' + round4(r.F) + '</td><td class="' + pc + '">' + round6(r.p) + '</td><td>' + (sig ? 'Yes' : 'No') + '</td></tr>' +
+      '<tr><td>Covariate</td><td>1</td><td>\u2014</td><td class="' + covPc + '">' + round6(r.covariateEffect.p) + '</td><td>' + (covSig ? 'Yes' : 'No') + '</td></tr>' +
+      '<tr><td>Error</td><td>' + r.df2 + '</td><td colspan="3"></td></tr>' +
+      '</table>';
+
+    var compHtml = '<h4 style="margin:1rem 0 0.5rem;font-size:0.85rem;color:var(--text-1)">Raw vs Adjusted Means</h4>' +
+      '<table class="posthoc-table"><tr><th>Group</th><th>Raw Mean</th><th>Adjusted Mean</th><th>Adjustment</th><th>n</th></tr>';
     for (var i = 0; i < r.groupStats.length; i++) {
       var diff = r.adjustedMeans[i].adjustedMean - r.groupStats[i].rawMean;
       compHtml += '<tr><td>' + escHtml(r.groupStats[i].group) + '</td><td>' + round4(r.groupStats[i].rawMean) + '</td>' +
@@ -9281,41 +9527,28 @@
     }
     compHtml += '</table>';
 
-    var html = '<div class="results-section">';
-
-    // 1. Key metrics
-    html += RC('ANCOVA Results',
+    var coeffHtml = '<h4 style="margin:1rem 0 0.5rem;font-size:0.85rem;color:var(--text-1)">Covariate Effect</h4>' +
       renderMetrics([
-        { label: 'F (group)', value: round4(r.F) },
-        { label: 'p-value', value: round6(r.p), cls: pc },
-        { label: 'R\u00B2', value: round4(r.rSquared) },
-        { label: 'df', value: r.df1 + ', ' + r.df2 }
-      ])
-    );
-
-    // 2. Significance badge
-    html += renderSigBadge(r.p);
-
-    // 3. Adjusted vs Raw means comparison
-    html += RC('Adjusted vs Raw Means', compHtml);
-
-    // 4. Chart
-    html += renderChart(chartId, 'Adjusted Group Means', 500, Math.max(180, bars.length * 55 + 30));
-
-    // 5. Full ANOVA table collapsed
-    html += renderCollapsed('Full ANCOVA Details',
-      renderMetrics([
-        { label: 'F (group)', value: round4(r.F) },
-        { label: 'Group p', value: round6(r.p), cls: pc },
-        { label: 'df1', value: r.df1 },
-        { label: 'df2', value: r.df2 },
-        { label: 'R-squared', value: round4(r.rSquared) },
         { label: 'Covariate B', value: round4(r.covariateEffect.B) },
-        { label: 'Covariate p', value: round6(r.covariateEffect.p), cls: pClass(r.covariateEffect.p) }
-      ]) + adjHtml
-    );
+        { label: 'Covariate p', value: round6(r.covariateEffect.p), cls: covPc },
+        { label: 'R\u00B2 (model)', value: round4(r.rSquared) },
+        { label: 'df (group)', value: r.df1 },
+        { label: 'df (error)', value: r.df2 }
+      ]) +
+      '<div class="effect-interpretation">Partial \u03B7\u00B2 = ' + round4(partialEta2) + ' \u2014 <strong>' + etaLabel + '</strong> effect (' +
+      '< 0.01 = negligible, 0.01\u20130.06 = small, 0.06\u20130.14 = medium, > 0.14 = large)</div>';
 
-    // 6. Plain English last
+    html += renderCollapsed('Full ANCOVA Table & Details', anovaTableHtml + compHtml + coeffHtml);
+
+    // 7. Plain English interpretation
+    var plainText = sig
+      ? 'After controlling for the covariate, there is a significant difference across groups, F(' + r.df1 + ', ' + r.df2 + ') = ' + round4(r.F) + ', p = ' + round6(r.p) + '. ' +
+        best.group + ' has the highest adjusted mean (' + round2(best.mean) + ') and ' + worst.group + ' has the lowest (' + round2(worst.mean) + '). ' +
+        'The effect size is ' + etaLabel + ' (partial \u03B7\u00B2 = ' + round4(partialEta2) + ').' +
+        (covSig ? ' The covariate is also a significant predictor (B = ' + round4(r.covariateEffect.B) + ', p = ' + round6(r.covariateEffect.p) + ').' : '')
+      : 'After controlling for the covariate, no significant group difference was found, F(' + r.df1 + ', ' + r.df2 + ') = ' + round4(r.F) + ', p = ' + round6(r.p) + '. ' +
+        'The groups perform similarly once the covariate is accounted for.' +
+        (covSig ? ' However, the covariate itself is a significant predictor (B = ' + round4(r.covariateEffect.B) + ', p = ' + round6(r.covariateEffect.p) + ').' : '');
     html += renderPlainEnglish(plainText);
 
     html += '</div>';
@@ -9323,6 +9556,9 @@
     container.insertAdjacentHTML('beforeend', html);
     scrollToBottom();
     drawBarChart(chartId, bars);
+
+    // 8. Validation checklist + next steps
+    showValidationChecklist('group_comparison', { n: minLen, p: r.p });
     showNextSteps('group_comparison', { n: minLen, p: r.p });
   }
 

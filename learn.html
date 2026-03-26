@@ -340,7 +340,7 @@
         <strong>What to look for:</strong> Which rating is most common? Do younger and older groups differ? Is there a skew toward high or low satisfaction?
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=frequencies" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -399,7 +399,7 @@ Paste it into the analyzer to get:
         <strong>What to look for:</strong> Is the mean close to the median (symmetric data) or far apart (skewed)? How much variability is there? Are there potential outliers?
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=summary" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -444,7 +444,7 @@ Paste it into the analyzer to get:
         <strong>What to look for:</strong> Which feature is most widely used? Which is least? Do any features cluster together (people who use A also tend to use E)?
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=multi_response" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -490,7 +490,7 @@ Paste it into the analyzer to get:
         <strong>What to look for:</strong> Quality should score highest (mostly 6s and 7s). Support is the weakest link (mostly 3s&ndash;5s). This tells you where to invest improvement effort.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=multi_response" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -535,7 +535,7 @@ Paste it into the analyzer to get:
         <strong>What to look for:</strong> Alpha above 0.70 means acceptable reliability. These items should score high because they move together. Look at "alpha if item deleted" to see if removing any item would improve the scale.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=reliability" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -605,7 +605,7 @@ Paste it into the analyzer to get:
         <strong>What to look for:</strong> Is the difference statistically significant (p &lt; 0.05)? The Test group should be clearly faster. Check the effect size (Cohen's d) &mdash; above 0.8 is large.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=ttest" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -667,7 +667,7 @@ Paste it into the analyzer to get:
         <strong>What to look for:</strong> Nearly every person improved by 1&ndash;2 points. The paired test accounts for individual baselines, giving more statistical power than an independent test.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=paired_ttest" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -729,7 +729,7 @@ Paste it into the analyzer to get:
         <strong>What to look for:</strong> Premium customers rate significantly higher. The Mann-Whitney works on ranks rather than raw values, making it ideal for ordinal Likert data.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=mann_whitney" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -785,7 +785,7 @@ Paste it into the analyzer to get:
         <strong>What to look for:</strong> Every user improved by 1&ndash;2 points. The Wilcoxon is the non-parametric equivalent of the paired t-test, appropriate for ordinal rating scales.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=wilcoxon" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -835,7 +835,7 @@ are statistically significant.</textarea>
         <strong>What to look for:</strong> A significant F-statistic means at least one region differs. Check post-hoc tests (Tukey) to see which specific pairs differ. South should stand out as lowest.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=anova" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -875,7 +875,7 @@ are statistically significant.</textarea>
         <strong>What to look for:</strong> Younger groups should rate significantly higher than older ones. The Kruskal-Wallis is the non-parametric alternative to ANOVA, appropriate for ordinal rating scales.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=kruskal_wallis" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -920,7 +920,7 @@ are statistically significant.</textarea>
         <strong>What to look for:</strong> Enterprise revenue is much higher and more variable than SMB. Welch ANOVA adjusts for this, giving a more reliable p-value than standard ANOVA would.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=welch_anova" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -970,7 +970,7 @@ are statistically significant.</textarea>
         <strong>What to look for:</strong> Check three things: (1) main effect of Region, (2) main effect of Product, (3) interaction effect. Premium should score higher everywhere, but the gap might vary by region.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=two_way_anova" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -1012,7 +1012,7 @@ are statistically significant.</textarea>
         <strong>What to look for:</strong> Scores increase steadily from T1 to T3 (~45 &rarr; ~53 &rarr; ~61). The test tells you whether this upward trend is statistically significant across time points.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=repeated_anova" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -1082,7 +1082,7 @@ are statistically significant.</textarea>
         <strong>What to look for:</strong> The correlation should be strong and positive (r close to +1). Higher spend consistently leads to higher revenue. Check the p-value to confirm it's not due to chance.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=pearson" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -1144,7 +1144,7 @@ are statistically significant.</textarea>
         <strong>What to look for:</strong> A strong positive Spearman rho means people who rate satisfaction high also rate loyalty high. The relationship is monotonic even if not perfectly linear.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=spearman" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -1196,7 +1196,7 @@ are statistically significant.</textarea>
         <strong>What to look for:</strong> Tau close to +1 means strong agreement. These judges mostly agree (just a few neighbor swaps). Kendall's tau is more robust than Spearman for small samples with ties.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=kendall" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -1268,7 +1268,7 @@ No</textarea>
         <strong>What to look for:</strong> Premium members should have noticeably higher satisfaction. A significant positive correlation confirms that membership status is associated with satisfaction levels.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=point_biserial" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -1313,7 +1313,7 @@ No</textarea>
         <strong>What to look for:</strong> All four variables should be positively correlated. Engagement and Satisfaction should show the strongest link. The matrix makes it easy to spot which pairs are most tightly coupled.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=corr_matrix" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -1383,7 +1383,7 @@ No</textarea>
         <strong>What to look for:</strong> A negative slope means higher prices predict lower satisfaction. Check R-squared &mdash; it tells you what percentage of satisfaction variation is explained by price alone.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=simple_regression" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -1433,7 +1433,7 @@ No</textarea>
         <strong>What to look for:</strong> Which predictor has the largest standardized coefficient? Quality should dominate. Check R-squared to see how much total variance the model explains. Are all three significant?
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=multiple_regression" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -1483,7 +1483,7 @@ No</textarea>
         <strong>What to look for:</strong> Short tenure and many complaints should strongly predict churn. Look at odds ratios &mdash; each additional complaint multiplies churn risk. Check model accuracy and classification table.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=logistic_regression" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -1533,7 +1533,7 @@ No</textarea>
         <strong>What to look for:</strong> Younger, heavier users should land in higher satisfaction tiers. Ordinal regression preserves the 1 &lt; 2 &lt; 3 &lt; 4 &lt; 5 ordering without assuming equal gaps between levels.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=ordinal_regression" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -1575,7 +1575,7 @@ No</textarea>
         <strong>What to look for:</strong> Prototype C should rank highest (~8.2 avg), A is middle (~7.1), and B is lowest (~4.7). The Friedman test tells you if these rank differences are significant across all participants.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=friedman" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -1634,7 +1634,7 @@ No</textarea>
         <strong>What to look for:</strong> Three clear groups should emerge: Power Users (high everything), At-Risk (low everything), and a Middle Tier. Check cluster centers to profile each segment and decide on targeted strategies.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=kmeans" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -1684,7 +1684,7 @@ No</textarea>
         <strong>What to look for:</strong> The dendrogram should show three main branches merging at different heights. Cut the tree at different levels to get 2, 3, or 4 segments. Compare with K-Means to see if both methods agree.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=hierarchical_clustering" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -1729,7 +1729,7 @@ No</textarea>
         <strong>What to look for:</strong> Two factors should emerge: Q1-Q3 load on Factor 1 (they move together) and Q4-Q6 load on Factor 2 (inversely related to the first group). This reveals two underlying dimensions in your survey.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=efa" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 
@@ -1774,7 +1774,7 @@ No</textarea>
         <strong>What to look for:</strong> The first principal component should explain 90%+ of variance since all 5 variables are highly correlated. This means one "overall experience" score could replace all five metrics. Check the scree plot and cumulative variance explained.
       </div>
 
-      <a href="analyze.html" class="try-btn">&#9654; Open Analyzer</a>
+      <a href="analyze.html?method=pca" class="try-btn">&#9654; Open Analyzer</a>
       <span class="copy-hint">Click any data box to select &amp; copy it</span>
     </div>
 

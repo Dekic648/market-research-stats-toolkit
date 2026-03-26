@@ -387,7 +387,19 @@
 
     // Normal approximation (with continuity correction)
     var mU = nA * nB / 2;
-    var sigmaU = Math.sqrt(nA * nB * (nA + nB + 1) / 12);
+    // Tie correction: count tie groups from ranks
+    var N = nA + nB;
+    var tieCorr = 0;
+    var ri = 0;
+    var sortedRanks = ranks.slice().sort(function (a, b) { return a - b; });
+    while (ri < sortedRanks.length) {
+      var rj = ri;
+      while (rj < sortedRanks.length && sortedRanks[rj] === sortedRanks[ri]) rj++;
+      var t = rj - ri;
+      if (t > 1) tieCorr += (t * t * t - t);
+      ri = rj;
+    }
+    var sigmaU = Math.sqrt((nA * nB / 12) * ((N + 1) - tieCorr / (N * (N - 1))));
     var z = (U - mU) / sigmaU;
     var p = 2 * (1 - jStat.normal.cdf(Math.abs(z), 0, 1));
 
@@ -435,9 +447,19 @@
 
     var W = Math.min(Wplus, Wminus);
 
-    // Normal approximation
+    // Normal approximation with tie correction
     var mW = nr * (nr + 1) / 4;
-    var sigmaW = Math.sqrt(nr * (nr + 1) * (2 * nr + 1) / 24);
+    var tieCorrW = 0;
+    var sri = 0;
+    var sortedAbsRanks = ranks_arr.slice().sort(function (a, b) { return a - b; });
+    while (sri < sortedAbsRanks.length) {
+      var srj = sri;
+      while (srj < sortedAbsRanks.length && sortedAbsRanks[srj] === sortedAbsRanks[sri]) srj++;
+      var tw = srj - sri;
+      if (tw > 1) tieCorrW += (tw * tw * tw - tw);
+      sri = srj;
+    }
+    var sigmaW = Math.sqrt((nr * (nr + 1) * (2 * nr + 1) - tieCorrW / 2) / 24);
     var z = sigmaW === 0 ? 0 : (W - mW) / sigmaW;
     var p = 2 * (1 - jStat.normal.cdf(Math.abs(z), 0, 1));
     var r = nr > 0 ? Math.abs(z) / Math.sqrt(nr) : 0;
@@ -487,6 +509,20 @@
       H += (rankSums[i] * rankSums[i]) / ns[i];
     }
     H = (12 / (N * (N + 1))) * H - 3 * (N + 1);
+
+    // Tie correction for Kruskal-Wallis
+    var tieCorrKW = 0;
+    var ki = 0;
+    var sortedKWRanks = ranks_arr.slice().sort(function (a, b) { return a - b; });
+    while (ki < sortedKWRanks.length) {
+      var kj = ki;
+      while (kj < sortedKWRanks.length && sortedKWRanks[kj] === sortedKWRanks[ki]) kj++;
+      var tk = kj - ki;
+      if (tk > 1) tieCorrKW += (tk * tk * tk - tk);
+      ki = kj;
+    }
+    var tieDenom = 1 - tieCorrKW / (N * N * N - N);
+    if (tieDenom > 0) H = H / tieDenom;
 
     var df = k - 1;
     var p = 1 - jStat.chisquare.cdf(H, df);
@@ -590,24 +626,27 @@
    *  FISHER'S EXACT TEST  (2x2)
    * ================================================================ */
 
+  function lnFactorial(n) { return jStat.gammaln(n + 1); }
+  function lnChoose(n, k) { return lnFactorial(n) - lnFactorial(k) - lnFactorial(n - k); }
+
   function fisherExact(a, b, c, d) {
     // 2x2 table:  [[a, b], [c, d]]
     var n = a + b + c + d;
     var r1 = a + b, r2 = c + d;
     var c1 = a + c, c2 = b + d;
 
-    function hypergeomPMF(x, N, K, n) {
-      return choose(K, x) * choose(N - K, n - x) / choose(N, n);
+    function lnHypergeomPMF(x, N, K, nn) {
+      return lnChoose(K, x) + lnChoose(N - K, nn - x) - lnChoose(N, nn);
     }
 
-    var pObserved = hypergeomPMF(a, n, c1, r1);
+    var lnPObserved = lnHypergeomPMF(a, n, c1, r1);
     var pValue = 0;
 
     var minA = Math.max(0, r1 - c2);
     var maxA = Math.min(r1, c1);
     for (var x = minA; x <= maxA; x++) {
-      var px = hypergeomPMF(x, n, c1, r1);
-      if (px <= pObserved + 1e-10) pValue += px;
+      var lnPx = lnHypergeomPMF(x, n, c1, r1);
+      if (lnPx <= lnPObserved + 1e-10) pValue += Math.exp(lnPx);
     }
 
     // Odds ratio
@@ -812,11 +851,17 @@
 
     // Fisher Z transform for CI
     var zr = 0.5 * Math.log((1 + r) / (1 - r));
-    var seZ = 1 / Math.sqrt(n - 3);
-    var zLo = zr - 1.96 * seZ;
-    var zHi = zr + 1.96 * seZ;
-    var ciLower = (Math.exp(2 * zLo) - 1) / (Math.exp(2 * zLo) + 1);
-    var ciUpper = (Math.exp(2 * zHi) - 1) / (Math.exp(2 * zHi) + 1);
+    var seZ = n > 3 ? 1 / Math.sqrt(n - 3) : NaN;
+    var ciLower, ciUpper;
+    if (isNaN(seZ)) {
+      ciLower = -1;
+      ciUpper = 1;
+    } else {
+      var zLo = zr - 1.96 * seZ;
+      var zHi = zr + 1.96 * seZ;
+      ciLower = (Math.exp(2 * zLo) - 1) / (Math.exp(2 * zLo) + 1);
+      ciUpper = (Math.exp(2 * zHi) - 1) / (Math.exp(2 * zHi) + 1);
+    }
 
     return {
       test: "Pearson Correlation",
@@ -1940,12 +1985,40 @@
     var denTauB = Math.sqrt((n0 - n1) * (n0 - n2));
     var tau = denTauB === 0 ? 0 : (concordant - discordant) / denTauB;
 
-    // Normal approximation for p-value
+    // Normal approximation for p-value with tie-corrected variance (Agresti 2002)
+    var S = concordant - discordant;
+
+    // Build tie groups for X and Y
+    var xGroups = {}, yGroups = {};
+    for (var i = 0; i < n; i++) {
+      xGroups[x[i]] = (xGroups[x[i]] || 0) + 1;
+      yGroups[y[i]] = (yGroups[y[i]] || 0) + 1;
+    }
+
     var v0 = n * (n - 1) * (2 * n + 5);
-    var variance_tau = v0 / 18;
-    // Simplified: not adjusting variance for ties groups (would need group sizes)
-    var se = Math.sqrt(2 * (2 * n + 5) / (9 * n * (n - 1)));
-    var z = se === 0 ? 0 : tau / se;
+    var tieTermX = 0, tieTermY = 0;
+    var tx2 = 0, ty2 = 0;
+    var tx3 = 0, ty3 = 0;
+    Object.values(xGroups).forEach(function(t) {
+      if (t > 1) {
+        tieTermX += t * (t - 1) * (2 * t + 5);
+        tx2 += t * (t - 1);
+        tx3 += t * (t - 1) * (t - 2);
+      }
+    });
+    Object.values(yGroups).forEach(function(t) {
+      if (t > 1) {
+        tieTermY += t * (t - 1) * (2 * t + 5);
+        ty2 += t * (t - 1);
+        ty3 += t * (t - 1) * (t - 2);
+      }
+    });
+
+    var varS = (v0 - tieTermX - tieTermY) / 18
+             + (tx2 * ty2) / (2 * n * (n - 1))
+             + (tx3 * ty3) / (9 * n * (n - 1) * (n - 2));
+    var se = Math.sqrt(varS);
+    var z = se === 0 ? 0 : S / se;
     var p = 2 * (1 - jStat.normal.cdf(Math.abs(z), 0, 1));
 
     return {
@@ -2432,7 +2505,7 @@
     var msError = ssError / df2;
     var F = msError === 0 ? 0 : msTreatment / msError;
     var p = 1 - jStat.centralF.cdf(F, df1, df2);
-    var etaSquared = ssTotal === 0 ? 0 : ssTreatment / ssTotal;
+    var etaSquared = (ssTreatment + ssError) === 0 ? 0 : ssTreatment / (ssTreatment + ssError);
 
     // Greenhouse-Geisser epsilon correction for sphericity
     // Compute the variance-covariance matrix of the conditions
