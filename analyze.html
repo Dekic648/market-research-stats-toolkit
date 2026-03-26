@@ -8459,6 +8459,19 @@
       }
     }
 
+    // FAILSAFE: if any percentage exceeds 100%, this is NOT checkbox data — it's matrix/scale data
+    // where each respondent contributed multiple values. Redirect to scale comparison.
+    var anyOver100 = false;
+    for (var g = 0; g < pctData.length && !anyOver100; g++) {
+      for (var c = 0; c < pctData[g].length; c++) {
+        if (pctData[g][c] > 100.5) { anyOver100 = true; break; }
+      }
+    }
+    if (anyOver100 && parsed.columns && parsed.columns.length > 1) {
+      runScaleCrosstab(parsed, groupLines, valDesc, grpDesc);
+      return;
+    }
+
     // Column totals (total who selected each option)
     var optionTotals = [];
     for (var c = 0; c < optionLabels.length; c++) {
