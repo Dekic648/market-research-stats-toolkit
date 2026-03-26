@@ -66,6 +66,53 @@ function randCount(lambda, n) {
   return arr;
 }
 
+// Sparse checkbox column: value = category code if selected, blank/0 if not
+// Mimics Alchemer "select max K options" — only ~20-40% of rows have a value
+function randSparseCheckbox(selectRate, n) {
+  var arr = [];
+  for (var i = 0; i < n; i++) {
+    arr.push(Math.random() < selectRate ? randInt(1, 7) : 0);
+  }
+  return arr;
+}
+
+// Generate Alchemer-style survey matching real user data patterns
+function generateAlchemerSurvey(n) {
+  // 10 Likert/rating columns + 7 sparse checkbox columns + 2 demographic columns
+  var seniority = randLikert(0, 4, n);  // 0-4 ordinal
+  var dps = Array(n).fill(1);           // zero-variance filtered column
+
+  // "Select max 2 options" — 7 checkbox columns, each ~25% filled
+  var reason1 = randSparseCheckbox(0.45, n); // "inconvenient times"
+  var reason2 = randSparseCheckbox(0.20, n); // "duration too long"
+  var reason3 = randSparseCheckbox(0.10, n); // "not exciting"
+  var reason4 = randSparseCheckbox(0.08, n); // "can't impact"
+  var reason5 = randSparseCheckbox(0.06, n); // "know outcome"
+  var reason6 = randSparseCheckbox(0.04, n); // "highlights repetitive"
+  var reason7 = randSparseCheckbox(0.03, n); // "something else"
+
+  return {
+    n: n,
+    // Rating questions (Likert 1-5)
+    watchHabit: randLikert(1, 5, n),
+    followMethod: randLikert(1, 3, n),
+    watchReason: randLikert(1, 6, n),
+    overallRating: randLikert(1, 5, n),
+    skipFeeling: randLikert(1, 5, n),
+    winSense: randLikert(1, 5, n),
+    matchLength: randLikert(1, 5, n),
+    timeSatisfaction: randLikert(1, 5, n),
+    // Sparse checkbox "select max 2" columns
+    reason1: reason1, reason2: reason2, reason3: reason3,
+    reason4: reason4, reason5: reason5, reason6: reason6, reason7: reason7,
+    // Demographics
+    seniority: seniority,
+    dps: dps,
+    // Grouping by seniority level
+    seniorityLabel: seniority.map(function(s) { return 'Level ' + s; }),
+  };
+}
+
 // Generate a full mock survey dataset
 function generateSurvey(n) {
   var half = Math.floor(n / 2);
@@ -1045,6 +1092,160 @@ for (var iter = 0; iter < ITERATIONS; iter++) {
   testWordFrequency(survey);
   testSentiment(survey);
   testDetectType();
+}
+
+// ============================
+// ALCHEMER-STYLE SURVEY TESTS
+// ============================
+
+function testAlchemerPatterns(alch) {
+  // --- Sparse checkbox analysis: treat non-zero as "selected" ---
+  // This is what Multi-Response does: count selection rates per option
+  var reasons = [alch.reason1, alch.reason2, alch.reason3, alch.reason4,
+                 alch.reason5, alch.reason6, alch.reason7];
+  reasons.forEach(function(col, i) {
+    var selected = col.filter(function(v) { return v !== 0; }).length;
+    var rate = selected / alch.n;
+    check('Alchemer reason' + (i+1) + ': select rate in [0,1]', rate >= 0 && rate <= 1,
+      'rate=' + rate.toFixed(2) + ' (' + selected + '/' + alch.n + ')');
+  });
+
+  // --- Sparse columns with stats: t-test on watchHabit BY whether reason1 selected ---
+  var groupSelected = [], groupNot = [];
+  for (var i = 0; i < alch.n; i++) {
+    if (alch.reason1[i] !== 0) groupSelected.push(alch.watchHabit[i]);
+    else groupNot.push(alch.watchHabit[i]);
+  }
+  if (groupSelected.length >= 3 && groupNot.length >= 3) {
+    var r = SE.ttest(groupSelected, groupNot);
+    check('Alchemer sparse t-test: p valid', r.p >= 0 && r.p <= 1 && !isNaN(r.p),
+      'p=' + r.p + ' (n1=' + groupSelected.length + ', n2=' + groupNot.length + ')');
+  }
+
+  // --- Zero-variance column (DPS = all 1s) ---
+  var desc = SE.describe(alch.dps);
+  check('Alchemer DPS: sd = 0', desc.sd === 0, 'sd=' + desc.sd);
+  check('Alchemer DPS: mean = 1', desc.mean === 1);
+
+  // Zero-variance in correlation should not crash
+  try {
+    var rCorr = SE.pearson(alch.dps, alch.watchHabit);
+    check('Alchemer DPS correlation: no crash', true);
+    check('Alchemer DPS correlation: r = 0 or NaN', rCorr.r === 0 || isNaN(rCorr.r),
+      'r=' + rCorr.r);
+  } catch(e) {
+    check('Alchemer DPS correlation: no crash', false, e.message);
+  }
+
+  // Zero-variance in t-test should not crash
+  try {
+    var rTT = SE.ttest(alch.dps, alch.watchHabit);
+    check('Alchemer DPS t-test: no crash', true);
+  } catch(e) {
+    check('Alchemer DPS t-test: no crash', false, e.message);
+  }
+
+  // --- Seniority 0-4 as grouping variable for ANOVA ---
+  var senGroups = {};
+  alch.seniorityLabel.forEach(function(s, i) {
+    if (!senGroups[s]) senGroups[s] = [];
+    senGroups[s].push(alch.overallRating[i]);
+  });
+  var senGA = Object.values(senGroups).filter(function(g) { return g.length >= 2; });
+  if (senGA.length >= 2) {
+    var rAnova = SE.anova(senGA);
+    check('Alchemer seniority ANOVA: p valid', rAnova.p >= 0 && rAnova.p <= 1, 'p=' + rAnova.p);
+    check('Alchemer seniority ANOVA: F >= 0', rAnova.F >= 0);
+
+    var rKW = SE.kruskalWallis(senGA);
+    check('Alchemer seniority KW: p valid', rKW.p >= 0 && rKW.p <= 1);
+  }
+
+  // --- Seniority 0-4 as predictor in regression ---
+  var rReg = SE.linearRegression(alch.overallRating, [alch.seniority]);
+  check('Alchemer seniority regression: R2 valid', rReg.R2 >= 0 && rReg.R2 <= 1);
+  check('Alchemer seniority regression: p valid', rReg.fP >= 0 && rReg.fP <= 1);
+
+  // --- Chi-square: seniority × whether reason1 selected ---
+  var senReason = {};
+  for (var i = 0; i < alch.n; i++) {
+    var sen = 'S' + alch.seniority[i];
+    var sel = alch.reason1[i] !== 0 ? 'Yes' : 'No';
+    var key = sen + '|' + sel;
+    if (!senReason[key]) senReason[key] = 0;
+    senReason[key]++;
+  }
+  // Build contingency table
+  var senLevels = [0,1,2,3,4].map(function(s) { return 'S' + s; });
+  var ctable = senLevels.map(function(s) {
+    return [(senReason[s + '|Yes'] || 0), (senReason[s + '|No'] || 0)];
+  }).filter(function(row) { return row[0] + row[1] > 0; });
+  if (ctable.length >= 2) {
+    var rChi = SE.chiSquare(ctable);
+    check('Alchemer seniority×reason chi-sq: p valid', rChi.p >= 0 && rChi.p <= 1);
+    check('Alchemer seniority×reason chi-sq: chi2 >= 0', rChi.chiSquare >= 0);
+  }
+
+  // --- Cronbach's alpha on the rating items ---
+  var rAlpha = SE.cronbachAlpha([alch.watchHabit, alch.overallRating, alch.skipFeeling,
+                                  alch.winSense, alch.matchLength, alch.timeSatisfaction]);
+  check('Alchemer scale reliability: alpha not NaN', !isNaN(rAlpha.alpha));
+  check('Alchemer scale reliability: k = 6', rAlpha.k === 6);
+
+  // --- Factor analysis on rating items ---
+  try {
+    var rFA = SE.factorAnalysis([alch.watchHabit, alch.overallRating, alch.skipFeeling,
+                                  alch.winSense, alch.matchLength, alch.timeSatisfaction],
+                                 { nFactors: 2 });
+    check('Alchemer FA: has loadings', rFA.loadings !== undefined);
+    check('Alchemer FA: 6 items', rFA.loadings.length === 6);
+  } catch(e) {
+    check('Alchemer FA: no crash', false, e.message);
+  }
+
+  // --- K-Means on rating items ---
+  var rKM = SE.kMeans([alch.watchHabit, alch.overallRating, alch.skipFeeling, alch.winSense], 3);
+  check('Alchemer K-Means: 3 clusters', rKM.k === 3);
+  check('Alchemer K-Means: assignments valid', rKM.assignments.every(function(a) { return a >= 0 && a <= 2; }));
+
+  // --- Logistic regression: predict reason1 selection from ratings ---
+  var reason1Binary = alch.reason1.map(function(v) { return v !== 0 ? 1 : 0; });
+  try {
+    var rLog = SE.logisticRegression(reason1Binary, [alch.watchHabit, alch.overallRating]);
+    check('Alchemer logistic: converged', rLog.converged !== false);
+    check('Alchemer logistic: pseudoR2 valid', rLog.pseudoR2 >= 0 && rLog.pseudoR2 <= 1);
+  } catch(e) {
+    check('Alchemer logistic: no crash', false, e.message);
+  }
+
+  // --- Very sparse column (reason7 ~3% fill) — tests with tiny groups ---
+  var sparseSelected = alch.reason7.filter(function(v) { return v !== 0; });
+  var sparseNotSel = alch.reason7.filter(function(v) { return v === 0; });
+  if (sparseSelected.length >= 2 && sparseNotSel.length >= 2) {
+    // Get corresponding watchHabit values
+    var watchSel = [], watchNot = [];
+    for (var i = 0; i < alch.n; i++) {
+      if (alch.reason7[i] !== 0) watchSel.push(alch.watchHabit[i]);
+      else watchNot.push(alch.watchHabit[i]);
+    }
+    if (watchSel.length >= 2) {
+      try {
+        var rMW = SE.mannWhitney(watchSel, watchNot);
+        check('Alchemer very sparse MW: p valid', rMW.p >= 0 && rMW.p <= 1,
+          'p=' + rMW.p + ' (n1=' + watchSel.length + ', n2=' + watchNot.length + ')');
+      } catch(e) {
+        check('Alchemer very sparse MW: no crash', false, e.message);
+      }
+    }
+  }
+}
+
+// Run Alchemer tests
+for (var aIter = 0; aIter < ITERATIONS; aIter++) {
+  var an = sampleSizes[aIter % sampleSizes.length];
+  console.log('--- Alchemer Pattern Test (n=' + an + ') ---');
+  var alch = generateAlchemerSurvey(an);
+  testAlchemerPatterns(alch);
 }
 
 // Run edge cases and invariants once
