@@ -5894,8 +5894,9 @@
     var runBtn = section.querySelector('#runBtn');
 
     function parseBinaryValues(text) {
-      var lines = text.split(/[\n,\t]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== ''; });
-      return lines;
+      var lines = text.split(/\n/).map(function(s) { return s.trim(); });
+      while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+      return lines.filter(function(s) { return s !== '' && !isExcelError(s); });
     }
 
     function checkReady() {
@@ -7796,7 +7797,11 @@
      Shared: Categorical Parser
      ================================================================== */
   function parseCategorical(text) {
-    return text.split(/\n/).map(function(s) { return s.trim(); }).filter(function(s) { return s !== '' && !isExcelError(s); });
+    var lines = text.split(/\n/).map(function(s) { return s.trim(); });
+    // Strip trailing blank lines only
+    while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+    // Map Excel errors to empty string, but keep blank lines in place
+    return lines.map(function(s) { return isExcelError(s) ? '' : s; });
   }
 
   /* ==================================================================
@@ -13206,7 +13211,8 @@
         var allGood = true;
         section.querySelectorAll('.lca-data').forEach(function(ta) {
           // Accept any values — will be converted to binary (0 = falsy, non-zero = 1) at run time
-          var lines = ta.value.split(/\n/).filter(function(l) { return l.trim() !== ''; });
+          var lines = ta.value.split(/\n/).map(function(s) { return s.trim(); });
+          while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
           if (lines.length < 5) { allGood = false; return; }
         });
         runBtn.disabled = !allGood;
@@ -13216,14 +13222,16 @@
         ta.addEventListener('input', function() {
           var idx = ta.getAttribute('data-idx');
           var countEl = section.querySelector('.lca-count[data-idx="' + idx + '"]');
-          var parsed = parseValues(ta.value);
-          if (parsed.nums.length === 0) {
+          var lines = ta.value.split(/\n/).map(function(s) { return s.trim(); });
+          while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+          if (lines.length === 0) {
             countEl.textContent = 'No values detected';
             countEl.className = 'value-count';
           } else {
-            var zeros = 0, nonZeros = 0;
-            parsed.nums.forEach(function(v) { if (v === 0) zeros++; else nonZeros++; });
-            countEl.textContent = parsed.nums.length + ' values (' + nonZeros + ' selected, ' + zeros + ' not selected)';
+            var nonZeros = 0;
+            lines.forEach(function(v) { if (v !== '' && parseFloat(v) !== 0 && !isNaN(parseFloat(v))) nonZeros++; });
+            var zeros = lines.length - nonZeros;
+            countEl.textContent = lines.length + ' respondents (' + nonZeros + ' selected, ' + zeros + ' not selected)';
             countEl.className = 'value-count valid';
           }
           checkReady();
@@ -13263,16 +13271,24 @@
 
       runBtn.addEventListener('click', function() {
         var nClasses = parseInt(section.querySelector('#lcaClassesSelect').value) || 2;
-        var colDefs = [];
         var labels = [];
+        // LCA: parse each column independently — blank = 0, any non-empty value = 1
+        var cols = [];
         section.querySelectorAll('.lca-data').forEach(function(ta, i) {
-          colDefs.push({ text: ta.value, type: 'numeric' });
+          var lines = ta.value.split(/\n/).map(function(s) { return s.trim(); });
+          while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+          var binary = lines.map(function(v) {
+            if (v === '' || isExcelError(v)) return 0;
+            var n = parseFloat(v);
+            return (!isNaN(n) && n !== 0) ? 1 : 0;
+          });
+          cols.push(binary);
           var desc = section.querySelector('.lca-desc[data-idx="' + i + '"]');
           labels.push(desc && desc.value ? desc.value : 'Item ' + (i + 1));
         });
-        var cols = alignColumns(colDefs);
-        // Convert to binary for LCA
-        cols = cols.map(function(col) { return col.map(function(v) { return v !== 0 ? 1 : 0; }); });
+        // Trim all columns to the same length (shortest)
+        var minLen = Math.min.apply(null, cols.map(function(c) { return c.length; }));
+        cols = cols.map(function(c) { return c.slice(0, minLen); });
         runBtn.disabled = true;
         runBtn.textContent = 'Running...';
         runLCA(cols, labels, nClasses);
@@ -14012,7 +14028,8 @@
         var allGood = true;
         section.querySelectorAll('.irt-data').forEach(function(ta) {
           // Accept any values — will be converted to binary (0 = 0, non-zero = 1) at run time
-          var lines = ta.value.split(/\n/).filter(function(l) { return l.trim() !== ''; });
+          var lines = ta.value.split(/\n/).map(function(s) { return s.trim(); });
+          while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
           if (lines.length < 5) { allGood = false; return; }
         });
         runBtn.disabled = !allGood;
@@ -14022,14 +14039,16 @@
         ta.addEventListener('input', function() {
           var idx = ta.getAttribute('data-idx');
           var countEl = section.querySelector('.irt-count[data-idx="' + idx + '"]');
-          var parsed = parseValues(ta.value);
-          if (parsed.nums.length === 0) {
+          var lines = ta.value.split(/\n/).map(function(s) { return s.trim(); });
+          while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+          if (lines.length === 0) {
             countEl.textContent = 'No values detected';
             countEl.className = 'value-count';
           } else {
-            var zeros = 0, nonZeros = 0;
-            parsed.nums.forEach(function(v) { if (v === 0) zeros++; else nonZeros++; });
-            countEl.textContent = parsed.nums.length + ' values (' + nonZeros + ' selected, ' + zeros + ' not selected)';
+            var nonZeros = 0;
+            lines.forEach(function(v) { if (v !== '' && parseFloat(v) !== 0 && !isNaN(parseFloat(v))) nonZeros++; });
+            var zeros = lines.length - nonZeros;
+            countEl.textContent = lines.length + ' respondents (' + nonZeros + ' selected, ' + zeros + ' not selected)';
             countEl.className = 'value-count valid';
           }
           checkReady();
@@ -14042,16 +14061,24 @@
       if (removeBtn) removeBtn.addEventListener('click', function() { if (colCount > 3) { var saved = saveGridData(); colCount--; buildGrid(saved); bindEvents(); scrollToBottom(); } });
 
       runBtn.addEventListener('click', function() {
-        var colDefs = [];
         var labels = [];
+        // IRT: parse each column independently — blank = 0, any non-empty value = 1
+        var cols = [];
         section.querySelectorAll('.irt-data').forEach(function(ta, i) {
-          colDefs.push({ text: ta.value, type: 'numeric' });
+          var lines = ta.value.split(/\n/).map(function(s) { return s.trim(); });
+          while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+          var binary = lines.map(function(v) {
+            if (v === '' || isExcelError(v)) return 0;
+            var n = parseFloat(v);
+            return (!isNaN(n) && n !== 0) ? 1 : 0;
+          });
+          cols.push(binary);
           var desc = section.querySelector('.irt-desc[data-idx="' + i + '"]');
           labels.push(desc && desc.value ? desc.value : 'Item ' + (i + 1));
         });
-        var cols = alignColumns(colDefs);
-        // Convert to binary for IRT
-        cols = cols.map(function(col) { return col.map(function(v) { return v !== 0 ? 1 : 0; }); });
+        // Trim all columns to the same length (shortest)
+        var minLen = Math.min.apply(null, cols.map(function(c) { return c.length; }));
+        cols = cols.map(function(c) { return c.slice(0, minLen); });
         runBtn.disabled = true;
         runBtn.textContent = 'Running...';
         runIRT(cols, labels);
