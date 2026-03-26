@@ -349,6 +349,44 @@
       font-size: 0.85rem;
     }
 
+    /* Plain language interpretation cards */
+    .plain-lang-card {
+      padding: 0.85rem 1.1rem; border-radius: 10px; margin-bottom: 0.75rem;
+      font-size: 0.88rem; line-height: 1.6; font-weight: 500;
+    }
+    .plain-lang-card.sig { background: var(--green-soft); color: var(--green); border: 1px solid rgba(58,154,92,0.2); }
+    .plain-lang-card.nonsig { background: var(--bg-1); color: var(--text-2); border: 1px solid var(--border); }
+    .plain-lang-card.info { background: var(--blue-soft); color: var(--blue); border: 1px solid rgba(91,141,184,0.2); }
+
+    /* Toggle buttons for distribution vs mean */
+    .view-toggle { display: inline-flex; gap: 0; margin-bottom: 0.75rem; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+    .view-toggle-btn {
+      padding: 0.35rem 0.85rem; font-size: 0.75rem; font-weight: 600; font-family: inherit;
+      border: none; cursor: pointer; background: var(--bg-1); color: var(--text-2); transition: background 0.2s, color 0.2s;
+    }
+    .view-toggle-btn.active { background: var(--rose); color: #fff; }
+
+    /* Add extra box button */
+    .add-box-btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 0.65rem 1.3rem;
+      border-radius: 10px; border: 1px dashed var(--border); background: var(--bg-card);
+      color: var(--text-2); font-size: 0.82rem; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: border-color 0.2s, color 0.2s, background 0.2s; width: 100%;
+      justify-content: center;
+    }
+    .add-box-btn:hover { border-color: var(--border-hover); color: var(--rose); background: var(--rose-soft); }
+
+    .extra-box-type-select {
+      width: 100%; margin-bottom: 0.5rem; padding: 0.4rem 0.6rem; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--bg-1); color: var(--text-0);
+      font-size: 0.78rem; font-family: inherit;
+    }
+
+    /* Shaded distribution cells */
+    .dist-cell-neg { background: rgba(192, 57, 43, 0.12); }
+    .dist-cell-mid { background: rgba(192, 138, 48, 0.08); }
+    .dist-cell-pos { background: rgba(58, 154, 92, 0.12); }
+
     /* ========================================
        Animations
        ======================================== */
@@ -454,6 +492,11 @@
         <input type="text" class="name-input" id="name-behavioral" placeholder="Name this data (optional)">
       </div>
 
+      <!-- Add another question button -->
+      <div id="addBoxSlot">
+        <button class="add-box-btn" id="addBoxBtn">+ Add another question</button>
+      </div>
+
     </div>
 
     <!-- ====== Start Button ====== -->
@@ -504,6 +547,43 @@
   function round4(v) { return Math.round(v * 10000) / 10000; }
   var ALPHA = 0.05;
   function pClass(p) { return p < ALPHA ? 'p-sig' : p < ALPHA * 2 ? 'p-marginal' : 'p-nonsig'; }
+
+  /* ---- IMPROVEMENT 4: Plain language helpers ---- */
+  function plainP(p) {
+    if (p < 0.001) return 'There IS a clear difference between groups. Extremely unlikely to be random chance.';
+    if (p < 0.01) return 'There IS a significant difference. Very unlikely to be random.';
+    if (p < 0.05) return 'There IS a significant difference. Unlikely to be random.';
+    return 'There is NO significant difference. The differences could easily be random.';
+  }
+  function plainR(r) {
+    var abs = Math.abs(r);
+    var dir = r >= 0 ? 'positive' : 'negative';
+    if (abs >= 0.7) return 'Strong ' + dir + ' relationship (r = ' + round2(r) + ').';
+    if (abs >= 0.4) return 'Moderate ' + dir + ' relationship (r = ' + round2(r) + ').';
+    if (abs >= 0.2) return 'Weak ' + dir + ' relationship (r = ' + round2(r) + ').';
+    return 'No meaningful relationship (r = ' + round2(r) + ').';
+  }
+  function plainR2(r2) {
+    var pct = Math.round(r2 * 100);
+    var strength = r2 > 0.5 ? 'strong model' : r2 > 0.2 ? 'moderate model' : 'weak model';
+    return 'This model explains ' + pct + '% of the variation — ' + strength + '.';
+  }
+  function plainAlpha(a) {
+    if (a >= 0.9) return 'Excellent internal consistency (\u03B1 = ' + round2(a) + ').';
+    if (a >= 0.8) return 'Good internal consistency (\u03B1 = ' + round2(a) + ').';
+    if (a >= 0.7) return 'Acceptable internal consistency (\u03B1 = ' + round2(a) + ').';
+    if (a >= 0.6) return 'Questionable internal consistency (\u03B1 = ' + round2(a) + ').';
+    return 'Poor internal consistency (\u03B1 = ' + round2(a) + '). Consider revising items.';
+  }
+  function plainCramersV(v) {
+    if (v > 0.3) return "Strong association (Cram\u00E9r's V = " + round2(v) + ').';
+    if (v >= 0.1) return "Moderate association (Cram\u00E9r's V = " + round2(v) + ').';
+    return "Weak association (Cram\u00E9r's V = " + round2(v) + ').';
+  }
+  function renderPlainLang(text, isSig) {
+    var cls = isSig === true ? 'sig' : isSig === false ? 'nonsig' : 'info';
+    return '<div class="plain-lang-card ' + cls + '">' + text + '</div>';
+  }
 
   var CHART_COLORS = ['#5B8DB8','#D4766E','#6BAF7A','#E8A854','#9A7EC7','#C27BA0','#4AADA5','#D4915E','#7A8FC2','#8DB87A'];
 
@@ -657,6 +737,12 @@
     var any = boxIds.some(function(id) {
       return document.getElementById('box-' + id).value.trim() !== '';
     });
+    if (!any) {
+      any = extraBoxIds.some(function(id) {
+        var el = document.getElementById('box-' + id);
+        return el && el.value.trim() !== '';
+      });
+    }
     startBtn.disabled = !any;
   }
 
@@ -674,6 +760,78 @@
       countLines(id);
     });
   });
+
+  /* ---- IMPROVEMENT 1: Add another question button ---- */
+  var extraBoxCount = 0;
+  var extraBoxIds = [];
+  var TYPE_MAP = {
+    'Rating': { color: 'var(--rose)', desc: 'Rating scale (1-5, 1-7). One column per question.' },
+    'Checkbox/Matrix': { color: 'var(--coral)', desc: 'Multi-response checkboxes or matrix grid. Tab-separated columns.' },
+    'Single-Choice': { color: 'var(--green)', desc: 'Radio button / single-choice. One column.' },
+    'Behavioral': { color: 'var(--blue)', desc: 'Continuous numeric data. One or more columns.' }
+  };
+
+  document.getElementById('addBoxBtn').addEventListener('click', function() {
+    extraBoxCount++;
+    var boxId = 'extra-' + extraBoxCount;
+    extraBoxIds.push(boxId);
+
+    var div = document.createElement('div');
+    div.className = 'paste-box';
+    div.setAttribute('data-box', boxId);
+    div.id = 'box-wrap-' + boxId;
+    div.innerHTML =
+      '<div class="paste-box-header">' +
+        '<span class="paste-box-label" style="color:var(--rose)">Extra ' + extraBoxCount + '</span>' +
+        '<button class="clear-btn" data-clear="' + boxId + '">Clear</button>' +
+      '</div>' +
+      '<select class="extra-box-type-select" id="type-' + boxId + '">' +
+        '<option value="Rating">Rating</option>' +
+        '<option value="Checkbox/Matrix">Checkbox / Matrix</option>' +
+        '<option value="Single-Choice">Single-Choice</option>' +
+        '<option value="Behavioral">Behavioral</option>' +
+      '</select>' +
+      '<div class="paste-box-desc" id="desc-' + boxId + '">' + TYPE_MAP['Rating'].desc + '</div>' +
+      '<textarea id="box-' + boxId + '" placeholder="Paste your data here"></textarea>' +
+      '<div class="paste-box-footer">' +
+        '<span class="line-count" id="count-' + boxId + '">No data</span>' +
+      '</div>' +
+      '<input type="text" class="name-input" id="name-' + boxId + '" placeholder="Name this data (optional)">';
+
+    var addSlot = document.getElementById('addBoxSlot');
+    addSlot.parentNode.insertBefore(div, addSlot);
+
+    // Wire up events
+    var ta = document.getElementById('box-' + boxId);
+    ta.addEventListener('input', function() { countExtraLines(boxId); });
+    ta.addEventListener('paste', function() { setTimeout(function() { countExtraLines(boxId); }, 50); });
+
+    div.querySelector('.clear-btn').addEventListener('click', function() {
+      document.getElementById('box-' + boxId).value = '';
+      countExtraLines(boxId);
+    });
+
+    document.getElementById('type-' + boxId).addEventListener('change', function() {
+      var t = this.value;
+      document.getElementById('desc-' + boxId).textContent = TYPE_MAP[t].desc;
+      div.querySelector('.paste-box-label').style.color = TYPE_MAP[t].color;
+    });
+  });
+
+  function countExtraLines(id) {
+    var ta = document.getElementById('box-' + id);
+    var countEl = document.getElementById('count-' + id);
+    var val = ta.value.trim();
+    if (!val) {
+      countEl.textContent = 'No data';
+      countEl.className = 'line-count';
+    } else {
+      var lines = val.split('\n').filter(function(l) { return l.trim() !== ''; });
+      countEl.textContent = lines.length + ' row' + (lines.length !== 1 ? 's' : '') + ' detected';
+      countEl.className = 'line-count has-data';
+    }
+    updateStartBtn();
+  }
 
   /* ==================================================================
      Data Parsing
@@ -846,6 +1004,35 @@
       }
     }
 
+    // Extra boxes
+    session.extras = [];
+    extraBoxIds.forEach(function(boxId) {
+      var ta = document.getElementById('box-' + boxId);
+      if (!ta || !ta.value.trim()) return;
+      var typeEl = document.getElementById('type-' + boxId);
+      var nameEl = document.getElementById('name-' + boxId);
+      var type = typeEl ? typeEl.value : 'Rating';
+      var name = nameEl ? nameEl.value.trim() : '';
+
+      if (type === 'Single-Choice') {
+        var parsed = parseSingleColumn(ta.value);
+        if (parsed) {
+          session.extras.push({ type: type, values: parsed.values, label: name || parsed.label || 'Extra', nRows: parsed.values.length });
+        }
+      } else {
+        var parsed = parseMultiColumn(ta.value);
+        if (parsed) {
+          var numCols = parsed.columns.map(function(col) { return toNumbers(col); });
+          session.extras.push({
+            type: type,
+            columns: numCols,
+            labels: name ? [name] : parsed.labels,
+            nRows: parsed.nRows
+          });
+        }
+      }
+    });
+
     return session;
   }
 
@@ -870,7 +1057,7 @@
           { id: 'rc_freq', title: 'Frequencies', desc: 'Distribution of each rating column', run: runRatingFrequencies },
           { id: 'rc_crosstab', title: 'Crosstab', desc: 'Percentage breakdown by segment for each rating', run: runRatingCrosstab },
           { id: 'rc_sig', title: 'Significance', desc: 'Kruskal-Wallis test per rating column across segments', run: runRatingSignificance },
-          { id: 'rc_posthoc', title: 'Post-hoc', desc: 'Which segments differ from each other?', run: null }
+          { id: 'rc_posthoc', title: 'Post-hoc', desc: 'Which segments differ from each other?', run: runPostHoc }
         ]
       });
     }
@@ -885,7 +1072,8 @@
           { id: 'cc_segment', title: 'By Segment', desc: 'Mean or percentage by segment for each item', run: runCheckboxBySegment },
           { id: 'cc_sig', title: 'Significance', desc: 'Kruskal-Wallis or chi-square per item across segments', run: runCheckboxSignificance },
           { id: 'cc_alpha', title: 'Reliability', desc: "Cronbach's alpha on the items", run: runCheckboxReliability },
-          { id: 'cc_reg', title: 'What Predicts?', desc: 'Regression with items as predictors', run: null }
+          { id: 'cc_factor', title: 'Factor Analysis', desc: 'Do these items group into underlying themes?', run: runCheckboxFactorAnalysis },
+          { id: 'cc_reg', title: 'What Predicts?', desc: 'Regression with items as predictors', run: runCheckboxRegression }
         ]
       });
     }
@@ -924,7 +1112,7 @@
         desc: 'Correlation and regression between ratings and behavioral measures.',
         steps: [
           { id: 'rb_corr', title: 'Correlation', desc: 'Rating vs behavioral variables', run: runRatingBehavioralCorr },
-          { id: 'rb_reg', title: 'Regression', desc: 'Does behavioral predict rating?', run: null }
+          { id: 'rb_reg', title: 'Regression', desc: 'Does behavioral predict rating?', run: runRatingBehavioralReg }
         ]
       });
     }
@@ -1020,7 +1208,6 @@
     var html = '';
     session.ratings.columns.forEach(function(col, ci) {
       var label = session.ratings.labels[ci] || ('Rating ' + (ci + 1));
-      // Build groups by segment
       var segmentMeans = {};
       var segmentCounts = {};
       var catVals = session.category.values;
@@ -1034,17 +1221,20 @@
         }
       }
 
-      var tableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>Median</th><th>SD</th></tr>';
+      var meanTableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>Median</th><th>SD</th></tr>';
       var bars = [];
       session.category.groups.forEach(function(g) {
         var vals = segmentMeans[g] || [];
         if (vals.length === 0) return;
         var d = StatsEngine.describe(vals);
-        tableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.median) + '</td><td>' + round2(d.sd) + '</td></tr>';
+        meanTableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.median) + '</td><td>' + round2(d.sd) + '</td></tr>';
         bars.push({ label: g, value: d.mean });
       });
-      tableHtml += '</table>';
-      html += RC(label + ' by ' + session.category.label, tableHtml);
+      meanTableHtml += '</table>';
+
+      var distHtml = renderStackedDistribution(col, catVals, session.category.groups, label, session.category.label);
+      var toggleId = 'rc_xtab_' + ci;
+      html += RC(label + ' by ' + session.category.label, wrapWithToggle(meanTableHtml, distHtml, toggleId));
 
       var chartId = 'xtab_chart_' + ci;
       html += renderChart(chartId, label + ' — Mean by Segment', 500, Math.max(120, bars.length * 46 + 28));
@@ -1052,6 +1242,7 @@
     });
 
     container.innerHTML = html;
+    bindToggles();
   }
 
   function runRatingSignificance(session, container) {
@@ -1076,6 +1267,7 @@
       }
 
       var result = StatsEngine.kruskalWallis(groupArr);
+      html += renderPlainLang(plainP(result.p), result.p < ALPHA);
       html += RC(label + ' — Kruskal-Wallis Test', renderMetrics([
         { label: 'H', value: round2(result.H) },
         { label: 'df', value: result.df },
@@ -1164,17 +1356,21 @@
         if (!isNaN(col[i])) segData[seg].push(col[i]);
       }
 
-      var tableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>SD</th></tr>';
+      var meanTableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>SD</th></tr>';
       session.category.groups.forEach(function(g) {
         var vals = segData[g] || [];
         if (vals.length === 0) return;
         var d = StatsEngine.describe(vals);
-        tableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.sd) + '</td></tr>';
+        meanTableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.sd) + '</td></tr>';
       });
-      tableHtml += '</table>';
-      html += RC(label + ' by ' + session.category.label, tableHtml);
+      meanTableHtml += '</table>';
+
+      var distHtml = renderStackedDistribution(col, catVals, session.category.groups, label, session.category.label);
+      var toggleId = 'cc_seg_' + ci;
+      html += RC(label + ' by ' + session.category.label, wrapWithToggle(meanTableHtml, distHtml, toggleId));
     });
     container.innerHTML = html;
+    bindToggles();
   }
 
   function runCheckboxSignificance(session, container) {
@@ -1198,6 +1394,7 @@
         return;
       }
       var result = StatsEngine.kruskalWallis(groupArr);
+      html += renderPlainLang(label + ': ' + plainP(result.p), result.p < ALPHA);
       html += RC(label + ' — Kruskal-Wallis', renderMetrics([
         { label: 'H', value: round2(result.H) },
         { label: 'df', value: result.df },
@@ -1215,7 +1412,8 @@
     }
     var result = StatsEngine.cronbachAlpha(cb.numericColumns);
     var alphaVal = result.alpha !== undefined ? result.alpha : result;
-    var html = RC("Cronbach's Alpha", renderMetrics([
+    var html = renderPlainLang(plainAlpha(alphaVal), alphaVal >= 0.7);
+    html += RC("Cronbach's Alpha", renderMetrics([
       { label: 'Alpha', value: round2(alphaVal) },
       { label: 'Items', value: cb.numericColumns.length }
     ]));
@@ -1279,14 +1477,25 @@
     if (xt.error) { container.innerHTML = RC('Error', '<p>' + xt.error + '</p>'); return; }
 
     var result = StatsEngine.chiSquare(xt.table);
-    var html = RC('Chi-Square Test of Independence', renderMetrics([
+    var sig = result.p < ALPHA;
+
+    // Compute Cramer's V
+    var nRows = xt.table.length;
+    var nCols = xt.table[0] ? xt.table[0].length : 0;
+    var cramersV = 0;
+    if (xt.grandTotal > 0 && Math.min(nRows, nCols) > 1) {
+      cramersV = Math.sqrt(result.chiSquare / (xt.grandTotal * (Math.min(nRows, nCols) - 1)));
+    }
+
+    var html = renderPlainLang(plainP(result.p) + ' ' + plainCramersV(cramersV), sig);
+    html += RC('Chi-Square Test of Independence', renderMetrics([
       { label: '\u03C7\u00B2', value: round2(result.chiSquare) },
       { label: 'df', value: result.df },
       { label: 'p-value', value: round4(result.p), cls: pClass(result.p) },
+      { label: "Cram\u00E9r's V", value: round2(cramersV) },
       { label: 'n', value: xt.grandTotal }
     ]) + renderSigBadge(result.p));
 
-    var sig = result.p < ALPHA;
     html += renderPlainEnglish(
       'Chi-square test: \u03C7\u00B2(' + result.df + ') = ' + round2(result.chiSquare) + ', p = ' + round4(result.p) + '. ' +
       (sig ? 'There IS a statistically significant association between ' + session.singleChoice.label + ' and ' + session.category.label + '.'
@@ -1327,23 +1536,27 @@
         if (!isNaN(col[i])) segData[seg].push(col[i]);
       }
 
-      var tableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>Median</th><th>SD</th></tr>';
+      var meanTableHtml = '<table class="freq-table"><tr><th>Segment</th><th>n</th><th>Mean</th><th>Median</th><th>SD</th></tr>';
       var bars = [];
       session.category.groups.forEach(function(g) {
         var vals = segData[g] || [];
         if (vals.length === 0) return;
         var d = StatsEngine.describe(vals);
-        tableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.median) + '</td><td>' + round2(d.sd) + '</td></tr>';
+        meanTableHtml += '<tr><td>' + escHtml(g) + '</td><td>' + d.n + '</td><td>' + round2(d.mean) + '</td><td>' + round2(d.median) + '</td><td>' + round2(d.sd) + '</td></tr>';
         bars.push({ label: g, value: d.mean });
       });
-      tableHtml += '</table>';
-      html += RC(label + ' by ' + session.category.label, tableHtml);
+      meanTableHtml += '</table>';
+
+      var distHtml = renderStackedDistribution(col, catVals, session.category.groups, label, session.category.label);
+      var toggleId = 'beh_seg_' + ci;
+      html += RC(label + ' by ' + session.category.label, wrapWithToggle(meanTableHtml, distHtml, toggleId));
 
       var chartId = 'beh_seg_chart_' + ci;
       html += renderChart(chartId, label + ' — Mean by Segment', 500, Math.max(120, bars.length * 46 + 28));
       setTimeout(function() { drawBarChart(chartId, bars); }, 50);
     });
     container.innerHTML = html;
+    bindToggles();
   }
 
   function runBehavioralSignificance(session, container) {
@@ -1365,6 +1578,7 @@
         return;
       }
       var result = StatsEngine.kruskalWallis(groupArr);
+      html += renderPlainLang(label + ': ' + plainP(result.p), result.p < ALPHA);
       html += RC(label + ' — Kruskal-Wallis', renderMetrics([
         { label: 'H', value: round2(result.H) },
         { label: 'df', value: result.df },
@@ -1415,6 +1629,84 @@
     container.innerHTML = html;
   }
 
+  /* ---- IMPROVEMENT 3: Stacked % distribution helper ---- */
+  function renderStackedDistribution(col, catVals, groups, label, catLabel) {
+    // Determine unique values in the rating column
+    var uniqueVals = [];
+    var seen = {};
+    col.forEach(function(v) { if (!isNaN(v) && !seen[v]) { seen[v] = true; uniqueVals.push(v); } });
+    uniqueVals.sort(function(a, b) { return a - b; });
+    if (uniqueVals.length === 0 || uniqueVals.length > 20) return '';
+
+    var minLen = Math.min(col.length, catVals.length);
+    // Build per-segment distribution
+    var segData = {};
+    for (var i = 0; i < minLen; i++) {
+      var seg = catVals[i];
+      if (!segData[seg]) segData[seg] = { counts: {}, total: 0, sum: 0 };
+      if (!isNaN(col[i])) {
+        segData[seg].counts[col[i]] = (segData[seg].counts[col[i]] || 0) + 1;
+        segData[seg].total++;
+        segData[seg].sum += col[i];
+      }
+    }
+
+    var maxVal = Math.max.apply(null, uniqueVals);
+    var minVal = Math.min.apply(null, uniqueVals);
+    var midVal = (maxVal + minVal) / 2;
+
+    var html = '<table class="freq-table"><tr><th>' + escHtml(label) + '</th>';
+    uniqueVals.forEach(function(v) { html += '<th>' + v + '</th>'; });
+    html += '<th>Mean</th><th>n</th></tr>';
+
+    groups.forEach(function(g) {
+      var sd = segData[g];
+      if (!sd || sd.total === 0) return;
+      html += '<tr><td><strong>' + escHtml(g) + '</strong></td>';
+      uniqueVals.forEach(function(v) {
+        var cnt = sd.counts[v] || 0;
+        var pct = Math.round(cnt / sd.total * 100);
+        var cellCls = '';
+        if (v <= minVal + (maxVal - minVal) * 0.3) cellCls = 'dist-cell-neg';
+        else if (v >= minVal + (maxVal - minVal) * 0.7) cellCls = 'dist-cell-pos';
+        else cellCls = 'dist-cell-mid';
+        html += '<td class="' + cellCls + '">' + pct + '%</td>';
+      });
+      html += '<td><strong>' + round2(sd.sum / sd.total) + '</strong></td>';
+      html += '<td>' + sd.total + '</td></tr>';
+    });
+    html += '</table>';
+    return html;
+  }
+
+  function wrapWithToggle(meanHtml, distHtml, toggleId) {
+    return '<div id="toggle-wrap-' + toggleId + '">' +
+      '<div class="view-toggle">' +
+        '<button class="view-toggle-btn active" data-target="mean" data-toggle="' + toggleId + '">Mean</button>' +
+        '<button class="view-toggle-btn" data-target="dist" data-toggle="' + toggleId + '">% Distribution</button>' +
+      '</div>' +
+      '<div id="view-mean-' + toggleId + '">' + meanHtml + '</div>' +
+      '<div id="view-dist-' + toggleId + '" style="display:none">' + distHtml + '</div>' +
+    '</div>';
+  }
+
+  function bindToggles() {
+    document.querySelectorAll('.view-toggle-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var tid = btn.getAttribute('data-toggle');
+        var target = btn.getAttribute('data-target');
+        var wrap = document.getElementById('toggle-wrap-' + tid);
+        if (!wrap) return;
+        wrap.querySelectorAll('.view-toggle-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var meanDiv = document.getElementById('view-mean-' + tid);
+        var distDiv = document.getElementById('view-dist-' + tid);
+        if (meanDiv) meanDiv.style.display = target === 'mean' ? '' : 'none';
+        if (distDiv) distDiv.style.display = target === 'dist' ? '' : 'none';
+      });
+    });
+  }
+
   // --- Ratings + Behavioral ---
   function runRatingBehavioralCorr(session, container) {
     var html = '';
@@ -1434,6 +1726,7 @@
         var result = StatsEngine.pearson(a, b);
         var rVal = result.r !== undefined ? result.r : result;
         var p = result.p !== undefined ? result.p : NaN;
+        html += renderPlainLang(plainR(rVal) + (!isNaN(p) ? ' ' + plainP(p) : ''), !isNaN(p) ? p < ALPHA : null);
         html += RC(rLabel + ' vs ' + bLabel, renderMetrics([
           { label: 'r', value: round2(rVal) },
           { label: 'n', value: a.length },
@@ -1445,6 +1738,290 @@
         html += renderPlainEnglish('There is a ' + strength + ' ' + direction + ' correlation (r = ' + round2(rVal) + ') between ' + rLabel + ' and ' + bLabel + '.');
       });
     });
+    container.innerHTML = html;
+  }
+
+  /* ---- IMPROVEMENT 2: Post-hoc pairwise Mann-Whitney ---- */
+  function runPostHoc(session, container) {
+    if (!session.category) { container.innerHTML = RC('No Segment Data', '<p>Paste category data.</p>'); return; }
+    var html = '';
+    session.ratings.columns.forEach(function(col, ci) {
+      var label = session.ratings.labels[ci] || ('Rating ' + (ci + 1));
+      var groups = {};
+      var catVals = session.category.values;
+      var minLen = Math.min(col.length, catVals.length);
+      for (var i = 0; i < minLen; i++) {
+        var seg = catVals[i];
+        if (!groups[seg]) groups[seg] = [];
+        if (!isNaN(col[i])) groups[seg].push(col[i]);
+      }
+      var validGroups = session.category.groups.filter(function(g) { return groups[g] && groups[g].length > 0; });
+      if (validGroups.length < 2) {
+        html += RC(label, '<p style="color:var(--text-2)">Need 2+ segments with data.</p>');
+        return;
+      }
+
+      var pairs = [];
+      for (var a = 0; a < validGroups.length; a++) {
+        for (var b = a + 1; b < validGroups.length; b++) {
+          pairs.push([validGroups[a], validGroups[b]]);
+        }
+      }
+      var nPairs = pairs.length;
+
+      var tableHtml = '<table class="freq-table"><tr><th>Pair</th><th>Mean A</th><th>Mean B</th><th>Diff</th><th>p-value</th><th>Corrected p</th><th>Significant?</th></tr>';
+      var anySig = false;
+      pairs.forEach(function(pair) {
+        var gA = groups[pair[0]];
+        var gB = groups[pair[1]];
+        var dA = StatsEngine.describe(gA);
+        var dB = StatsEngine.describe(gB);
+        var result = StatsEngine.mannWhitney(gA, gB);
+        var rawP = result.p !== undefined ? result.p : 1;
+        var corrP = Math.min(rawP * nPairs, 1); // Bonferroni
+        var sig = corrP < ALPHA;
+        if (sig) anySig = true;
+        tableHtml += '<tr><td>' + escHtml(pair[0]) + ' vs ' + escHtml(pair[1]) + '</td>' +
+          '<td>' + round2(dA.mean) + '</td><td>' + round2(dB.mean) + '</td>' +
+          '<td>' + round2(dA.mean - dB.mean) + '</td>' +
+          '<td>' + round4(rawP) + '</td><td>' + round4(corrP) + '</td>' +
+          '<td style="font-weight:700;color:' + (sig ? 'var(--green)' : 'var(--text-2)') + '">' + (sig ? 'Yes' : 'No') + '</td></tr>';
+      });
+      tableHtml += '</table>';
+      tableHtml += '<div style="font-size:0.72rem;color:var(--text-2);margin-top:0.4rem">Bonferroni correction applied (\u00D7' + nPairs + ' pairs)</div>';
+
+      html += renderPlainLang(anySig ? 'At least one pair of segments differs significantly on ' + label + '.' : 'No segment pairs differ significantly on ' + label + ' after correction for multiple comparisons.', anySig);
+      html += RC(label + ' — Pairwise Comparisons', tableHtml);
+    });
+    container.innerHTML = html;
+  }
+
+  /* ---- IMPROVEMENT 2: Checkbox Regression ---- */
+  function runCheckboxRegression(session, container) {
+    if (!session.category) { container.innerHTML = RC('No Segment Data', '<p>Need segment data for regression.</p>'); return; }
+    var cb = session.checkbox;
+    var html = '';
+
+    // Outcome: first rating/behavioral column if available, else mean of all checkbox items
+    var outcome = null;
+    var outcomeLabel = '';
+    if (session.ratings && session.ratings.columns.length > 0 && session.ratings.columns[0].length > 0) {
+      outcome = session.ratings.columns[0];
+      outcomeLabel = session.ratings.labels[0] || 'Rating 1';
+    } else if (session.behavioral && session.behavioral.columns.length > 0 && session.behavioral.columns[0].length > 0) {
+      outcome = session.behavioral.columns[0];
+      outcomeLabel = session.behavioral.labels[0] || 'Behavioral 1';
+    } else {
+      // Mean of checkbox items
+      var nRows = cb.numericColumns[0].length;
+      outcome = [];
+      for (var r = 0; r < nRows; r++) {
+        var sum = 0, cnt = 0;
+        cb.numericColumns.forEach(function(col) {
+          if (r < col.length && !isNaN(col[r])) { sum += col[r]; cnt++; }
+        });
+        outcome.push(cnt > 0 ? sum / cnt : NaN);
+      }
+      outcomeLabel = 'Mean of checkbox items';
+    }
+
+    // Predictors: dummy-coded segments
+    var catVals = session.category.values;
+    var groups = session.category.groups;
+    var minLen = Math.min(outcome.length, catVals.length);
+    var y = [];
+    var predictors = [];
+    // Create dummy columns for all groups except the first (reference)
+    for (var g = 1; g < groups.length; g++) predictors.push([]);
+
+    var validRows = [];
+    for (var i = 0; i < minLen; i++) {
+      if (isNaN(outcome[i])) continue;
+      y.push(outcome[i]);
+      for (var g = 1; g < groups.length; g++) {
+        predictors[g - 1].push(catVals[i] === groups[g] ? 1 : 0);
+      }
+    }
+
+    if (y.length < 10 || predictors.length === 0) {
+      container.innerHTML = RC('Regression', '<p style="color:var(--text-2)">Not enough data for regression (need 10+ valid rows and 2+ segments).</p>');
+      return;
+    }
+
+    try {
+      var result = StatsEngine.linearRegression(y, predictors);
+      var r2 = result.rSquared !== undefined ? result.rSquared : (result.r2 || 0);
+      var adjR2 = result.adjustedRSquared !== undefined ? result.adjustedRSquared : (result.adjR2 || 0);
+      var fStat = result.fStatistic !== undefined ? result.fStatistic : (result.F || 0);
+      var pVal = result.p !== undefined ? result.p : (result.pValue || 1);
+      var coeffs = result.coefficients || result.betas || [];
+      var se = result.standardErrors || result.se || [];
+      var tVals = result.tStatistics || result.t || [];
+      var pVals = result.pValues || result.ps || [];
+
+      html += renderPlainLang(plainR2(r2) + ' ' + plainP(pVal), pVal < ALPHA);
+
+      html += RC('Regression: ' + outcomeLabel + ' ~ Segments', renderMetrics([
+        { label: 'R\u00B2', value: round4(r2) },
+        { label: 'Adj R\u00B2', value: round4(adjR2) },
+        { label: 'F', value: round2(fStat) },
+        { label: 'p-value', value: round4(pVal), cls: pClass(pVal) }
+      ]));
+
+      // Coefficients table
+      var predLabels = ['(Intercept)'];
+      for (var g = 1; g < groups.length; g++) predLabels.push(groups[g] + ' (vs ' + groups[0] + ')');
+
+      var coefHtml = '<table class="freq-table"><tr><th>Predictor</th><th>B</th><th>SE</th><th>t</th><th>p</th></tr>';
+      for (var c = 0; c < predLabels.length; c++) {
+        var cB = coeffs[c] !== undefined ? round4(coeffs[c]) : '-';
+        var cSE = se[c] !== undefined ? round4(se[c]) : '-';
+        var cT = tVals[c] !== undefined ? round2(tVals[c]) : '-';
+        var cP = pVals[c] !== undefined ? round4(pVals[c]) : '-';
+        coefHtml += '<tr><td>' + escHtml(predLabels[c]) + '</td><td>' + cB + '</td><td>' + cSE + '</td><td>' + cT + '</td><td>' + cP + '</td></tr>';
+      }
+      coefHtml += '</table>';
+      html += RC('Coefficient Table', coefHtml);
+
+      // Find strongest predictor
+      var maxT = 0, maxIdx = -1;
+      for (var c = 1; c < predLabels.length; c++) {
+        var absT = Math.abs(tVals[c] || 0);
+        if (absT > maxT) { maxT = absT; maxIdx = c; }
+      }
+      if (maxIdx >= 0) {
+        html += renderPlainEnglish('Reference group: ' + groups[0] + '. ' + predLabels[maxIdx] + ' is the strongest predictor (t = ' + round2(tVals[maxIdx]) + ').');
+      }
+    } catch(e) {
+      html += RC('Regression Error', '<p style="color:var(--red)">' + escHtml(e.message) + '</p>');
+    }
+    container.innerHTML = html;
+  }
+
+  /* ---- IMPROVEMENT 2: Rating-Behavioral Regression ---- */
+  function runRatingBehavioralReg(session, container) {
+    if (!session.ratings || !session.behavioral) {
+      container.innerHTML = RC('Missing Data', '<p style="color:var(--text-2)">Need both rating and behavioral data.</p>');
+      return;
+    }
+    var html = '';
+    // Outcome = first rating column. Predictors = behavioral columns.
+    var outcome = session.ratings.columns[0];
+    var outcomeLabel = session.ratings.labels[0] || 'Rating 1';
+    var behCols = session.behavioral.columns;
+    var behLabels = session.behavioral.labels;
+    var minLen = outcome.length;
+    behCols.forEach(function(c) { minLen = Math.min(minLen, c.length); });
+
+    var y = [], predictors = [];
+    for (var b = 0; b < behCols.length; b++) predictors.push([]);
+
+    for (var i = 0; i < minLen; i++) {
+      var valid = !isNaN(outcome[i]);
+      behCols.forEach(function(c) { if (isNaN(c[i])) valid = false; });
+      if (!valid) continue;
+      y.push(outcome[i]);
+      behCols.forEach(function(c, b) { predictors[b].push(c[i]); });
+    }
+
+    if (y.length < 10 || predictors.length === 0) {
+      container.innerHTML = RC('Regression', '<p style="color:var(--text-2)">Not enough paired data for regression.</p>');
+      return;
+    }
+
+    try {
+      var result = StatsEngine.linearRegression(y, predictors);
+      var r2 = result.rSquared !== undefined ? result.rSquared : (result.r2 || 0);
+      var adjR2 = result.adjustedRSquared !== undefined ? result.adjustedRSquared : (result.adjR2 || 0);
+      var fStat = result.fStatistic !== undefined ? result.fStatistic : (result.F || 0);
+      var pVal = result.p !== undefined ? result.p : (result.pValue || 1);
+      var coeffs = result.coefficients || result.betas || [];
+      var se = result.standardErrors || result.se || [];
+      var tVals = result.tStatistics || result.t || [];
+      var pVals = result.pValues || result.ps || [];
+
+      html += renderPlainLang(plainR2(r2) + ' ' + plainP(pVal), pVal < ALPHA);
+
+      html += RC('Regression: ' + outcomeLabel + ' ~ Behavioral', renderMetrics([
+        { label: 'R\u00B2', value: round4(r2) },
+        { label: 'Adj R\u00B2', value: round4(adjR2) },
+        { label: 'F', value: round2(fStat) },
+        { label: 'p-value', value: round4(pVal), cls: pClass(pVal) }
+      ]));
+
+      var predLabels = ['(Intercept)'].concat(behLabels);
+      var coefHtml = '<table class="freq-table"><tr><th>Predictor</th><th>B</th><th>SE</th><th>t</th><th>p</th></tr>';
+      for (var c = 0; c < predLabels.length; c++) {
+        var cB = coeffs[c] !== undefined ? round4(coeffs[c]) : '-';
+        var cSE = se[c] !== undefined ? round4(se[c]) : '-';
+        var cT = tVals[c] !== undefined ? round2(tVals[c]) : '-';
+        var cP = pVals[c] !== undefined ? round4(pVals[c]) : '-';
+        coefHtml += '<tr><td>' + escHtml(predLabels[c]) + '</td><td>' + cB + '</td><td>' + cSE + '</td><td>' + cT + '</td><td>' + cP + '</td></tr>';
+      }
+      coefHtml += '</table>';
+      html += RC('Coefficient Table', coefHtml);
+
+      var maxT = 0, maxIdx = -1;
+      for (var c = 1; c < predLabels.length; c++) {
+        var absT = Math.abs(tVals[c] || 0);
+        if (absT > maxT) { maxT = absT; maxIdx = c; }
+      }
+      if (maxIdx >= 0) {
+        html += renderPlainEnglish(predLabels[maxIdx] + ' is the strongest driver of ' + outcomeLabel + ' (t = ' + round2(tVals[maxIdx]) + ').');
+      }
+    } catch(e) {
+      html += RC('Regression Error', '<p style="color:var(--red)">' + escHtml(e.message) + '</p>');
+    }
+    container.innerHTML = html;
+  }
+
+  /* ---- IMPROVEMENT 2: Factor Analysis ---- */
+  function runCheckboxFactorAnalysis(session, container) {
+    var cb = session.checkbox;
+    if (!cb.isScale || cb.numericColumns.length < 3) {
+      container.innerHTML = RC('Factor Analysis', '<p style="color:var(--text-2)">Need 3+ numeric scale items for factor analysis.</p>');
+      return;
+    }
+    var html = '';
+    try {
+      var nFactors = Math.min(2, cb.numericColumns.length - 1);
+      var result = StatsEngine.factorAnalysis(cb.numericColumns, { nFactors: nFactors });
+      var loadings = result.loadings || [];
+      var variance = result.explainedVariance || result.variance || [];
+
+      // Variance summary
+      var totalVar = 0;
+      variance.forEach(function(v) { totalVar += v; });
+      html += renderPlainLang('Factor analysis extracted ' + nFactors + ' factors explaining ' + Math.round(totalVar * 100) + '% of total variance.', null);
+
+      // Variance metrics
+      var varMetrics = [];
+      for (var f = 0; f < variance.length; f++) {
+        varMetrics.push({ label: 'Factor ' + (f + 1), value: Math.round(variance[f] * 100) + '%' });
+      }
+      varMetrics.push({ label: 'Total', value: Math.round(totalVar * 100) + '%' });
+      html += RC('Explained Variance', renderMetrics(varMetrics));
+
+      // Loadings table
+      var loadHtml = '<table class="freq-table"><tr><th>Item</th>';
+      for (var f = 0; f < nFactors; f++) loadHtml += '<th>Factor ' + (f + 1) + '</th>';
+      loadHtml += '</tr>';
+      for (var i = 0; i < cb.labels.length; i++) {
+        loadHtml += '<tr><td>' + escHtml(cb.labels[i]) + '</td>';
+        for (var f = 0; f < nFactors; f++) {
+          var val = loadings[i] ? (loadings[i][f] !== undefined ? loadings[i][f] : '-') : '-';
+          var numVal = typeof val === 'number' ? val : 0;
+          var cls = Math.abs(numVal) >= 0.4 ? 'font-weight:700;color:var(--rose)' : '';
+          loadHtml += '<td style="' + cls + '">' + (typeof val === 'number' ? round2(val) : val) + '</td>';
+        }
+        loadHtml += '</tr>';
+      }
+      loadHtml += '</table>';
+      loadHtml += '<div style="font-size:0.72rem;color:var(--text-2);margin-top:0.4rem">Loadings \u2265 0.4 highlighted. Items loading strongly on the same factor form a theme.</div>';
+      html += RC('Factor Loadings', loadHtml);
+    } catch(e) {
+      html += RC('Factor Analysis Error', '<p style="color:var(--red)">' + escHtml(e.message) + '</p>');
+    }
     container.innerHTML = html;
   }
 
