@@ -1693,6 +1693,37 @@
       });
     }
 
+    // ============================================================
+    // Cross-Question Analysis flows (combine multiple data types)
+    // ============================================================
+    var crossSteps = [];
+
+    if (hasRatings && hasCheckbox) {
+      crossSteps.push({ id: 'cx_rating_matrix_corr', title: 'Rating \u00D7 Matrix Correlation', desc: 'How do matrix items correlate with your rating columns?', run: runRatingMatrixCorrelation });
+      crossSteps.push({ id: 'cx_rating_checkbox_pb', title: 'Rating \u00D7 Checkbox (Point-Biserial)', desc: 'Do people who select each option rate differently?', run: runRatingCheckboxAnalysis });
+    }
+
+    if (hasRatings && hasBehavioral) {
+      crossSteps.push({ id: 'cx_rating_beh_reg', title: 'Rating \u00D7 Behavioral Regression', desc: 'How well do behavioral variables predict ratings?', run: runCrossRatingBehavioralRegression });
+    }
+
+    if (hasCheckbox && hasBehavioral) {
+      crossSteps.push({ id: 'cx_matrix_beh_corr', title: 'Matrix \u00D7 Behavioral Correlation', desc: 'How do matrix items relate to behavioral variables?', run: runMatrixBehavioralCorrelation });
+    }
+
+    if (hasRatings && (hasCheckbox || hasBehavioral)) {
+      crossSteps.push({ id: 'cx_driver', title: 'Driver Analysis', desc: 'What drives your key outcome? All predictors combined.', run: runDriverAnalysis });
+    }
+
+    if (crossSteps.length > 0) {
+      flows.push({
+        id: 'cross_question',
+        title: 'Cross-Question Analysis',
+        desc: 'Combining your data to find what drives what.',
+        steps: crossSteps
+      });
+    }
+
     return flows;
   }
 
@@ -3266,6 +3297,685 @@
       setTimeout(function() { drawBarChart(segChartId, bars); }, 50 + gi * 30);
     });
 
+    container.innerHTML = html;
+  }
+
+  /* ==================================================================
+     Cross-Question Analysis Step Runners
+     ================================================================== */
+
+  // Helper: Pearson correlation returning {r, p}
+  function safePearson(a, b) {
+    var pa = [], pb = [];
+    var minLen = Math.min(a.length, b.length);
+    for (var k = 0; k < minLen; k++) {
+      if (!isNaN(a[k]) && !isNaN(b[k])) { pa.push(a[k]); pb.push(b[k]); }
+    }
+    if (pa.length < 3) return { r: NaN, p: NaN, n: 0 };
+    var res = StatsEngine.pearson(pa, pb);
+    return { r: res.r !== undefined ? res.r : res, p: res.p !== undefined ? res.p : NaN, n: pa.length };
+  }
+
+  // Helper: heatmap cell color based on correlation
+  function heatColor(r) {
+    var abs = Math.abs(r);
+    if (isNaN(r)) return '';
+    if (r > 0) return 'background:rgba(58,154,92,' + Math.min(0.35, abs * 0.5) + ')';
+    return 'background:rgba(192,57,43,' + Math.min(0.35, abs * 0.5) + ')';
+  }
+
+  // Helper: extract regression results consistently
+  function extractRegResults(result) {
+    return {
+      r2: result.rSquared !== undefined ? result.rSquared : (result.r2 || 0),
+      adjR2: result.adjustedRSquared !== undefined ? result.adjustedRSquared : (result.adjR2 || 0),
+      fStat: result.fStatistic !== undefined ? result.fStatistic : (result.F || 0),
+      pVal: result.p !== undefined ? result.p : (result.pValue || 1),
+      coeffs: result.coefficients || result.betas || [],
+      se: result.standardErrors || result.se || [],
+      tVals: result.tStatistics || result.t || [],
+      pVals: result.pValues || result.ps || []
+    };
+  }
+
+  // Helper: compute standardized betas from regression
+  function computeBetas(y, predictors, coeffs, predLabels) {
+    var sdY = StatsEngine.describe(y).sd;
+    var items = [];
+    for (var c = 1; c < predLabels.length; c++) {
+      if (coeffs[c] !== undefined) {
+        var sdX = StatsEngine.describe(predictors[c - 1]).sd;
+        var beta = (sdY !== 0 && sdX !== 0) ? coeffs[c] * (sdX / sdY) : 0;
+        items.push({ label: predLabels[c], beta: round4(beta), b: coeffs[c] });
+      }
+    }
+    items.sort(function(a, b) { return Math.abs(b.beta) - Math.abs(a.beta); });
+    return items;
+  }
+
+  /* ---- Cross Step 1: Rating x Matrix Correlation ---- */
+  function runRatingMatrixCorrelation(session, container) {
+    if (!session.ratings || !session.checkbox) {
+      container.innerHTML = RC('Missing Data', '<p style="color:var(--text-2)">Need both rating and checkbox/matrix data.</p>');
+      return;
+    }
+    var html = '';
+    var rCols = session.ratings.columns;
+    var rLabels = session.ratings.labels;
+    var mCols = session.checkbox.numericColumns;
+    var mLabels = session.checkbox.labels;
+    var allCorrs = [];
+    var strongestR = 0, strongestPair = '';
+
+    // Correlation heatmap table
+    var tHtml = '<table class="freq-table"><tr><th></th>';
+    mLabels.forEach(function(ml) { tHtml += '<th>' + escHtml(ml.length > 15 ? ml.substring(0, 13) + '..' : ml) + '</th>'; });
+    tHtml += '</tr>';
+
+    rCols.forEach(function(rCol, ri) {
+      var rLabel = rLabels[ri] || ('Rating ' + (ri + 1));
+      tHtml += '<tr><td><strong>' + escHtml(rLabel.length > 18 ? rLabel.substring(0, 16) + '..' : rLabel) + '</strong></td>';
+      mCols.forEach(function(mCol, mi) {
+        var res = safePearson(rCol, mCol);
+        var r = res.r;
+        var cellStyle = heatColor(r);
+        var bold = Math.abs(r) >= 0.4 ? ';font-weight:700;color:var(--green)' : '';
+        tHtml += '<td style="' + cellStyle + bold + '">' + (isNaN(r) ? '-' : round2(r)) + '</td>';
+        if (!isNaN(r)) {
+          allCorrs.push({ rLabel: rLabel, mLabel: mLabels[mi], r: r, absR: Math.abs(r) });
+          if (Math.abs(r) > Math.abs(strongestR)) { strongestR = r; strongestPair = mLabels[mi] + ' \u00D7 ' + rLabel; }
+        }
+      });
+      tHtml += '</tr>';
+    });
+    tHtml += '</table>';
+
+    // Plain language card at top
+    if (strongestPair) {
+      html += renderPlainLang(escHtml(strongestPair.split(' \u00D7 ')[0]) + ' (r=' + round2(strongestR) + ') has the strongest relationship with ' + escHtml(strongestPair.split(' \u00D7 ')[1]) + '. ' + plainR(strongestR), Math.abs(strongestR) >= 0.3);
+    }
+
+    html += RC('Rating \u00D7 Matrix Correlation Heatmap', tHtml);
+
+    // Bar chart: correlation strength per matrix item (avg |r| across rating columns)
+    var mItemBars = [];
+    mLabels.forEach(function(ml, mi) {
+      var sumAbsR = 0, cnt = 0;
+      rCols.forEach(function(rCol) {
+        var res = safePearson(rCol, mCols[mi]);
+        if (!isNaN(res.r)) { sumAbsR += Math.abs(res.r); cnt++; }
+      });
+      if (cnt > 0) mItemBars.push({ label: ml, value: round2(sumAbsR / cnt), color: sumAbsR / cnt >= 0.4 ? '#3a9a5c' : sumAbsR / cnt >= 0.2 ? '#c08a30' : '#5B8DB8' });
+    });
+    if (mItemBars.length > 0) {
+      mItemBars.sort(function(a, b) { return b.value - a.value; });
+      var mItemChartId = 'cx_rm_item_corr';
+      html += renderChart(mItemChartId, 'Average |r| per Matrix Item', 500, Math.max(120, mItemBars.length * 46 + 28));
+      setTimeout(function() { drawBarChart(mItemChartId, mItemBars); }, 50);
+    }
+
+    // Diverging bar chart of individual correlations (positive right, negative left)
+    allCorrs.sort(function(a, b) { return b.r - a.r; });
+    var divBars = allCorrs.map(function(c) {
+      return { label: c.mLabel + ' \u00D7 ' + c.rLabel, value: round2(c.r), color: c.r >= 0 ? '#3a9a5c' : '#c0392b' };
+    });
+    if (divBars.length > 0) {
+      var divChartId = 'cx_rm_div_corr';
+      html += renderChart(divChartId, 'Diverging Correlations (Rating \u00D7 Matrix)', 500, Math.max(120, divBars.length * 46 + 28));
+      setTimeout(function() { drawBarChart(divChartId, divBars); }, 70);
+    }
+
+    // Plain English summary
+    var topCorrs = allCorrs.slice(0, 3).map(function(c) { return c.mLabel + ' (r=' + round2(c.r) + ')'; });
+    html += renderPlainEnglish('The matrix items most strongly correlated with ratings are: ' + topCorrs.join(', ') + '. ' +
+      'Items with stronger correlations have a tighter relationship with the outcome \u2014 changes in those items tend to move ratings.');
+
+    // So what?
+    html += renderPlainLang('So what? Focus improvement efforts on matrix items with the strongest rating correlations \u2014 they are most likely to move the needle on satisfaction.', null);
+
+    // Store findings
+    session.findings.push({ step: 'Rating \u00D7 Matrix Correlation', finding: 'Strongest correlation: ' + strongestPair + ' (r=' + round2(strongestR) + ')', detail: allCorrs.length + ' pairs analyzed', important: true });
+
+    container.innerHTML = html;
+  }
+
+  /* ---- Cross Step 2: Rating x Checkbox (Point-Biserial) ---- */
+  function runRatingCheckboxAnalysis(session, container) {
+    if (!session.ratings || !session.checkbox) {
+      container.innerHTML = RC('Missing Data', '<p style="color:var(--text-2)">Need both rating and checkbox/matrix data.</p>');
+      return;
+    }
+    var html = '';
+    var rCol = session.ratings.columns[0];
+    var rLabel = session.ratings.labels[0] || 'Rating 1';
+    var cb = session.checkbox;
+    var results = [];
+
+    // For each checkbox/matrix column, split respondents
+    cb.columns.forEach(function(mCol, mi) {
+      var selectedVals = [];
+      var notSelectedVals = [];
+      var minLen = Math.min(rCol.length, mCol.length);
+      for (var i = 0; i < minLen; i++) {
+        if (isNaN(rCol[i])) continue;
+        var cellVal = String(mCol[i]).trim();
+        if (cb.isScale) {
+          // For scale data: split at median
+          var numVal = Number(cellVal);
+          if (!isNaN(numVal)) {
+            var median = StatsEngine.describe(cb.numericColumns[mi]).median;
+            if (numVal >= median) selectedVals.push(rCol[i]);
+            else notSelectedVals.push(rCol[i]);
+          }
+        } else {
+          // For checkbox: filled = selected, blank = not selected
+          if (cellVal !== '' && cellVal !== '0') selectedVals.push(rCol[i]);
+          else notSelectedVals.push(rCol[i]);
+        }
+      }
+
+      if (selectedVals.length >= 2 && notSelectedVals.length >= 2) {
+        var dSel = StatsEngine.describe(selectedVals);
+        var dNot = StatsEngine.describe(notSelectedVals);
+        var diff = round2(dSel.mean - dNot.mean);
+        var mw = StatsEngine.mannWhitney(selectedVals, notSelectedVals);
+        var p = mw.p !== undefined ? mw.p : 1;
+        results.push({
+          label: cb.labels[mi],
+          meanSel: round2(dSel.mean), nSel: dSel.n, sdSel: dSel.sd,
+          meanNot: round2(dNot.mean), nNot: dNot.n, sdNot: dNot.sd,
+          diff: diff, p: p, sig: p < ALPHA
+        });
+      }
+    });
+
+    if (results.length === 0) {
+      container.innerHTML = RC('Point-Biserial', '<p style="color:var(--text-2)">Not enough data to compare selected vs not-selected groups.</p>');
+      return;
+    }
+
+    // Find most impactful
+    var strongest = results.slice().sort(function(a, b) { return Math.abs(b.diff) - Math.abs(a.diff); })[0];
+    var sigCount = results.filter(function(r) { return r.sig; }).length;
+
+    // Plain language card at top
+    html += renderPlainLang('People who ' + (cb.isScale ? 'rate higher on' : 'selected') + ' ' + escHtml(strongest.label) +
+      ' rate ' + rLabel + ' ' + Math.abs(strongest.diff) + ' points ' + (strongest.diff > 0 ? 'higher' : 'lower') +
+      ' (p ' + (strongest.p < 0.001 ? '< 0.001' : '= ' + round4(strongest.p)) + '). ' +
+      sigCount + ' of ' + results.length + ' items show significant differences.',
+      sigCount > 0);
+
+    // Table
+    var tHtml = '<table class="freq-table"><tr><th>Option</th><th>Mean (Selected)</th><th>Mean (Not Selected)</th><th>Diff</th><th>p-value</th><th>Significant?</th></tr>';
+    results.forEach(function(r) {
+      var sigStyle = r.sig ? 'color:var(--green);font-weight:700' : 'color:var(--text-2)';
+      var diffStyle = Math.abs(r.diff) >= 0.3 ? 'font-weight:700' : '';
+      tHtml += '<tr><td>' + escHtml(r.label) + '</td><td>' + r.meanSel + ' (n=' + r.nSel + ')</td><td>' + r.meanNot + ' (n=' + r.nNot + ')</td><td style="' + diffStyle + '">' + (r.diff > 0 ? '+' : '') + r.diff + '</td><td>' + round4(r.p) + '</td><td style="' + sigStyle + '">' + (r.sig ? 'Yes' : 'No') + '</td></tr>';
+    });
+    tHtml += '</table>';
+    html += RC('Point-Biserial Analysis: ' + rLabel, tHtml);
+
+    // Side-by-side bar chart: selected vs not selected means
+    var chartId = 'cx_pb_bars';
+    var groupLabels = results.map(function(r) { return r.label; });
+    var seriesLabels = [cb.isScale ? 'High' : 'Selected', cb.isScale ? 'Low' : 'Not Selected'];
+    var data = results.map(function(r) { return [parseFloat(r.meanSel), parseFloat(r.meanNot)]; });
+    var sdData = results.map(function(r) { return [{ sd: r.sdSel, n: r.nSel }, { sd: r.sdNot, n: r.nNot }]; });
+    var chartH = Math.max(250, 40 * groupLabels.length + 80);
+    html += renderChart(chartId, rLabel + ' by ' + (cb.isScale ? 'High/Low' : 'Selected/Not'), 600, chartH);
+    setTimeout(function() { drawVerticalGroupedBarChart(chartId, 600, chartH, groupLabels, seriesLabels, data, sdData); }, 60);
+
+    // Difference bar chart (diverging)
+    var diffBars = results.map(function(r) {
+      return { label: r.label, value: r.diff, color: r.diff >= 0 ? '#3a9a5c' : '#c0392b' };
+    });
+    diffBars.sort(function(a, b) { return b.value - a.value; });
+    var diffChartId = 'cx_pb_diff';
+    html += renderChart(diffChartId, 'Rating Difference (Selected - Not Selected)', 500, Math.max(120, diffBars.length * 46 + 28));
+    setTimeout(function() { drawBarChart(diffChartId, diffBars); }, 80);
+
+    // Plain English
+    var sigItems = results.filter(function(r) { return r.sig; }).map(function(r) {
+      return r.label + ' (' + (r.diff > 0 ? '+' : '') + r.diff + ', p=' + round4(r.p) + ')';
+    });
+    html += renderPlainEnglish(sigItems.length > 0
+      ? 'Significant rating differences for: ' + sigItems.join('; ') + '.'
+      : 'No items show a statistically significant rating difference between selected and not-selected groups.');
+
+    // So what?
+    html += renderPlainLang('So what? Items with the largest positive differences represent features or attributes that are associated with higher ' + rLabel + '. Prioritize these.', null);
+
+    session.findings.push({ step: 'Rating \u00D7 Checkbox', finding: 'Largest difference: ' + strongest.label + ' (' + (strongest.diff > 0 ? '+' : '') + strongest.diff + ', p=' + round4(strongest.p) + ')', detail: sigCount + '/' + results.length + ' significant', important: true });
+
+    container.innerHTML = html;
+  }
+
+  /* ---- Cross Step 3: Rating x Behavioral Regression ---- */
+  function runCrossRatingBehavioralRegression(session, container) {
+    if (!session.ratings || !session.behavioral) {
+      container.innerHTML = RC('Missing Data', '<p style="color:var(--text-2)">Need both rating and behavioral data.</p>');
+      return;
+    }
+    var html = '';
+    var outcome = session.ratings.columns[0];
+    var outcomeLabel = session.ratings.labels[0] || 'Rating 1';
+    var behCols = session.behavioral.columns;
+    var behLabels = session.behavioral.labels;
+    var minLen = outcome.length;
+    behCols.forEach(function(c) { minLen = Math.min(minLen, c.length); });
+
+    var y = [], predictors = [];
+    for (var b = 0; b < behCols.length; b++) predictors.push([]);
+    for (var i = 0; i < minLen; i++) {
+      var valid = !isNaN(outcome[i]);
+      behCols.forEach(function(c) { if (isNaN(c[i])) valid = false; });
+      if (!valid) continue;
+      y.push(outcome[i]);
+      behCols.forEach(function(c, b) { predictors[b].push(c[i]); });
+    }
+
+    if (y.length < 10 || predictors.length === 0) {
+      container.innerHTML = RC('Regression', '<p style="color:var(--text-2)">Not enough paired data for regression (need 10+ valid rows).</p>');
+      return;
+    }
+
+    try {
+      var result = StatsEngine.linearRegression(y, predictors);
+      var reg = extractRegResults(result);
+      var predLabels = ['(Intercept)'].concat(behLabels);
+      var betaItems = computeBetas(y, predictors, reg.coeffs, predLabels);
+
+      // Plain language at top
+      var pctExplained = Math.round(reg.r2 * 100);
+      var topPredictor = betaItems.length > 0 ? betaItems[0] : null;
+      html += renderPlainLang('Behavioral variables explain ' + pctExplained + '% of ' + escHtml(outcomeLabel) + ' variation. ' +
+        (topPredictor ? escHtml(topPredictor.label) + ' is the strongest predictor (\u03B2=' + topPredictor.beta + ').' : '') +
+        ' ' + plainR2(reg.r2), reg.pVal < ALPHA);
+
+      // Model metrics
+      html += RC('Regression: ' + outcomeLabel + ' ~ Behavioral Variables', renderMetrics([
+        { label: 'R\u00B2', value: round4(reg.r2) },
+        { label: 'Adj R\u00B2', value: round4(reg.adjR2) },
+        { label: 'F', value: round2(reg.fStat) },
+        { label: 'p-value', value: round4(reg.pVal), cls: pClass(reg.pVal) },
+        { label: 'n', value: y.length }
+      ]));
+
+      // Coefficient table
+      var coefHtml = '<table class="freq-table"><tr><th>Predictor</th><th>B</th><th>\u03B2</th><th>SE</th><th>t</th><th>p</th></tr>';
+      for (var c = 0; c < predLabels.length; c++) {
+        var betaVal = '-';
+        if (c > 0) {
+          var found = betaItems.filter(function(bi) { return bi.label === predLabels[c]; });
+          if (found.length > 0) betaVal = found[0].beta;
+        }
+        coefHtml += '<tr><td>' + escHtml(predLabels[c]) + '</td><td>' + (reg.coeffs[c] !== undefined ? round4(reg.coeffs[c]) : '-') + '</td><td>' + betaVal + '</td><td>' + (reg.se[c] !== undefined ? round4(reg.se[c]) : '-') + '</td><td>' + (reg.tVals[c] !== undefined ? round2(reg.tVals[c]) : '-') + '</td><td>' + (reg.pVals[c] !== undefined ? round4(reg.pVals[c]) : '-') + '</td></tr>';
+      }
+      coefHtml += '</table>';
+      html += RC('Coefficient Table', coefHtml);
+
+      // Standardized beta chart
+      if (betaItems.length > 0) {
+        var betaChartId = 'cx_rb_beta';
+        html += renderChart(betaChartId, 'Standardized Coefficients (\u03B2) \u2014 What Matters Most?', 500, Math.max(120, betaItems.length * 46 + 28));
+        setTimeout(function() { drawStandardizedCoeffChart(betaChartId, betaItems); }, 60);
+      }
+
+      // Predicted vs Actual scatter
+      var predicted = [];
+      for (var i = 0; i < y.length; i++) {
+        var yHat = reg.coeffs[0] || 0;
+        for (var p = 0; p < predictors.length; p++) {
+          yHat += (reg.coeffs[p + 1] || 0) * predictors[p][i];
+        }
+        predicted.push(yHat);
+      }
+      var scatterPoints = [];
+      for (var i = 0; i < y.length; i++) scatterPoints.push({ x: predicted[i], y: y[i] });
+      var scatterId = 'cx_rb_scatter';
+      html += renderChart(scatterId, 'Predicted vs Actual ' + outcomeLabel, 500, 300);
+      setTimeout(function() { drawScatterPlot(scatterId, scatterPoints, 'Predicted', 'Actual'); }, 80);
+
+      // Plain English
+      html += renderPlainEnglish('This model explains ' + pctExplained + '% of the variation in ' + outcomeLabel + '. ' +
+        (topPredictor ? topPredictor.label + ' is the strongest predictor.' : ''));
+
+      // So what?
+      html += renderPlainLang('So what? ' + (topPredictor ? 'Improving or optimizing ' + escHtml(topPredictor.label) + ' is likely to have the biggest behavioral impact on ' + escHtml(outcomeLabel) + '.' : 'No single behavioral variable stands out as a clear driver.'), null);
+
+      session.findings.push({ step: 'Rating \u00D7 Behavioral Regression', finding: 'R\u00B2 = ' + round4(reg.r2) + '. ' + (topPredictor ? 'Strongest predictor: ' + topPredictor.label + ' (\u03B2=' + topPredictor.beta + ')' : ''), detail: 'p = ' + round4(reg.pVal), important: reg.pVal < ALPHA });
+    } catch(e) {
+      html += RC('Regression Error', '<p style="color:var(--red)">' + escHtml(e.message) + '</p>');
+    }
+    container.innerHTML = html;
+  }
+
+  /* ---- Cross Step 4: Matrix x Behavioral Correlation ---- */
+  function runMatrixBehavioralCorrelation(session, container) {
+    if (!session.checkbox || !session.behavioral) {
+      container.innerHTML = RC('Missing Data', '<p style="color:var(--text-2)">Need both checkbox/matrix and behavioral data.</p>');
+      return;
+    }
+    var html = '';
+    var mCols = session.checkbox.numericColumns;
+    var mLabels = session.checkbox.labels;
+    var bCols = session.behavioral.columns;
+    var bLabels = session.behavioral.labels;
+    var allCorrs = [];
+    var strongestR = 0, strongestPair = '';
+
+    // Correlation matrix table
+    var tHtml = '<table class="freq-table"><tr><th></th>';
+    bLabels.forEach(function(bl) { tHtml += '<th>' + escHtml(bl.length > 15 ? bl.substring(0, 13) + '..' : bl) + '</th>'; });
+    tHtml += '</tr>';
+
+    mCols.forEach(function(mCol, mi) {
+      tHtml += '<tr><td><strong>' + escHtml(mLabels[mi].length > 18 ? mLabels[mi].substring(0, 16) + '..' : mLabels[mi]) + '</strong></td>';
+      bCols.forEach(function(bCol, bi) {
+        var res = safePearson(mCol, bCol);
+        var r = res.r;
+        var cellStyle = heatColor(r);
+        var bold = Math.abs(r) >= 0.4 ? ';font-weight:700;color:var(--green)' : '';
+        tHtml += '<td style="' + cellStyle + bold + '">' + (isNaN(r) ? '-' : round2(r)) + '</td>';
+        if (!isNaN(r)) {
+          allCorrs.push({ mLabel: mLabels[mi], bLabel: bLabels[bi], r: r, absR: Math.abs(r) });
+          if (Math.abs(r) > Math.abs(strongestR)) { strongestR = r; strongestPair = mLabels[mi] + ' \u00D7 ' + bLabels[bi]; }
+        }
+      });
+      tHtml += '</tr>';
+    });
+    tHtml += '</table>';
+
+    // Plain language at top
+    if (strongestPair) {
+      html += renderPlainLang(escHtml(strongestPair) + ' has the strongest relationship (r=' + round2(strongestR) + '). ' + plainR(strongestR), Math.abs(strongestR) >= 0.3);
+    }
+
+    html += RC('Matrix \u00D7 Behavioral Correlation Matrix', tHtml);
+
+    // Bar chart of strongest correlations
+    allCorrs.sort(function(a, b) { return b.absR - a.absR; });
+    var topCorrs = allCorrs.slice(0, Math.min(12, allCorrs.length));
+    if (topCorrs.length > 0) {
+      var corrBars = topCorrs.map(function(c) {
+        return { label: c.mLabel + ' \u00D7 ' + c.bLabel, value: round2(c.r), color: c.r >= 0 ? '#3a9a5c' : '#c0392b' };
+      });
+      var corrChartId = 'cx_mb_corr_bars';
+      html += renderChart(corrChartId, 'Strongest Correlations', 500, Math.max(120, corrBars.length * 46 + 28));
+      setTimeout(function() { drawBarChart(corrChartId, corrBars); }, 50);
+    }
+
+    // Scatter for the strongest pair
+    if (allCorrs.length > 0) {
+      var best = allCorrs[0];
+      var mi2 = mLabels.indexOf(best.mLabel);
+      var bi2 = bLabels.indexOf(best.bLabel);
+      if (mi2 >= 0 && bi2 >= 0) {
+        var pts = [];
+        var mCol2 = mCols[mi2], bCol2 = bCols[bi2];
+        var minLen2 = Math.min(mCol2.length, bCol2.length);
+        for (var k = 0; k < minLen2; k++) {
+          if (!isNaN(mCol2[k]) && !isNaN(bCol2[k])) pts.push({ x: bCol2[k], y: mCol2[k] });
+        }
+        if (pts.length >= 3) {
+          var scId = 'cx_mb_scatter';
+          html += renderChart(scId, best.bLabel + ' vs ' + best.mLabel + ' (r=' + round2(best.r) + ')', 500, 300);
+          setTimeout(function() { drawScatterPlot(scId, pts, best.bLabel, best.mLabel); }, 70);
+        }
+      }
+    }
+
+    // Plain English
+    var topNames = allCorrs.slice(0, 3).map(function(c) { return c.mLabel + ' \u00D7 ' + c.bLabel + ' (r=' + round2(c.r) + ')'; });
+    html += renderPlainEnglish('The strongest matrix \u00D7 behavioral correlations are: ' + topNames.join('; ') + '.');
+
+    // So what?
+    html += renderPlainLang('So what? These correlations reveal which perceptions (matrix items) are most connected to actual behaviors. Strong links suggest perception matches reality; weak links suggest a disconnect.', null);
+
+    session.findings.push({ step: 'Matrix \u00D7 Behavioral Correlation', finding: 'Strongest: ' + strongestPair + ' (r=' + round2(strongestR) + ')', detail: allCorrs.length + ' pairs', important: Math.abs(strongestR) >= 0.3 });
+
+    container.innerHTML = html;
+  }
+
+  /* ---- Cross Step 5: DRIVER ANALYSIS ---- */
+  function runDriverAnalysis(session, container) {
+    if (!session.ratings) {
+      container.innerHTML = RC('Missing Data', '<p style="color:var(--text-2)">Need rating data for driver analysis.</p>');
+      return;
+    }
+    var html = '';
+    var outcome = session.ratings.columns[0];
+    var outcomeLabel = session.ratings.labels[0] || 'Rating 1';
+
+    // Build ALL predictors: matrix item means + behavioral columns + segment dummies
+    var predictors = [];
+    var predLabels = [];
+
+    // Matrix / Checkbox items
+    if (session.checkbox && session.checkbox.numericColumns) {
+      session.checkbox.numericColumns.forEach(function(col, i) {
+        predictors.push(col);
+        predLabels.push(session.checkbox.labels[i]);
+      });
+    }
+
+    // Behavioral columns
+    if (session.behavioral && session.behavioral.columns) {
+      session.behavioral.columns.forEach(function(col, i) {
+        predictors.push(col);
+        predLabels.push(session.behavioral.labels[i]);
+      });
+    }
+
+    // Segment dummies
+    var hasCategory = session.category && session.category.values.length > 0;
+    if (hasCategory) {
+      var groups = session.category.groups;
+      for (var g = 1; g < groups.length; g++) {
+        var dummy = session.category.values.map(function(v) { return v === groups[g] ? 1 : 0; });
+        predictors.push(dummy);
+        predLabels.push('Seg: ' + groups[g]);
+      }
+    }
+
+    if (predictors.length === 0) {
+      container.innerHTML = RC('Driver Analysis', '<p style="color:var(--text-2)">No predictors available. Need checkbox/matrix or behavioral data alongside ratings.</p>');
+      return;
+    }
+
+    // Align data: only rows with valid values across all columns
+    var maxLen = outcome.length;
+    predictors.forEach(function(p) { maxLen = Math.min(maxLen, p.length); });
+    var y = [], alignedPreds = [];
+    for (var p = 0; p < predictors.length; p++) alignedPreds.push([]);
+    for (var i = 0; i < maxLen; i++) {
+      if (isNaN(outcome[i])) continue;
+      var allValid = true;
+      for (var p = 0; p < predictors.length; p++) {
+        if (isNaN(predictors[p][i])) { allValid = false; break; }
+      }
+      if (!allValid) continue;
+      y.push(outcome[i]);
+      for (var p = 0; p < predictors.length; p++) alignedPreds[p].push(predictors[p][i]);
+    }
+
+    if (y.length < 10 || alignedPreds.length === 0) {
+      container.innerHTML = RC('Driver Analysis', '<p style="color:var(--text-2)">Not enough complete cases for driver analysis (need 10+ rows).</p>');
+      return;
+    }
+
+    try {
+      var result = StatsEngine.linearRegression(y, alignedPreds);
+      var reg = extractRegResults(result);
+      var allPredLabels = ['(Intercept)'].concat(predLabels);
+      var betaItems = computeBetas(y, alignedPreds, reg.coeffs, allPredLabels);
+      var pctExplained = Math.round(reg.r2 * 100);
+
+      // 1. R2 with plain language
+      html += renderPlainLang('This model explains ' + pctExplained + '% of what drives ' + escHtml(outcomeLabel) + '. ' + plainR2(reg.r2), reg.pVal < ALPHA);
+
+      html += RC('Driver Analysis: What Drives ' + outcomeLabel + '?', renderMetrics([
+        { label: 'R\u00B2', value: round4(reg.r2) },
+        { label: 'Adj R\u00B2', value: round4(reg.adjR2) },
+        { label: 'F', value: round2(reg.fStat) },
+        { label: 'p-value', value: round4(reg.pVal), cls: pClass(reg.pVal) },
+        { label: 'Predictors', value: predLabels.length },
+        { label: 'n', value: y.length }
+      ]));
+
+      // 2. Standardized beta bar chart sorted by importance (THE key visual)
+      if (betaItems.length > 0) {
+        var driverChartId = 'cx_driver_beta';
+        html += renderChart(driverChartId, 'Driver Importance \u2014 Standardized Coefficients (\u03B2)', 500, Math.max(120, betaItems.length * 46 + 28));
+        setTimeout(function() { drawStandardizedCoeffChart(driverChartId, betaItems); }, 50);
+        html += '<div style="font-size:0.74rem;color:var(--text-2);margin:-0.5rem 0 0.75rem;padding:0 0.25rem;line-height:1.5">Larger bars = stronger driver. Green = positive impact on ' + escHtml(outcomeLabel) + '. Red = negative impact.</div>';
+      }
+
+      // 3. Coefficient table with B, beta, SE, t, p
+      var coefHtml = '<table class="freq-table"><tr><th>Predictor</th><th>B</th><th>\u03B2</th><th>SE</th><th>t</th><th>p</th></tr>';
+      for (var c = 0; c < allPredLabels.length; c++) {
+        var betaVal = '-';
+        if (c > 0) {
+          var found = betaItems.filter(function(bi) { return bi.label === allPredLabels[c]; });
+          if (found.length > 0) betaVal = found[0].beta;
+        }
+        var pCls = (reg.pVals[c] !== undefined && reg.pVals[c] < ALPHA) ? 'font-weight:700;color:var(--green)' : '';
+        coefHtml += '<tr><td>' + escHtml(allPredLabels[c]) + '</td><td>' + (reg.coeffs[c] !== undefined ? round4(reg.coeffs[c]) : '-') + '</td><td>' + betaVal + '</td><td>' + (reg.se[c] !== undefined ? round4(reg.se[c]) : '-') + '</td><td>' + (reg.tVals[c] !== undefined ? round2(reg.tVals[c]) : '-') + '</td><td style="' + pCls + '">' + (reg.pVals[c] !== undefined ? round4(reg.pVals[c]) : '-') + '</td></tr>';
+      }
+      coefHtml += '</table>';
+      html += RC('Full Coefficient Table', coefHtml);
+
+      // 4. Top 3 drivers highlighted
+      var topDrivers = betaItems.slice(0, Math.min(3, betaItems.length));
+      if (topDrivers.length > 0) {
+        var topHtml = '<div style="font-size:0.95rem;line-height:1.7;color:var(--text-0)">';
+        topHtml += '<strong>Top ' + topDrivers.length + ' drivers of ' + escHtml(outcomeLabel) + ':</strong><ol style="padding-left:1.5rem;margin-top:0.3rem">';
+        topDrivers.forEach(function(d, idx) {
+          topHtml += '<li><strong>' + escHtml(d.label) + '</strong> (\u03B2 = ' + d.beta + ')</li>';
+        });
+        topHtml += '</ol></div>';
+        html += RC('Key Drivers', topHtml);
+      }
+
+      // 5. Drivers that DON'T matter
+      var nonsigDrivers = betaItems.filter(function(bi) {
+        var idx = allPredLabels.indexOf(bi.label);
+        return idx >= 0 && reg.pVals[idx] !== undefined && reg.pVals[idx] >= ALPHA;
+      });
+      if (nonsigDrivers.length > 0) {
+        var nsHtml = '<div style="font-size:0.88rem;line-height:1.6;color:var(--text-2)">';
+        nsHtml += '<strong>Not significant drivers:</strong><ul style="padding-left:1.5rem;margin-top:0.3rem">';
+        nonsigDrivers.forEach(function(d) {
+          var idx = allPredLabels.indexOf(d.label);
+          var pStr = reg.pVals[idx] !== undefined ? round4(reg.pVals[idx]) : '?';
+          nsHtml += '<li>' + escHtml(d.label) + ' (\u03B2 = ' + d.beta + ', p = ' + pStr + ') \u2014 does not significantly drive ' + escHtml(outcomeLabel) + '</li>';
+        });
+        nsHtml += '</ul></div>';
+        html += RC('Non-Significant Factors', nsHtml);
+      }
+
+      // 6. By segment: run regression per segment if we have category data
+      if (hasCategory && session.category.groups.length >= 2) {
+        var segBetaData = {}; // { segName: { predLabel: beta } }
+        var topPredLabels = topDrivers.map(function(d) { return d.label; });
+        if (topPredLabels.length === 0) topPredLabels = predLabels.slice(0, Math.min(3, predLabels.length));
+
+        session.category.groups.forEach(function(grp) {
+          var segY = [], segPreds = [];
+          for (var p = 0; p < alignedPreds.length; p++) segPreds.push([]);
+          // We need to re-align using the category values — find rows belonging to this segment
+          var catVals = session.category.values;
+          var maxL = Math.min(outcome.length, catVals.length);
+          predictors.forEach(function(pr) { maxL = Math.min(maxL, pr.length); });
+          for (var i = 0; i < maxL; i++) {
+            if (catVals[i] !== grp) continue;
+            if (isNaN(outcome[i])) continue;
+            var av = true;
+            for (var p = 0; p < predictors.length; p++) { if (isNaN(predictors[p][i])) { av = false; break; } }
+            if (!av) continue;
+            segY.push(outcome[i]);
+            for (var p = 0; p < predictors.length; p++) segPreds[p].push(predictors[p][i]);
+          }
+
+          if (segY.length >= 10) {
+            try {
+              var segResult = StatsEngine.linearRegression(segY, segPreds);
+              var segReg = extractRegResults(segResult);
+              var segBetas = computeBetas(segY, segPreds, segReg.coeffs, allPredLabels);
+              var betaMap = {};
+              segBetas.forEach(function(sb) { betaMap[sb.label] = sb.beta; });
+              segBetaData[grp] = betaMap;
+            } catch(e) { /* skip segment */ }
+          }
+        });
+
+        var segNames = Object.keys(segBetaData);
+        if (segNames.length >= 2) {
+          // Grouped bar chart: segments x top predictors
+          var segGrpLabels = segNames;
+          var segSeriesLabels = topPredLabels;
+          var segGrpData = segNames.map(function(sg) {
+            return topPredLabels.map(function(pl) { return segBetaData[sg][pl] || 0; });
+          });
+          var segChartId = 'cx_driver_by_seg';
+          var segChartH = Math.max(250, 40 * segGrpLabels.length + 80);
+          html += renderChart(segChartId, 'Driver Importance by ' + session.category.label, 600, segChartH);
+          setTimeout(function() { drawVerticalGroupedBarChart(segChartId, 600, segChartH, segGrpLabels, segSeriesLabels, segGrpData); }, 80);
+
+          // Table
+          var segTHtml = '<table class="freq-table"><tr><th>' + escHtml(session.category.label) + '</th>';
+          topPredLabels.forEach(function(pl) { segTHtml += '<th>' + escHtml(pl.length > 15 ? pl.substring(0, 13) + '..' : pl) + '</th>'; });
+          segTHtml += '</tr>';
+          segNames.forEach(function(sg) {
+            segTHtml += '<tr><td><strong>' + escHtml(sg) + '</strong></td>';
+            topPredLabels.forEach(function(pl) {
+              var b = segBetaData[sg][pl] || 0;
+              var cellStyle = heatColor(b);
+              segTHtml += '<td style="' + cellStyle + '">' + round4(b) + '</td>';
+            });
+            segTHtml += '</tr>';
+          });
+          segTHtml += '</table>';
+          html += RC('Driver Importance by Segment (\u03B2)', segTHtml);
+
+          // Find notable differences
+          var segInsights = [];
+          topPredLabels.forEach(function(pl) {
+            var maxBeta = -Infinity, maxSeg = '', minBeta = Infinity, minSeg = '';
+            segNames.forEach(function(sg) {
+              var b = segBetaData[sg][pl] || 0;
+              if (b > maxBeta) { maxBeta = b; maxSeg = sg; }
+              if (b < minBeta) { minBeta = b; minSeg = sg; }
+            });
+            if (maxBeta - minBeta > 0.1) {
+              segInsights.push('For ' + maxSeg + ', ' + pl + ' is even more important (\u03B2=' + round4(maxBeta) + ' vs ' + round4(minBeta) + ' for ' + minSeg + ')');
+            }
+          });
+          if (segInsights.length > 0) {
+            html += renderPlainLang('Segment differences: ' + segInsights.join('. ') + '.', null);
+          }
+        }
+      }
+
+      // Final Plain English
+      var driverSummary = topDrivers.map(function(d, i) { return (i + 1) + '. ' + d.label + ' (\u03B2=' + d.beta + ')'; }).join(', ');
+      html += renderPlainEnglish('The top drivers of ' + outcomeLabel + ' are: ' + driverSummary + '. This model explains ' + pctExplained + '% of the variation.');
+
+      // So what?
+      if (topDrivers.length > 0) {
+        html += renderPlainLang('So what? Improving ' + escHtml(topDrivers[0].label) + ' is likely to have the biggest impact on ' + escHtml(outcomeLabel) + '. ' +
+          (topDrivers.length > 1 ? escHtml(topDrivers[1].label) + ' is the second priority.' : ''), null);
+      }
+
+      // Store HIGH importance findings
+      session.findings.push({ step: 'Driver Analysis', finding: 'R\u00B2 = ' + round4(reg.r2) + ' (' + pctExplained + '% explained). Top drivers: ' + driverSummary, detail: 'F=' + round2(reg.fStat) + ', p=' + round4(reg.pVal), important: true });
+      if (topDrivers.length > 0) {
+        session.findings.push({ step: 'Driver Analysis', finding: '#1 driver of ' + outcomeLabel + ': ' + topDrivers[0].label + ' (\u03B2=' + topDrivers[0].beta + ')', detail: '', important: true });
+      }
+
+    } catch(e) {
+      html += RC('Driver Analysis Error', '<p style="color:var(--red)">' + escHtml(e.message) + '</p>');
+    }
     container.innerHTML = html;
   }
 
