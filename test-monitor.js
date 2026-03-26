@@ -1098,6 +1098,102 @@ function testDataParsing() {
 }
 
 // ============================
+// INDEPENDENT vs PAIRED DATA TESTS
+// ============================
+// This catches the ANOVA truncation bug: methods that compare independent groups
+// must NOT align/truncate columns. Methods with paired data must align.
+
+function testIndependentVsPaired() {
+  // --- ANOVA with deliberately unequal groups: no data should be lost ---
+  var smallGroup = randLikert(1, 5, 30);
+  var medGroup = randLikert(1, 5, 150);
+  var largeGroup = randLikert(1, 5, 400);
+
+  var r = SE.anova([smallGroup, medGroup, largeGroup]);
+  check('ANOVA unequal N: p valid', r.p >= 0 && r.p <= 1, 'p=' + r.p);
+  check('ANOVA unequal N: F not NaN', !isNaN(r.F));
+  // Critical: total N must equal sum of all groups, not truncated to smallest
+  var totalN = r.dfBetween + r.dfWithin + 1; // dfB = k-1, dfW = N-k, so N = dfB + dfW + 1
+  check('ANOVA unequal N: total N = 580 (30+150+400)', totalN === 580,
+    'totalN=' + totalN + ' (expected 580, truncated would be 90)');
+  check('ANOVA unequal N: dfWithin = 577 (580-3)', r.dfWithin === 577,
+    'dfW=' + r.dfWithin);
+
+  // --- Same test with Welch ANOVA ---
+  var rW = SE.welchAnova([smallGroup, medGroup, largeGroup]);
+  check('Welch unequal N: p valid', rW.p >= 0 && rW.p <= 1);
+  check('Welch unequal N: F not NaN', !isNaN(rW.F));
+
+  // --- Kruskal-Wallis with unequal groups ---
+  var rKW = SE.kruskalWallis([smallGroup, medGroup, largeGroup]);
+  check('KW unequal N: p valid', rKW.p >= 0 && rKW.p <= 1);
+  check('KW unequal N: H not NaN', !isNaN(rKW.H));
+
+  // --- Levene with unequal groups ---
+  var rLev = SE.levene([smallGroup, medGroup, largeGroup]);
+  check('Levene unequal N: p valid', rLev.p >= 0 && rLev.p <= 1);
+
+  // --- t-test with very unequal groups (10 vs 500) ---
+  var tiny = randNormalArray(50, 10, 10);
+  var huge = randNormalArray(55, 10, 500);
+  var rTT = SE.ttest(tiny, huge);
+  check('t-test 10 vs 500: p valid', rTT.p >= 0 && rTT.p <= 1);
+  check('t-test 10 vs 500: nA = 10', rTT.nA === 10, 'nA=' + rTT.nA);
+  check('t-test 10 vs 500: nB = 500', rTT.nB === 500, 'nB=' + rTT.nB);
+
+  // --- Mann-Whitney with very unequal groups ---
+  var rMW = SE.mannWhitney(tiny, huge);
+  check('MW 10 vs 500: p valid', rMW.p >= 0 && rMW.p <= 1);
+  check('MW 10 vs 500: nA = 10', rMW.nA === 10);
+  check('MW 10 vs 500: nB = 500', rMW.nB === 500);
+
+  // --- Paired methods MUST have equal N ---
+  // Repeated measures with 3 conditions, same n
+  var cond1 = randLikert(1, 5, 50);
+  var cond2 = randLikert(1, 5, 50);
+  var cond3 = randLikert(1, 5, 50);
+  var rRM = SE.repeatedMeasuresAnova([cond1, cond2, cond3]);
+  check('RM paired: p valid', rRM.p >= 0 && rRM.p <= 1);
+
+  // --- Cronbach's alpha: items must be same n ---
+  var item1 = randLikert(1, 5, 80);
+  var item2 = randLikert(1, 5, 80);
+  var item3 = randLikert(1, 5, 80);
+  var rCA = SE.cronbachAlpha([item1, item2, item3]);
+  check('Cronbach paired: alpha valid', !isNaN(rCA.alpha));
+
+  // --- Stress: ANOVA with extreme ratio (5 vs 1000) ---
+  var micro = [1, 2, 3, 4, 5];
+  var macro = randLikert(1, 5, 1000);
+  try {
+    var rStress = SE.anova([micro, macro]);
+    check('ANOVA 5 vs 1000: p valid', rStress.p >= 0 && rStress.p <= 1);
+    var stressN = rStress.dfBetween + rStress.dfWithin + 1;
+    check('ANOVA 5 vs 1000: N = 1005', stressN === 1005,
+      'N=' + stressN + ' (truncated would be 10)');
+  } catch(e) {
+    check('ANOVA 5 vs 1000: no crash', false, e.message);
+  }
+
+  // --- Power check: unequal groups shouldn't lose power ---
+  // Group A (n=200, mean=50), Group B (n=200, mean=55) — should be significant
+  var powerA = randNormalArray(50, 10, 200);
+  var powerB = randNormalArray(55, 10, 200);
+  var rPower = SE.anova([powerA, powerB]);
+  check('ANOVA power: detects 0.5 SD diff', rPower.p < 0.05, 'p=' + rPower.p);
+
+  // Now make Group A much smaller (n=20) but bigger effect (1 SD) — should still detect
+  var powerASmall = randNormalArray(45, 10, 20);
+  var rPowerUnequal = SE.anova([powerASmall, powerB]);
+  check('ANOVA unequal power: detects 1 SD diff (n=20 vs n=200)', rPowerUnequal.p < 0.05,
+    'p=' + rPowerUnequal.p);
+  // Verify it used all data, not truncated to 20
+  var unequN = rPowerUnequal.dfBetween + rPowerUnequal.dfWithin + 1;
+  check('ANOVA unequal power: N = 220 not 40', unequN === 220,
+    'N=' + unequN);
+}
+
+// ============================
 // DESCRIPTIVE STATS ACCURACY
 // ============================
 
@@ -1718,6 +1814,9 @@ for (var aIter = 0; aIter < ITERATIONS; aIter++) {
 // Run structural tests once
 console.log('\n--- Data Parsing Integrity ---');
 testDataParsing();
+
+console.log('\n--- Independent vs Paired Data ---');
+testIndependentVsPaired();
 
 console.log('\n--- Descriptive Stats Accuracy ---');
 testDescriptiveAccuracy();
