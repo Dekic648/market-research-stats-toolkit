@@ -2021,6 +2021,7 @@
       <a href="index.html" class="back-link">&#8592; <span>Home</span></a>
       <a href="learn.html" class="sister-link">Learn</a>
       <a href="guide.html" class="sister-link">Guide</a>
+      <span style="font-size:0.6rem;color:var(--text-2);opacity:0.4;margin-left:0.5rem">v3.26</span>
     </div>
     <div class="header-right">
       <button class="start-over-link" id="startOverLink">Start over</button>
@@ -8414,7 +8415,7 @@
     var optionLabels = parsed.uniqueItems.slice();
 
     // Sort numerically if all option labels are numbers (Likert/scale data)
-    var allNumericOpts = optionLabels.every(function(v) { var n = parseFloat(v); return !isNaN(n) && isFinite(n); });
+    var allNumericOpts = optionLabels.every(function(v) { var n = Number(v); return !isNaN(n) && isFinite(n) && v.trim() === String(n); });
     if (allNumericOpts) {
       optionLabels.sort(function(a, b) { return parseFloat(a) - parseFloat(b); });
     } else {
@@ -14999,8 +15000,10 @@
         var v = columns[c][r];
         if (v === '' || v === undefined) continue;
         filledCells++;
-        var num = parseFloat(v);
-        if (isNaN(num) || num !== Math.floor(num)) { allScaleInts = false; break; }
+        // STRICT check: the entire string must be a valid integer, not just start with a digit
+        // parseFloat("2) Minnow") = 2 which is WRONG — it's text, not a number
+        var num = Number(v);
+        if (isNaN(num) || num !== Math.floor(num) || v.trim() !== String(Math.floor(num))) { allScaleInts = false; break; }
         if (num < scaleMin) scaleMin = num;
         if (num > scaleMax) scaleMax = num;
       }
